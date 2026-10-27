@@ -128,6 +128,16 @@ void xbox_SetTotalRam(size_t bytes);
  */
 BOOL xbox_MemoryLayoutInit(const void *xbe_data, size_t xbe_size);
 
+/* Hardware-free mode: the NV2A, MCPX and flash apertures are reserved with
+ * no access and no device model or register thread is started. Set before
+ * xbox_MemoryLayoutInit() (or RECOMP_NO_HW=1). xbox_HardwareGuardFault()
+ * is for the access-violation handler; xbox_HardwareAccessCount() is how
+ * many such accesses happened (0 = the run never touched hardware). */
+void xbox_SetNoHardware(int on);
+int xbox_no_hardware(void);
+int xbox_HardwareGuardFault(uint32_t va, uintptr_t rip, int write);
+long xbox_HardwareAccessCount(void);
+
 /**
  * Release the reserved Xbox memory layout.
  */
@@ -358,6 +368,18 @@ typedef union RecompXmm {
  * it. */
 #define XBOX_TIB_MAIN       0x00004000
 extern RECOMP_TLS uint32_t g_fs_base;
+/* Architectural state preserved when a device ISR borrows a host callback
+ * thread. Arithmetic flags are local to lifted C frames; DF/x87/SIMD are TLS. */
+typedef struct XboxGuestCpuState {
+    uint32_t gpr[8], fs_base, seh_ebp, seh_head;
+    RecompXmm xmm[8];
+    RecompMmx mm[8];
+    double fp_stack[8];
+    int fp_top, fp_cmp, df;
+    uint16_t fp_control_word, fp_cc;
+} XboxGuestCpuState;
+void xbox_GuestCpuStateSave(XboxGuestCpuState *state);
+void xbox_GuestCpuStateRestore(const XboxGuestCpuState *state);
 #define XBOX_FS_BASE        g_fs_base
 
 #define XBOX_STACK_BASE     0x00780000
@@ -507,5 +529,16 @@ void  *xbox_thread_debug_handle(void); /* the game thread, or NULL under inline 
 #define XBOX_THREAD_MODE_INLINE 0
 #define XBOX_THREAD_MODE_SPAWN  1
 void xbox_SetThreadMode(int mode);
+
+#ifndef XBOX_LOWRAM_PHYS_TAG
+/* Low RAM (identity-mapped VAs) and the contiguous window are separate
+ * storage here, though on hardware both are the same physical bytes, so a
+ * bare physical number is ambiguous between them. MmGetPhysicalAddress tags
+ * low-RAM results with this otherwise unused bit; bus masters (APU, OHCI)
+ * resolve tagged addresses to low RAM and untagged ones as before. Without
+ * it DirectSound's GP scratch, built in low RAM, was DMA'd by the DSP into
+ * the game's contiguous heap at the same number. */
+#define XBOX_LOWRAM_PHYS_TAG 0x40000000u
+#endif
 
 #endif /* XBOX_MEMORY_LAYOUT_H */

@@ -8,6 +8,7 @@
  */
 
 #include "kernel.h"
+#include "interrupt_sync.h"
 /* RECOMP_TLS, and the guest stack pointer the contention report walks. */
 #include "xbox_memory_layout.h"
 #include <stdio.h>
@@ -473,6 +474,7 @@ static void xbox_cs_clear_owner(CRITICAL_SECTION* cs)
 VOID __stdcall xbox_RtlEnterCriticalSection(PRTL_CRITICAL_SECTION CriticalSection)
 {
     CRITICAL_SECTION* cs = xbox_cs_shadow(CriticalSection);
+    int cpu_token;
     if (!cs)
         return;
     InterlockedIncrement(&g_cs_enters);
@@ -481,6 +483,12 @@ VOID __stdcall xbox_RtlEnterCriticalSection(PRTL_CRITICAL_SECTION CriticalSectio
         xbox_cs_note_owner(cs);
         return;
     }
+    /* A passive guest can own this lock while waiting to resume on the
+     * single guest CPU. An ISR/DPC that blocks here while owning that CPU
+     * would prevent the owner from ever reaching LeaveCriticalSection.
+     * Only contention gives up the CPU; the uncontended elevated-IRQL
+     * path above remains non-preemptible. */
+    cpu_token = guest_cpu_suspend();
     if (InterlockedIncrement(&g_cs_contention_reports) <= 16) {
         fprintf(stderr, "  [CS] thread %lu waiting on guest lock 0x%08X"
                         " (held by thread %lu)\n",
@@ -512,6 +520,7 @@ VOID __stdcall xbox_RtlEnterCriticalSection(PRTL_CRITICAL_SECTION CriticalSectio
     }
     EnterCriticalSection(cs);
     xbox_cs_note_owner(cs);
+    guest_cpu_resume(cpu_token);
     if (g_cs_contention_reports <= 16) {
         fprintf(stderr, "  [CS] thread %lu acquired 0x%08X\n",
                 GetCurrentThreadId(),

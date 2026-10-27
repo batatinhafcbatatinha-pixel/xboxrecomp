@@ -11,6 +11,7 @@
 
 #include "kernel.h"
 #include <string.h>
+#include <stdlib.h>
 
 /* ============================================================================
  * Exported Data Objects
@@ -136,18 +137,35 @@ NTSTATUS __stdcall xbox_ExQueryNonVolatileSetting(
 
     switch (ValueIndex) {
     case XC_LANGUAGE:
-        /* English = 1 */
+        /* Xbox EEPROM language IDs: English=1, Japanese=2, German=3,
+         * French=4, Spanish=5, Italian=6, Korean=7, Chinese=8, Portuguese=9.
+         * The launcher validates that the selected title's resources are
+         * present; anything else reads as English. */
         if (ValueLength >= sizeof(ULONG)) {
-            *(PULONG)Value = 1;
+            const char *language = getenv("RECOMP_LANGUAGE");
+            int id = language ? atoi(language) : 1;
+            *(PULONG)Value = id >= 1 && id <= 9 ? (ULONG)id : 1;
             if (Type) *Type = 4; /* REG_DWORD */
             if (ResultLength) *ResultLength = sizeof(ULONG);
         }
         break;
 
     case XC_VIDEO:
-        /* NTSC with widescreen and HDTV support enabled */
+        /* The dashboard's video options live in the high word: XAPI's
+         * XGetVideoFlags returns (value >> 16) & 0x5F (0x01 widescreen,
+         * 0x02 720p, 0x04 1080i, 0x08 480p, 0x10 letterbox). The low word
+         * kept here never reached a title as a flag, so every title saw a 4:3
+         * set. RECOMP_XBOX_WIDESCREEN=1 reports a widescreen TV -- titles
+         * with a 16:9 mode (FIFA Street) then frame and cull their own camera
+         * for it; RECOMP_XBOX_VIDEO_FLAGS=<hex> sets the whole value. */
         if (ValueLength >= sizeof(ULONG)) {
-            *(PULONG)Value = XC_VIDEO_FLAGS_WIDESCREEN | XC_VIDEO_FLAGS_HDTV;
+            const char *vf = getenv("RECOMP_XBOX_VIDEO_FLAGS"), *ws = getenv("RECOMP_XBOX_WIDESCREEN");
+            ULONG v = XC_VIDEO_FLAGS_WIDESCREEN | XC_VIDEO_FLAGS_HDTV;
+            if (ws && *ws && *ws != '0')
+                v |= 0x00010000u;
+            if (vf && *vf)
+                v = (ULONG)strtoul(vf, NULL, 16);
+            *(PULONG)Value = v;
             if (Type) *Type = 4; /* REG_DWORD */
             if (ResultLength) *ResultLength = sizeof(ULONG);
         }

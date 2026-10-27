@@ -828,6 +828,11 @@ NTSTATUS __stdcall xbox_NtCreateFile(
         if (CreateDisposition == XBOX_FILE_CREATE || CreateDisposition == XBOX_FILE_OPEN_IF)
             mkdir(host_path, 0755);   /* EEXIST is fine */
         fd = open(host_path, O_RDONLY | O_DIRECTORY);
+        /* A device opened as a directory ("\Device\Harddisk0\Partition1\")
+         * is an image file here; the Win32 backend opens it all the same
+         * (backup semantics), so do that rather than report no path. */
+        if (fd < 0 && errno == ENOTDIR)
+            fd = open(host_path, posix_open_flags(DesiredAccess, XBOX_FILE_OPEN), 0644);
     } else {
         fd = open(host_path, posix_open_flags(DesiredAccess, CreateDisposition), 0644);
     }

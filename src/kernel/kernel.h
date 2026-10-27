@@ -397,6 +397,16 @@ typedef VOID (__stdcall *PXBOX_SYSTEM_ROUTINE)(PVOID StartContext);
  * the layout and the bridges cannot disagree about where it is. */
 #define XBOX_CONTIG_BASE 0x80000000u
 #define XBOX_CONTIG_SIZE (64u * 1024u * 1024u)
+#ifndef XBOX_LOWRAM_PHYS_TAG
+/* Low RAM (identity-mapped VAs) and the contiguous window are separate
+ * storage here, though on hardware both are the same physical bytes, so a
+ * bare physical number is ambiguous between them. MmGetPhysicalAddress tags
+ * low-RAM results with this otherwise unused bit; bus masters (APU, OHCI)
+ * resolve tagged addresses to low RAM and untagged ones as before. Without
+ * it DirectSound's GP scratch, built in low RAM, was DMA'd by the DSP into
+ * the game's contiguous heap at the same number. */
+#define XBOX_LOWRAM_PHYS_TAG 0x40000000u
+#endif
 
 /* Default GPU instance size, used when a caller asks to claim everything. */
 #define XBOX_GPU_INSTANCE_DEFAULT (128u * 1024u)
@@ -771,6 +781,9 @@ VOID     __stdcall xbox_KeInitializeTimerEx(PXBOX_KTIMER Timer, XBOX_TIMER_TYPE 
 VOID     __stdcall xbox_KeInitializeDpc(PXBOX_KDPC Dpc, PKDEFERRED_ROUTINE DeferredRoutine, PVOID DeferredContext);
 BOOLEAN  __stdcall xbox_KeInsertQueueDpc(PXBOX_KDPC Dpc, PVOID SystemArgument1, PVOID SystemArgument2);
 BOOLEAN  __stdcall xbox_KeRemoveQueueDpc(PXBOX_KDPC Dpc);
+/* Ordered NV097 software notification; the decoder pauses until its ISR. */
+void xbox_Nv2aNotify(uint32_t subchannel, uint32_t parameter);
+void xbox_Nv2aAckInterrupt(uint32_t address, uint32_t value);
 
 BOOLEAN  __stdcall xbox_KeSynchronizeExecution(PXBOX_KINTERRUPT Interrupt, PVOID SynchronizeRoutine, PVOID SynchronizeContext);
 

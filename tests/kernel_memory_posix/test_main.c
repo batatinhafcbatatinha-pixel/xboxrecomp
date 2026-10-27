@@ -193,7 +193,8 @@ int main(void)
             { 0x80001000u, 0x00001000u, "inside the contiguous window" },
             { 0x83FFFFFFu, 0x03FFFFFFu, "last byte of the window" },
             { 0x84000000u, 0x84000000u, "just past the window is unchanged" },
-            { 0x00040000u, 0x00040000u, "an ordinary guest VA is unchanged" },
+            { 0x00040000u, 0x40040000u, "low RAM carries the low-RAM tag" },
+            { 0x00000000u, 0x00000000u, "NULL stays NULL" },
         };
         for (size_t i = 0; i < sizeof cases / sizeof cases[0]; i++) {
             ULONG_PTR got =

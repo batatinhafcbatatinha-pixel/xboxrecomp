@@ -167,8 +167,8 @@ ULONG_PTR __stdcall xbox_MmGetPhysicalAddress(PVOID BaseAddress)
 {
     /*
      * The contiguous arena is the virtual window onto physical RAM, so an
-     * address inside it is its physical offset plus XBOX_CONTIG_BASE. Anything
-     * outside passes through unchanged.
+     * address inside it is its physical offset plus XBOX_CONTIG_BASE. Low RAM
+     * gets XBOX_LOWRAM_PHYS_TAG, so bus masters can tell the two stores apart.
      *
      * The only implementation. bridge_MmGetPhysicalAddress calls this rather
      * than repeating the arithmetic: the two used to disagree, with the bridge
@@ -179,9 +179,10 @@ ULONG_PTR __stdcall xbox_MmGetPhysicalAddress(PVOID BaseAddress)
      * nothing naming this function.
      */
     uint32_t va = (uint32_t)(uintptr_t)BaseAddress;
-    return (ULONG_PTR)((va >= XBOX_CONTIG_BASE &&
-                        (uint64_t)va < (uint64_t)XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE)
-                     ? va - XBOX_CONTIG_BASE : va);
+    if (va >= XBOX_CONTIG_BASE &&
+        (uint64_t)va < (uint64_t)XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE)
+        return (ULONG_PTR)(va - XBOX_CONTIG_BASE);
+    return (ULONG_PTR)(va && va < XBOX_LOWRAM_PHYS_TAG ? va | XBOX_LOWRAM_PHYS_TAG : va);
 }
 
 VOID __stdcall xbox_MmPersistContiguousMemory(PVOID BaseAddress, ULONG NumberOfBytes, BOOLEAN Persist)
