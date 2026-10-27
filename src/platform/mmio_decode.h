@@ -28,8 +28,15 @@
 
 #include <stdint.h>
 
+/* Any x86-64 host: on POSIX the vectored handlers run over sigaction
+ * (win32_compat.c) with the same CONTEXT. */
+#if defined(_WIN32) || defined(__x86_64__)
 #if defined(_WIN32)
 #include <windows.h>
+#else
+#include "platform/xbox_winnt.h"
+#include "platform/win32_compat.h"
+#endif
 
 /* Service one register access. dev is passed straight back to the callbacks. */
 typedef uint64_t (*mmio_read_fn)(void *dev, uint32_t off, int size);
@@ -186,7 +193,91 @@ static inline int mmio_emulate(PCONTEXT ctx, uint32_t off, void *dev,
         ctx->Rip += prefix + 1 + mlen;
         return 1;
 
+    /* ADD/OR/AND/SUB/XOR/CMP r, r/m: the register reads the device. GCC and
+     * clang on Linux fold a register read into the operation that uses it
+     * ("and edx, [rax+rcx]") where clang-cl kept a separate mov. */
+    case 0x02: case 0x03: case 0x0A: case 0x0B: case 0x22: case 0x23:
+    case 0x2A: case 0x2B: case 0x32: case 0x33: case 0x3A: case 0x3B: {
+        uint64_t m, r, res, mask, *dst;
+        int kind = op[0] >> 3;                       /* 0 add 1 or 4 and 5 sub 6 xor 7 cmp */
+        if (!(op[0] & 1)) size = 1;
+        mlen = mmio_modrm_len(op + 1, rex_b);
+        reg  = ((op[1] >> 3) & 7) | (rex_r ? 8 : 0);
+        dst  = mmio_ctx_reg(ctx, reg);
+        mask = (size < 8) ? ((1ULL << (size * 8)) - 1) : ~0ULL;
+        m    = rd(dev, off, size) & mask;
+        r    = *dst & mask;
+        switch (kind) {
+        case 0: res = r + m; break;
+        case 1: res = r | m; break;
+        case 4: res = r & m; break;
+        case 6: res = r ^ m; break;
+        default: res = r - m; break;                 /* sub, cmp */
+        }
+        mmio_set_flags(ctx, res, size, kind == 0 ? ((res & mask) < r) : (kind == 5 || kind == 7) ? r < m : 0);
+        if (kind != 7) {
+            res &= mask;
+            if (size == 1)      *dst = (*dst & ~0xFFULL)   | res;
+            else if (size == 2) *dst = (*dst & ~0xFFFFULL) | res;
+            else                *dst = res;          /* 32-bit clears high */
+        }
+        ctx->Rip += prefix + 1 + mlen;
+        return 1;
+    }
+
+    /* ADD/OR/AND/SUB/XOR/CMP r/m, imm: read-modify-write of the register
+     * (CMP only reads). 0x80 imm8 on a byte, 0x81 imm32, 0x83 imm8 sign-extended. */
+    case 0x80: case 0x81: case 0x83: {
+        uint64_t m, imm, res, mask;
+        int kind, isz;
+        if (op[0] == 0x80) size = 1;
+        mlen = mmio_modrm_len(op + 1, rex_b);
+        kind = (op[1] >> 3) & 7;
+        if (kind == 2 || kind == 3)                  /* adc/sbb: not emitted against registers */
+            return 0;
+        mask = (size < 8) ? ((1ULL << (size * 8)) - 1) : ~0ULL;
+        if (op[0] == 0x81) { imm = size == 2 ? *(const uint16_t *)(op + 1 + mlen) : (uint64_t)(int64_t)*(const int32_t *)(op + 1 + mlen); isz = size == 2 ? 2 : 4; }
+        else               { imm = (uint64_t)(int64_t)(int8_t)op[1 + mlen]; isz = 1; }
+        imm &= mask;
+        m = rd(dev, off, size) & mask;
+        switch (kind) {
+        case 0: res = m + imm; break;
+        case 1: res = m | imm; break;
+        case 4: res = m & imm; break;
+        case 6: res = m ^ imm; break;
+        default: res = m - imm; break;
+        }
+        mmio_set_flags(ctx, res, size, kind == 0 ? ((res & mask) < m) : (kind == 5 || kind == 7) ? m < imm : 0);
+        if (kind != 7)
+            wr(dev, off, res & mask, size);
+        ctx->Rip += prefix + 1 + mlen + isz;
+        return 1;
+    }
+
+    case 0xF6: case 0xF7:                            /* TEST r/m, imm        */
+        if (op[0] == 0xF6) size = 1;
+        mlen = mmio_modrm_len(op + 1, rex_b);
+        if (((op[1] >> 3) & 7) != 0)
+            return 0;
+        {
+            uint64_t imm = size == 1 ? op[1 + mlen] : size == 2 ? *(const uint16_t *)(op + 1 + mlen)
+                                                                : (uint64_t)*(const uint32_t *)(op + 1 + mlen);
+            mmio_set_flags(ctx, rd(dev, off, size) & imm, size, 0);
+            ctx->Rip += prefix + 1 + mlen + (size == 1 ? 1 : size == 2 ? 2 : 4);
+        }
+        return 1;
+
     case 0x0F:
+        if (op[1] == 0xBE || op[1] == 0xBF) {        /* MOVSX r32, r/m8|16   */
+            int s = (op[1] == 0xBE) ? 1 : 2;
+            int64_t v;
+            mlen  = mmio_modrm_len(op + 2, rex_b);
+            reg   = ((op[2] >> 3) & 7) | (rex_r ? 8 : 0);
+            v     = s == 1 ? (int8_t)rd(dev, off, 1) : (int16_t)rd(dev, off, 2);
+            *mmio_ctx_reg(ctx, reg) = rex_w ? (uint64_t)v : (uint64_t)(uint32_t)v;
+            ctx->Rip += prefix + 2 + mlen;
+            return 1;
+        }
         if (op[1] == 0xB6 || op[1] == 0xB7) {        /* MOVZX r32, r/m8|16   */
             int s = (op[1] == 0xB6) ? 1 : 2;
             mlen  = mmio_modrm_len(op + 2, rex_b);

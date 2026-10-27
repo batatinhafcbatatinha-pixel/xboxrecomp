@@ -143,6 +143,10 @@ BOOL   ReleaseSemaphore(HANDLE h, LONG releaseCount, PLONG previousCount);
 /* ---- Mutexes ---------------------------------------------------------- */
 HANDLE CreateMutexA(LPSECURITY_ATTRIBUTES sa, BOOL initialOwner, LPCSTR name);
 HANDLE CreateMutexW(LPSECURITY_ATTRIBUTES sa, BOOL initialOwner, LPCWSTR name);
+/* The un-suffixed names, as <windows.h> maps them (ANSI build). */
+#define CreateEvent     CreateEventA
+#define CreateSemaphore CreateSemaphoreA
+#define CreateMutex     CreateMutexA
 BOOL   ReleaseMutex(HANDLE h);
 
 /* ---- Waiting ---------------------------------------------------------- */
@@ -417,6 +421,18 @@ int   WideCharToMultiByte(UINT cp, DWORD flags, LPCWSTR wide, int wideCount,
 #define FAILED(hr)      (((HRESULT)(hr)) < 0)
 #endif
 
+/* ---- Misc ------------------------------------------------------------ */
+#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+DWORD GetFileAttributesA(const char *path);
+static inline void YieldProcessor(void)
+{
+#if defined(__x86_64__) || defined(__i386__)
+    __builtin_ia32_pause();
+#elif defined(__aarch64__)
+    __asm__ __volatile__("yield");
+#endif
+}
+
 /* ---- Exception records (SEH compile-shim; not yet emulated) ----------- */
 #define EXCEPTION_MAXIMUM_PARAMETERS 15
 typedef struct _EXCEPTION_RECORD {
@@ -432,21 +448,14 @@ VOID RtlUnwind(PVOID TargetFrame, PVOID TargetIp,
                PEXCEPTION_RECORD ExceptionRecord, PVOID ReturnValue);
 VOID RaiseException(DWORD code, DWORD flags, DWORD nargs, const ULONG_PTR *args);
 
-/* Win32 VEH: opaque PEXCEPTION_POINTERS + AddVectoredExceptionHandler stub.
- * On Linux the equivalent goes through sigaction(SIGSEGV/SIGFPE) +
- * ucontext_t; for now we accept the registration and never fire. 
- * 
- * Note: GCC needs correct struct. This is from nxdk
- * */
-#ifdef __linux__
+/* Win32 VEH over sigaction(SIGSEGV/SIGBUS/SIGILL/SIGFPE): the handlers get
+ * the faulting registers as CONTEXT (xbox_winnt.h) and may change them
+ * (win32_compat.c). x86-64 hosts. */
 typedef struct _EXCEPTION_POINTERS
 {
     PEXCEPTION_RECORD ExceptionRecord;
     PCONTEXT ContextRecord;
 } EXCEPTION_POINTERS, *PEXCEPTION_POINTERS;
-#else
-typedef void *PEXCEPTION_POINTERS;
-#endif
 typedef LONG (*PVECTORED_EXCEPTION_HANDLER)(PEXCEPTION_POINTERS info);
 PVOID AddVectoredExceptionHandler(ULONG FirstHandler, PVECTORED_EXCEPTION_HANDLER Handler);
 ULONG RemoveVectoredExceptionHandler(PVOID Handle);

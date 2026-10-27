@@ -1912,8 +1912,185 @@ VOID RaiseException(DWORD code, DWORD flags, DWORD nargs, const ULONG_PTR *args)
     /* TODO: on Windows this does not return; SEH dispatch unimplemented. */
 }
 
+DWORD GetFileAttributesA(const char *path)
+{
+    struct stat st;
+    if (!path || stat(path, &st) != 0)
+        return INVALID_FILE_ATTRIBUTES;
+    return S_ISDIR(st.st_mode) ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+}
+
+/* Vectored handlers over SIGSEGV/SIGBUS/SIGILL/SIGFPE.
+ *
+ * The trapped-MMIO devices (OHCI, APU, NV2A) leave their pages PROT_NONE and
+ * service each access from a vectored handler that decodes the faulting host
+ * instruction against CONTEXT and steps over it. Here the signal's ucontext
+ * becomes that CONTEXT (x86-64 field names), the handlers run in the order
+ * Windows would (First = 1 in front), and a handler's CONTINUE_EXECUTION
+ * writes the registers back into the ucontext so the thread resumes past the
+ * access. Nobody handling it: the default action (the process dies with the
+ * signal, as an unhandled exception would). */
+#if defined(__x86_64__)
+#if defined(__APPLE__)
+#define UC_REG(uc, r) ((uc)->uc_mcontext->__ss.__##r)
+#define UC_FLAGS(uc)  ((uc)->uc_mcontext->__ss.__rflags)
+#define UC_WRITE(uc)  (((uc)->uc_mcontext->__es.__err & 2) != 0)
+#else
+#include <ucontext.h>
+#endif
+
+#define VEH_MAX 16
+static PVECTORED_EXCEPTION_HANDLER s_veh[VEH_MAX];
+static volatile int s_nveh;
+static pthread_mutex_t s_veh_lock = PTHREAD_MUTEX_INITIALIZER;
+static int s_veh_installed;
+static struct sigaction s_veh_prev[4];
+static const int k_veh_signals[4] = { SIGSEGV, SIGBUS, SIGILL, SIGFPE };
+
+static void ctx_from_uc(CONTEXT *c, const ucontext_t *uc)
+{
+#if defined(__APPLE__)
+    c->Rax = UC_REG(uc, rax); c->Rcx = UC_REG(uc, rcx); c->Rdx = UC_REG(uc, rdx); c->Rbx = UC_REG(uc, rbx);
+    c->Rsp = UC_REG(uc, rsp); c->Rbp = UC_REG(uc, rbp); c->Rsi = UC_REG(uc, rsi); c->Rdi = UC_REG(uc, rdi);
+    c->R8 = UC_REG(uc, r8);   c->R9 = UC_REG(uc, r9);   c->R10 = UC_REG(uc, r10); c->R11 = UC_REG(uc, r11);
+    c->R12 = UC_REG(uc, r12); c->R13 = UC_REG(uc, r13); c->R14 = UC_REG(uc, r14); c->R15 = UC_REG(uc, r15);
+    c->Rip = UC_REG(uc, rip); c->EFlags = (uint32_t)UC_FLAGS(uc);
+#else
+    const greg_t *g = uc->uc_mcontext.gregs;
+    c->Rax = (uint64_t)g[REG_RAX]; c->Rcx = (uint64_t)g[REG_RCX]; c->Rdx = (uint64_t)g[REG_RDX];
+    c->Rbx = (uint64_t)g[REG_RBX]; c->Rsp = (uint64_t)g[REG_RSP]; c->Rbp = (uint64_t)g[REG_RBP];
+    c->Rsi = (uint64_t)g[REG_RSI]; c->Rdi = (uint64_t)g[REG_RDI]; c->R8 = (uint64_t)g[REG_R8];
+    c->R9 = (uint64_t)g[REG_R9];   c->R10 = (uint64_t)g[REG_R10]; c->R11 = (uint64_t)g[REG_R11];
+    c->R12 = (uint64_t)g[REG_R12]; c->R13 = (uint64_t)g[REG_R13]; c->R14 = (uint64_t)g[REG_R14];
+    c->R15 = (uint64_t)g[REG_R15]; c->Rip = (uint64_t)g[REG_RIP]; c->EFlags = (uint32_t)g[REG_EFL];
+#endif
+}
+
+static void ctx_to_uc(const CONTEXT *c, ucontext_t *uc)
+{
+#if defined(__APPLE__)
+    UC_REG(uc, rax) = c->Rax; UC_REG(uc, rcx) = c->Rcx; UC_REG(uc, rdx) = c->Rdx; UC_REG(uc, rbx) = c->Rbx;
+    UC_REG(uc, rsp) = c->Rsp; UC_REG(uc, rbp) = c->Rbp; UC_REG(uc, rsi) = c->Rsi; UC_REG(uc, rdi) = c->Rdi;
+    UC_REG(uc, r8) = c->R8;   UC_REG(uc, r9) = c->R9;   UC_REG(uc, r10) = c->R10; UC_REG(uc, r11) = c->R11;
+    UC_REG(uc, r12) = c->R12; UC_REG(uc, r13) = c->R13; UC_REG(uc, r14) = c->R14; UC_REG(uc, r15) = c->R15;
+    UC_REG(uc, rip) = c->Rip; UC_FLAGS(uc) = c->EFlags;
+#else
+    greg_t *g = uc->uc_mcontext.gregs;
+    g[REG_RAX] = (greg_t)c->Rax; g[REG_RCX] = (greg_t)c->Rcx; g[REG_RDX] = (greg_t)c->Rdx;
+    g[REG_RBX] = (greg_t)c->Rbx; g[REG_RSP] = (greg_t)c->Rsp; g[REG_RBP] = (greg_t)c->Rbp;
+    g[REG_RSI] = (greg_t)c->Rsi; g[REG_RDI] = (greg_t)c->Rdi; g[REG_R8] = (greg_t)c->R8;
+    g[REG_R9] = (greg_t)c->R9;   g[REG_R10] = (greg_t)c->R10; g[REG_R11] = (greg_t)c->R11;
+    g[REG_R12] = (greg_t)c->R12; g[REG_R13] = (greg_t)c->R13; g[REG_R14] = (greg_t)c->R14;
+    g[REG_R15] = (greg_t)c->R15; g[REG_RIP] = (greg_t)c->Rip; g[REG_EFL] = (greg_t)c->EFlags;
+#endif
+}
+
+static void veh_signal(int sig, siginfo_t *si, void *ucv)
+{
+    ucontext_t *uc = (ucontext_t *)ucv;
+    EXCEPTION_RECORD rec;
+    EXCEPTION_POINTERS ep;
+    CONTEXT ctx;
+    int i, n = s_nveh, k;
+
+    memset(&rec, 0, sizeof rec);
+    switch (sig) {
+    case SIGILL: rec.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; break;
+    case SIGFPE: rec.ExceptionCode = EXCEPTION_INT_DIVIDE_BY_ZERO; break;
+    default:
+        rec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
+        rec.NumberParameters = 2;
+#if defined(__APPLE__)
+        rec.ExceptionInformation[0] = UC_WRITE(uc) ? 1 : 0;
+#else
+        /* x86 page-fault error code: bit 1 = write. */
+        rec.ExceptionInformation[0] = (uc->uc_mcontext.gregs[REG_ERR] & 2) ? 1 : 0;
+#endif
+        rec.ExceptionInformation[1] = (ULONG_PTR)si->si_addr;
+        break;
+    }
+    ctx_from_uc(&ctx, uc);
+    rec.ExceptionAddress = (PVOID)(uintptr_t)ctx.Rip;
+    ep.ExceptionRecord = &rec;
+    ep.ContextRecord = &ctx;
+    for (i = 0; i < n; i++) {
+        PVECTORED_EXCEPTION_HANDLER h = s_veh[i];
+        if (h && h(&ep) == EXCEPTION_CONTINUE_EXECUTION) {
+            ctx_to_uc(&ctx, uc);
+            return;
+        }
+    }
+    /* Unhandled: what was installed before, else die with the signal. */
+    for (k = 0; k < 4 && k_veh_signals[k] != sig; k++)
+        ;
+    if (k < 4 && (s_veh_prev[k].sa_flags & SA_SIGINFO) && s_veh_prev[k].sa_sigaction) {
+        s_veh_prev[k].sa_sigaction(sig, si, ucv);
+        return;
+    }
+    if (k < 4 && s_veh_prev[k].sa_handler != SIG_DFL && s_veh_prev[k].sa_handler != SIG_IGN &&
+        s_veh_prev[k].sa_handler) {
+        s_veh_prev[k].sa_handler(sig);
+        return;
+    }
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
 PVOID AddVectoredExceptionHandler(ULONG First, PVECTORED_EXCEPTION_HANDLER Handler)
-{ (void)First; (void)Handler; return NULL; }   /* TODO: wire to sigaction */
+{
+    int i;
+    if (!Handler)
+        return NULL;
+    pthread_mutex_lock(&s_veh_lock);
+    if (s_nveh >= VEH_MAX) {
+        pthread_mutex_unlock(&s_veh_lock);
+        return NULL;
+    }
+    if (First) {
+        for (i = s_nveh; i > 0; i--)
+            s_veh[i] = s_veh[i - 1];
+        s_veh[0] = Handler;
+    } else {
+        s_veh[s_nveh] = Handler;
+    }
+    __atomic_store_n(&s_nveh, s_nveh + 1, __ATOMIC_SEQ_CST);
+    if (!s_veh_installed) {
+        /* The handler runs on the faulting thread's own stack (no
+         * SA_ONSTACK): a guest MMIO access is an ordinary instruction in an
+         * ordinary frame, as on Windows. */
+        struct sigaction sa;
+        memset(&sa, 0, sizeof sa);
+        sa.sa_sigaction = veh_signal;
+        sa.sa_flags = SA_SIGINFO | SA_NODEFER;
+        sigemptyset(&sa.sa_mask);
+        for (i = 0; i < 4; i++)
+            sigaction(k_veh_signals[i], &sa, &s_veh_prev[i]);
+        s_veh_installed = 1;
+    }
+    pthread_mutex_unlock(&s_veh_lock);
+    return (PVOID)Handler;
+}
+
+ULONG RemoveVectoredExceptionHandler(PVOID h)
+{
+    int i, j;
+    pthread_mutex_lock(&s_veh_lock);
+    for (i = 0; i < s_nveh; i++)
+        if ((PVOID)s_veh[i] == h) {
+            for (j = i; j + 1 < s_nveh; j++)
+                s_veh[j] = s_veh[j + 1];
+            s_veh[s_nveh - 1] = NULL;
+            __atomic_store_n(&s_nveh, s_nveh - 1, __ATOMIC_SEQ_CST);
+            pthread_mutex_unlock(&s_veh_lock);
+            return 1;
+        }
+    pthread_mutex_unlock(&s_veh_lock);
+    return 0;
+}
+#else
+PVOID AddVectoredExceptionHandler(ULONG First, PVECTORED_EXCEPTION_HANDLER Handler)
+{ (void)First; (void)Handler; return NULL; }   /* non-x86-64 host: no MMIO decoder */
 ULONG RemoveVectoredExceptionHandler(PVOID h) { (void)h; return 1; }
+#endif
 
 #endif /* !_WIN32 */

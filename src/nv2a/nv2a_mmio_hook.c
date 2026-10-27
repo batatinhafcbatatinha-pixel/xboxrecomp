@@ -28,7 +28,7 @@ static int g_mmio_decode_fail = 0;
  * (regardless of whether the MMIO hook is active). Keep its definition
  * outside the Win32 guard. */
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__x86_64__)
 
 /* ============================================================
  * x86-64 register access helpers

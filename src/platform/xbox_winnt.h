@@ -153,32 +153,18 @@ typedef void             **PHANDLE, **LPHANDLE;
 typedef void              *HMODULE, *HINSTANCE, *HKEY, *HLOCAL, *HGLOBAL;
 typedef void              *HWND, *HDC, *HBITMAP, *HICON, *HMENU, *HCURSOR;
 
-/* PCONTEXT: Windows VEH register state. On Linux the equivalent is
- * ucontext_t*; we leave it opaque here since Linux callers don't use it. */
- 
-#ifdef __linux__
-/* On gcc these data structures are necessary  even if anyone is going to be used*/
-typedef union Register{
-	uint32_t X; // all register
-	uint8_t SR[4]; // Subregister
-} REG; 
-
-typedef uint32_t  IREG;
-
-typedef struct ProcessorCONTEXT{
-	// General
-	REG EAX;
-	REG EBX;
-	REG ECX;
-	REG EDX;
-	IREG ESI;
-	IREG EDI;
-	IREG ESP;
-	IREG EBP;
-	//  Instruction Pointer Flags
-	IREG EIP;
-	IREG EFlags;
-} *PCONTEXT;
+/* PCONTEXT: Windows VEH register state. */
+#if defined(__x86_64__)
+/* The faulting thread's registers as a vectored handler sees them on Windows
+ * x64, same field names: AddVectoredExceptionHandler (win32_compat.c) fills
+ * this from the signal's ucontext and writes it back, so the MMIO decoders
+ * (mmio_decode.h, ohci.c, apu/nv2a hooks) run unchanged on POSIX. */
+typedef struct _CONTEXT {
+    uint64_t Rax, Rcx, Rdx, Rbx, Rsp, Rbp, Rsi, Rdi;
+    uint64_t R8, R9, R10, R11, R12, R13, R14, R15;
+    uint64_t Rip;
+    uint32_t EFlags;
+} CONTEXT, *PCONTEXT;
 #else
 typedef void              *PCONTEXT;
 #endif
