@@ -37,6 +37,15 @@ typedef struct {
     float tex[4][4];
 } Nv2aVshOutput;
 
+typedef struct { float attr[NV2A_VSH_INPUTS][4]; } Nv2aVshInput;
+typedef struct {
+    uint32_t program[NV2A_VSH_SLOTS][4];
+    float constants[NV2A_VSH_CONSTANTS][4];
+    uint32_t start, cxt_write;
+} Nv2aVshState;
+/* Called by the same pushbuffer executor thread as uploads and dispatch. */
+void nv2a_vsh_snapshot(Nv2aVshState *state);
+
 void nv2a_vsh_set_load_slot(uint32_t slot);           /* _PROGRAM_LOAD      */
 void nv2a_vsh_program_word(uint32_t word);            /* _PROGRAM(i)        */
 void nv2a_vsh_set_start_slot(uint32_t slot);          /* _PROGRAM_START     */

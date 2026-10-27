@@ -40,6 +40,15 @@ static uint32_t s_load_slot, s_load_word, s_start_slot;
 static uint32_t s_const_load, s_const_word;
 static uint32_t s_cxt_write;
 
+void nv2a_vsh_snapshot(Nv2aVshState *state)
+{
+    if (!state) return;
+    memcpy(state->program, s_program, sizeof s_program);
+    memcpy(state->constants, s_const, sizeof s_const);
+    state->start = s_start_slot;
+    state->cxt_write = s_cxt_write;
+}
+
 static uint32_t field(const uint32_t *ins, int dw, int lo, int width)
 {
     return (ins[dw] >> lo) & ((1u << width) - 1u);

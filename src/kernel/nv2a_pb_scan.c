@@ -49,6 +49,7 @@ static uint32_t s_tot_calls;
 extern void nv2a_pb_exec_method(uint32_t subch, uint32_t method, uint32_t param);
 extern void nv2a_pb_exec_report(void);
 static int s_exec_enabled = -1;
+static int s_scan_enabled = -1;
 
 static void note(uint32_t subch, uint32_t method)
 {
@@ -103,7 +104,9 @@ static const struct { uint32_t m; const char *name; } NV097_NAMES[] = {
     { 0x1D8C, "SET_CLEAR_DEPTH" },
     { 0x1D90, "SET_COLOR_CLEAR_VALUE" },
     { 0x1D94, "CLEAR_SURFACE" },
-    { 0x1D6C, "SET_ZSTENCIL_CLEAR" },
+    { 0x01A4, "SET_CONTEXT_DMA_SEMAPHORE" },
+    { 0x1D6C, "SET_SEMAPHORE_OFFSET" },
+    { 0x1D70, "BACK_END_WRITE_SEMAPHORE_RELEASE" },
     { 0x0B80, "SET_TRANSFORM_PROGRAM" },
     { 0x0B00, "SET_TRANSFORM_CONSTANT" },
     { 0x1720, "SET_VERTEX_DATA_ARRAY_OFFSET" },
@@ -130,7 +133,14 @@ static const char *nv097_name(uint32_t m)
     return "";
 }
 
+static void scan_report_body(void);
 void nv2a_pb_scan_report(void)
+{
+    scan_report_body();
+    fflush(stderr);                     /* stderr is buffered; see main.c */
+}
+
+static void scan_report_body(void)
 {
     int i;
 
@@ -205,7 +215,8 @@ static uint32_t pb_walk(uint32_t va, uint32_t end_va, int in_call,
 
             for (uint32_t i = 0; i < count && va < end_va; i++) {
                 uint32_t m = noninc ? method : method + i * 4;
-                note(subch, m);
+                if (s_scan_enabled)
+                    note(subch, m);
                 /* Same walk, two consumers: the survey counts, the executor
                  * acts. Keeping them on one decode means they can never
                  * disagree about what the stream said. */
@@ -222,16 +233,91 @@ static uint32_t pb_walk(uint32_t va, uint32_t end_va, int in_call,
     return words;
 }
 
+/* The DMA pusher: execute from GET to PUT the way the NV2A fetches, following
+ * JUMPs (the ring's wrap) and CALLs, and return the new GET. Addresses are
+ * physical, like the registers. Scanning [last PUT, PUT) with a learned ring
+ * base instead skipped whatever sat between the true base and the lowest PUT
+ * ever seen -- once that was the software-method-5 NOP D3D's BlockOnTime
+ * waits on, and the title slept forever. */
+uint32_t nv2a_pb_run(uint32_t get, uint32_t put)
+{
+    const uint8_t *mem = (const uint8_t *)xbox_GetMemoryOffset();
+    uint32_t words = 0, jumps = 0, unknown = 0;
+
+    if (s_exec_enabled < 0)
+        s_exec_enabled = getenv("RECOMP_PB_EXEC") != NULL;
+    if (s_scan_enabled < 0)
+        s_scan_enabled = getenv("RECOMP_PB_SCAN") != NULL;
+    if (!(s_scan_enabled || s_exec_enabled))
+        return put;
+    get &= 0x0FFFFFFCu;
+    put &= 0x0FFFFFFCu;
+    while (get != put && words < 0x400000u) {
+        uint32_t va = XBOX_CONTIG_BASE | get;
+        uint32_t w = *(const uint32_t *)(mem + va);
+        if ((w & 3u) == 1u || (w & 0xE0000003u) == 0x20000000u) {
+            get = ((w & 3u) == 1u ? (w & 0xFFFFFFFCu) : (w & 0x1FFFFFFCu)) & 0x0FFFFFFCu;
+            jumps++;
+            words++;
+            continue;
+        }
+        if ((w & 3u) == 2u) {                    /* CALL: one level */
+            uint32_t sub = XBOX_CONTIG_BASE | ((w & 0xFFFFFFFCu) & 0x0FFFFFFFu);
+            s_tot_calls++;
+            words += pb_walk(sub, sub + 0x400000u, 1, &jumps, &unknown);
+            get += 4;
+            continue;
+        }
+        if ((w & 0xFFFF0003u) == 0x00020000u) {  /* RETURN outside a call */
+            get += 4;
+            words++;
+            continue;
+        }
+        if ((w & 0x00030003u) == 0u) {
+            uint32_t count  = (w >> 18) & 0x7FFu;
+            uint32_t subch  = (w >> 13) & 7u;
+            uint32_t method =  w & 0x1FFCu;
+            int noninc = (w & 0xE0000000u) == 0x40000000u;
+            if (get < put && get + 4 + 4 * count > put)
+                break;                           /* PUT inside a command: not ours yet */
+            for (uint32_t i = 0; i < count; i++) {
+                uint32_t m = noninc ? method : method + i * 4;
+                if (s_scan_enabled)
+                    note(subch, m);
+                if (s_exec_enabled)
+                    nv2a_pb_exec_method(subch, m, *(const uint32_t *)(mem + va + 4 + 4 * i));
+            }
+            get += 4 + 4 * count;
+            words += 1 + count;
+            continue;
+        }
+        unknown++;
+        get += 4;
+        words++;
+    }
+    if (get != put) {
+        static unsigned said;
+        if (said++ < 8)
+            fprintf(stderr, "  [PB] pusher lost the stream at %08X (PUT %08X); resynchronised\n",
+                    get, put);
+        get = put;
+    }
+    s_tot_words += words;
+    s_tot_unknown += unknown;
+    s_tot_jumps += jumps;
+    s_tot_segments++;
+    return get;
+}
+
 void nv2a_pb_scan(uint32_t start_va, uint32_t end_va)
 {
     uint32_t words, jumps = 0, unknown = 0;
 
     if (s_exec_enabled < 0)
         s_exec_enabled = getenv("RECOMP_PB_EXEC") != NULL;
-    static int scan = -1;
-    if (scan < 0)
-        scan = getenv("RECOMP_PB_SCAN") != NULL;
-    if (!(scan || s_exec_enabled) || end_va <= start_va)
+    if (s_scan_enabled < 0)
+        s_scan_enabled = getenv("RECOMP_PB_SCAN") != NULL;
+    if (!(s_scan_enabled || s_exec_enabled) || end_va <= start_va)
         return;
     if (end_va - start_va > 0x400000u)        /* a sane single-frame bound */
         end_va = start_va + 0x400000u;
