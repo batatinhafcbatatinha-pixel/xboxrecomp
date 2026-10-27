@@ -1,5 +1,14 @@
 # xboxrecomp
 
+> [!NOTE]
+> **Fork** of [sp00nznet/xboxrecomp](https://github.com/sp00nznet/xboxrecomp) (v0.13.1) with the changes used by
+> the native PC ports [black-xbox-pc](https://github.com/batatinhafcbatatinha-pixel/black-xbox-pc) and
+> [fifa-street-pc](https://github.com/batatinhafcbatatinha-pixel/fifa-street-pc): native-port kernel support
+> (title KEVENTs, guest events, POSIX side), the NV2A compute path, the APU DSP and input. Those changes are kept
+> here only and are not upstream. The original project, its license and credits are below, unchanged. The DSP sources in
+> `src/apu/dsp/` come from xemu under GPL-2.0/LGPL-2.1 (see `src/apu/dsp/UPSTREAM.md`).
+
+
 ```
  #   #  ####    ###   #   #         #####   ###    ###   #       ###
  #   #  #   #  #   #  #   #           #    #   #  #   #  #      #
