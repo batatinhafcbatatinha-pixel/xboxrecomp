@@ -114,7 +114,7 @@ void mcpx_apu_dsp_ack_poll(MCPXAPUState *d)
     }
 }
 
-void mcpx_apu_dsp_init(MCPXAPUState *d)
+void mcpx_apu_dsp_init_passthrough(MCPXAPUState *d)
 {
     /* Allocate minimal DSP state for GP and EP.
      * We need these to exist so reset doesn't crash,
@@ -131,14 +131,14 @@ void mcpx_apu_dsp_init(MCPXAPUState *d)
     fprintf(stderr, "[APU] DSP GP/EP initialized (STUBBED - passthrough mode)\n");
 }
 
-void mcpx_apu_update_dsp_preference(MCPXAPUState *d)
+void mcpx_apu_update_dsp_preference_passthrough(MCPXAPUState *d)
 {
     /* In the real xemu, this reads settings to decide whether
      * GP/EP should run in realtime or cached mode. We ignore it. */
     (void)d;
 }
 
-void mcpx_apu_dsp_frame(MCPXAPUState *d,
+void mcpx_apu_dsp_frame_passthrough(MCPXAPUState *d,
                          float mixbins[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME])
 {
     /* Bypass DSP: take mixbin 0 (front-left) and mixbin 1 (front-right)

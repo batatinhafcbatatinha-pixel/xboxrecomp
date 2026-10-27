@@ -1,3 +1,4 @@
+#include <math.h>
 /*
  * MCPX APU Voice Processor - Standalone extraction from xemu
  *
@@ -876,6 +877,10 @@ static int voice_get_samples(MCPXAPUState *d, uint32_t v, float samples[][2],
                 addr = get_data_ptr(d->regs[NV_PAPU_VPSGEADDR], 0xFFFFFFFF,
                                     linear_addr);
             }
+            if (sample_count == 0) {
+                extern void mcpx_gpo_vp_read(unsigned v, uint64_t addr);
+                mcpx_gpo_vp_read(v, addr);
+            }
 
             for (unsigned int channel = 0; channel < channels; channel++) {
                 uint32_t ival;
@@ -946,31 +951,120 @@ static int voice_get_samples(MCPXAPUState *d, uint32_t v, float samples[][2],
  * resample. This gives us functional audio at the cost of quality.
  * ============================================================ */
 
-static int voice_resample(MCPXAPUState *d, uint16_t v, float samples[][2],
-                          int requested_num, float rate)
+/* Pull up to n source samples from the voice; returns how many arrived. */
+static int voice_pull(MCPXAPUState *d, uint16_t v, float out[][2], int n)
 {
-    /* Without libsamplerate, just fetch raw samples at native rate.
-     * Rate < 1.0 means we need more source samples than output samples.
-     * For initial functionality, just get the samples directly. */
-    int sample_count = 0;
-    while (sample_count < requested_num) {
+    int got = 0;
+    while (got < n) {
         int active = voice_get_mask(d, v, NV_PAVS_VOICE_PAR_STATE,
                                     NV_PAVS_VOICE_PAR_STATE_ACTIVE_VOICE);
         if (!active) break;
-
-        int count = voice_get_samples(d, v, &samples[sample_count],
-                                      requested_num - sample_count);
-        if (count < 0) break;
-        if (count == 0) return -1;
-        sample_count += count;
+        int count = voice_get_samples(d, v, &out[got], n - got);
+        /* Stop at the first empty answer, as the old loop did: a stream
+         * voice that returns nothing has just finished a segment, and asking
+         * again advances to the next one and posts another completion. */
+        if (count <= 0) break;
+        got += count;
     }
-    (void)rate; /* Ignored until we add proper resampling */
-    return sample_count;
+    return got;
+}
+
+/* Linear-interpolation resampler. rate is output samples per source sample
+ * (2^(-pitch/4096)); the hardware pitch was ignored before, so every voice
+ * played at 48 kHz whatever DirectSound asked for. Per voice: the source
+ * samples already fetched but not yet passed (q) and the fractional phase. */
+#define SRC_MAX_STEP 8.0
+#define SRC_QCAP (NUM_SAMPLES_PER_FRAME * 8 + 8)
+typedef struct { float q[4][2]; int n; double phase; } VoiceSrc;
+static VoiceSrc s_src[MCPX_HW_MAX_VOICES];
+
+static int voice_resample(MCPXAPUState *d, uint16_t v, float samples[][2],
+                          int requested_num, float rate)
+{
+    VoiceSrc *st = &s_src[v];
+    static float buf[SRC_QCAP][2];
+    double step, ph, end;
+    int total, have, got, out = 0, consumed, i;
+
+    if (voice_get_mask(d, v, NV_PAVS_VOICE_PAR_STATE, NV_PAVS_VOICE_PAR_STATE_NEW_VOICE)) {
+        st->n = 0;
+        st->phase = 0.0;
+    }
+    if (!(rate > 0.0f))
+        rate = 1.0f;
+    {
+        static int off = -1;            /* RECOMP_VP_NORESAMPLE=1: old behaviour (A/B) */
+        if (off < 0) off = getenv("RECOMP_VP_NORESAMPLE") != NULL;
+        if (off)
+            rate = 1.0f;
+    }
+    step = 1.0 / rate;
+    if (step > SRC_MAX_STEP)
+        step = SRC_MAX_STEP;
+    if (step > 0.9999 && step < 1.0001 && st->n == 0 && st->phase == 0.0) {
+        int count = voice_pull(d, v, samples, requested_num);
+        return count ? count : -1;
+    }
+
+    /* Source positions are relative to the first queued sample. The last
+     * output needs floor(ph_last) + 1; consuming needs floor(ph_end). */
+    ph = st->phase;
+    end = ph + step * requested_num;
+    total = (int)(ph + step * (requested_num - 1)) + 2;
+    if ((int)end > total)
+        total = (int)end;
+    if (total > SRC_QCAP)
+        total = SRC_QCAP;
+    have = st->n;
+    for (i = 0; i < have; i++) {
+        buf[i][0] = st->q[i][0];
+        buf[i][1] = st->q[i][1];
+    }
+    got = have + voice_pull(d, v, &buf[have], total - have);
+    if (got == 0)
+        return -1;
+
+    while (out < requested_num) {
+        int i0 = (int)ph;
+        float fr = (float)(ph - i0);
+        if (i0 + 1 >= got) {
+            if (i0 < got && got < total) {      /* voice ended: last sample */
+                samples[out][0] = buf[i0][0];
+                samples[out][1] = buf[i0][1];
+                out++;
+                ph += step;
+            }
+            break;
+        }
+        samples[out][0] = buf[i0][0] + (buf[i0 + 1][0] - buf[i0][0]) * fr;
+        samples[out][1] = buf[i0][1] + (buf[i0 + 1][1] - buf[i0][1]) * fr;
+        out++;
+        ph += step;
+    }
+
+    consumed = (int)ph;
+    if (consumed > got)
+        consumed = got;
+    st->n = got - consumed;
+    if (st->n > 4) {                          /* cannot happen; stay safe */
+        consumed = got - 4;
+        st->n = 4;
+    }
+    for (i = 0; i < st->n; i++) {
+        st->q[i][0] = buf[consumed + i][0];
+        st->q[i][1] = buf[consumed + i][1];
+    }
+    st->phase = ph - (int)ph;
+    return out ? out : -1;
 }
 
 /* ============================================================
  * Voice processing (main per-voice function)
  * ============================================================ */
+
+/* RECOMP_VP_TRACE=1: once a second, one line per active voice. */
+static unsigned s_vp_frames;
+static int s_vp_trace = -1;
 
 static void voice_process(MCPXAPUState *d,
                           float mixbins[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME],
@@ -1095,6 +1189,24 @@ static void voice_process(MCPXAPUState *d,
         dbg->bin[i] = (uint8_t)bin[i];
         dbg->vol[i] = vol[i];
     }
+    if (s_vp_trace < 0)
+        s_vp_trace = getenv("RECOMP_VP_TRACE") != NULL;
+    if (s_vp_trace && s_vp_frames % 1500 == 0) {
+        double e = 0;
+        for (int i = 0; i < NUM_SAMPLES_PER_FRAME; i++)
+            e += samples[i][0] * samples[i][0];
+        fprintf(stderr, "[VP] v%u list%d fmt %08X ba %08X cbo %u ebo %u lbo %u rate %.3f ea %.2f "
+                "bins %d,%d,%d,%d,%d,%d vol %03X,%03X,%03X,%03X,%03X,%03X rms %.4f\n",
+                v, voice_list,
+                voice_get_mask(d, v, NV_PAVS_VOICE_CFG_FMT, 0xFFFFFFFF),
+                voice_get_mask(d, v, NV_PAVS_VOICE_CUR_PSL_START, NV_PAVS_VOICE_CUR_PSL_START_BA),
+                voice_get_mask(d, v, NV_PAVS_VOICE_PAR_OFFSET, NV_PAVS_VOICE_PAR_OFFSET_CBO),
+                voice_get_mask(d, v, NV_PAVS_VOICE_PAR_NEXT, NV_PAVS_VOICE_PAR_NEXT_EBO),
+                voice_get_mask(d, v, NV_PAVS_VOICE_CUR_PSH_SAMPLE, NV_PAVS_VOICE_CUR_PSH_SAMPLE_LBO),
+                rate, ea_value, bin[0], bin[1], bin[2], bin[3], bin[4], bin[5],
+                vol[0], vol[1], vol[2], vol[3], vol[4], vol[5],
+                sqrt(e / NUM_SAMPLES_PER_FRAME));
+    }
 
     if (voice_should_mute(v)) return;
 
@@ -1179,6 +1291,7 @@ void mcpx_apu_vp_frame(MCPXAPUState *d,
                         float mixbins[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME])
 {
     memset(d->vp.sample_buf, 0, sizeof(d->vp.sample_buf));
+    s_vp_frames++;
 
     for (int list = 0; list < 3; list++) {
         hwaddr top, current, next;

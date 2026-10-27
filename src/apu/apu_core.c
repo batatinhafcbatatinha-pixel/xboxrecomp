@@ -23,6 +23,7 @@
 #include "apu.h"
 #include "apu_xaudio2.h"
 #include "fpconv.h"
+#include "apu_frame_handoff.h"
 #include "../kernel/xbox_memory_layout.h"   /* XBOX_WORKER_STACK_TOP */
 
 /* ============================================================
@@ -76,10 +77,23 @@ extern uint32_t xbox_ContiguousAllocatedBytes(void);
 uint8_t *mcpx_apu_phys(uint64_t addr)
 {
     uint32_t a = (uint32_t)addr & 0x0FFFFFFFu;
-    if (a >= g_xbox_image_lo && a < g_xbox_image_hi)
-        return g_apu_ram_ptr + a;
+    if ((uint32_t)addr & XBOX_LOWRAM_PHYS_TAG)
+        return g_apu_ram_ptr + a;      /* MmGetPhysicalAddress of low RAM */
+    /* Contiguous allocations before the image heuristic: low RAM is tagged
+     * above, and a contiguous page at physical 0x001D1000 is numerically
+     * inside the XBE image range. Checked the other way round, FIFA Street's
+     * 6-channel mix buffer (contiguous 0x801D1B90) was read from the game's
+     * code bytes and played as full-scale noise. */
+    {
+        static int old = -1;            /* RECOMP_APU_PHYS_OLD=1: image first (A/B) */
+        if (old < 0) old = getenv("RECOMP_APU_PHYS_OLD") != NULL;
+        if (old && a >= g_xbox_image_lo && a < g_xbox_image_hi)
+            return g_apu_ram_ptr + a;
+    }
     if (a < xbox_ContiguousAllocatedBytes())
         return g_apu_ram_ptr + 0x80000000u + a;
+    if (a >= g_xbox_image_lo && a < g_xbox_image_hi)
+        return g_apu_ram_ptr + a;
     return g_apu_ram_ptr + (a & 0x03FFFFFFu);
 }
 
@@ -108,6 +122,7 @@ static void update_irq(MCPXAPUState *d)
 
 /* HalGetInterruptVector(5) -- the APU's IRQ -- is what DirectSound connects
  * its service routine to (0x002F8E81 in Burnout 3). */
+#include "../kernel/interrupt_sync.h"
 #define APU_VECTOR 5
 
 typedef void (*apu_guest_fn)(void);
@@ -140,6 +155,7 @@ static void apu_deliver_irq(MCPXAPUState *d)
     uint32_t kint, routine, context;
     apu_guest_fn fn;
     int slot;
+    int cpu_token;
 
     if (!InterlockedCompareExchange(&s_irq_line, 0, 0))
         return;
@@ -171,7 +187,11 @@ static void apu_deliver_irq(MCPXAPUState *d)
     g_esp -= 4; *(uint32_t *)(g_apu_ram_ptr + g_esp) = context;
     g_esp -= 4; *(uint32_t *)(g_apu_ram_ptr + g_esp) = kint;
     g_esp -= 4; *(uint32_t *)(g_apu_ram_ptr + g_esp) = 0xDEADBEEFu;
-    { int _irql = xbox_IrqlEnterInterrupt(16); fn(); xbox_IrqlLeaveInterrupt(_irql); }
+    cpu_token = guest_cpu_callback_enter();
+    xbox_InterruptAcquire(kint);
+    { int _irql = xbox_IrqlEnterInterrupt(xbox_InterruptIrql(kint)); fn(); xbox_IrqlLeaveInterrupt(_irql); }
+    xbox_InterruptRelease(kint);
+    guest_cpu_callback_leave(cpu_token);
     xbox_worker_stack_free(slot);
     qemu_mutex_lock(&d->lock);
 
@@ -383,6 +403,103 @@ void mcpx_apu_monitor_frame(MCPXAPUState *d)
         return;
     }
 
+    /* The interpreter produces 8 x 32 stereo samples per EP frame. Preserve
+     * that output and its 48 kHz timing; the legacy software mixer below
+     * clears this buffer and generates an unrelated 1024/2048-sample block. */
+    if (mcpx_apu_dsp_enabled() && !g_test_tone.active) {
+        int16_t samples[MIXER_FRAME_SAMPLES][2];
+        static unsigned blocks, nonzero_blocks;
+        static FILE *capture;
+        static int capture_initialized;
+        int peak = 0;
+        extern int mcpx_apu_audio_native(void);
+        extern int16_t g_apu_native_buf[MIXER_FRAME_SAMPLES][2];
+        memcpy(samples, mcpx_apu_audio_native() ? g_apu_native_buf : d->monitor.frame_buf,
+               sizeof(samples));
+        for (int i = 0; i < MIXER_FRAME_SAMPLES; ++i) {
+            for (int c = 0; c < 2; ++c) {
+                int amplitude = abs((int)samples[i][c]);
+                if (amplitude > peak) peak = amplitude;
+            }
+        }
+        if (peak) ++nonzero_blocks;
+        if (++blocks % 1000 == 0) {
+            fprintf(stderr, "[DSP] output blocks=%u nonzero=%u peak=%d GP pc=%06X cycles=%u EP pc=%06X cycles=%u\n",
+                    blocks, nonzero_blocks, peak, d->gp.dsp->core.pc,
+                    d->gp.dsp->core.cycle_count, d->ep.dsp->core.pc,
+                    d->ep.dsp->core.cycle_count);
+            if (d->gp.dsp->native_enabled || d->ep.dsp->native_enabled)
+                fprintf(stderr, "[DSP-NATIVE] GP enabled=%d native=%llu interpreted=%llu guard-fallback=%llu EP enabled=%d native=%llu interpreted=%llu guard-fallback=%llu\n",
+                        d->gp.dsp->native_enabled,
+                        (unsigned long long)d->gp.dsp->native_steps,
+                        (unsigned long long)d->gp.dsp->interpreted_steps,
+                        (unsigned long long)d->gp.dsp->native_guard_fallbacks,
+                        d->ep.dsp->native_enabled,
+                        (unsigned long long)d->ep.dsp->native_steps,
+                        (unsigned long long)d->ep.dsp->interpreted_steps,
+                        (unsigned long long)d->ep.dsp->native_guard_fallbacks);
+            dsp_profile_report(d->gp.dsp, "GP");
+            dsp_profile_report(d->ep.dsp, "EP");
+            if (d->gp.dsp->profile_enabled || d->ep.dsp->profile_enabled)
+                fprintf(stderr, "[APU-SCHED] pending-mmio=%ld handoffs=%llu\n",
+                        InterlockedCompareExchange(&d->host_mmio_waiters, 0, 0),
+                        (unsigned long long)d->host_mmio_handoffs);
+        }
+        if (!capture_initialized) {
+            const char *path = getenv("RECOMP_DSP_PCM");
+            capture_initialized = 1;
+            if (path && *path) capture = fopen(path, "wb");
+        }
+        /* RECOMP_PCM_FROM=<seconds>: start the 60 s captures later. */
+        static long pcm_from = -1;
+        if (pcm_from < 0) {
+            const char *e = getenv("RECOMP_PCM_FROM");
+            pcm_from = e ? atol(e) * 1875 / 10 : 0;
+        }
+        if (capture && blocks > (unsigned)pcm_from && blocks <= (unsigned)pcm_from + 11250) {
+            fwrite(samples, 1, sizeof(samples), capture);
+            fflush(capture);
+        }
+        {
+            /* RECOMP_NATIVE_PCM: the native final mix of the same frames. */
+            extern int16_t g_apu_native_buf[MIXER_FRAME_SAMPLES][2];
+            static FILE *ncap;
+            static int ninit;
+            if (!ninit) {
+                const char *path = getenv("RECOMP_NATIVE_PCM");
+                ninit = 1;
+                if (path && *path) ncap = fopen(path, "wb");
+            }
+            if (ncap && blocks > (unsigned)pcm_from && blocks <= (unsigned)pcm_from + 11250) {
+                fwrite(g_apu_native_buf, 1, sizeof(samples), ncap);
+                fflush(ncap);
+            }
+        }
+        if (g_audio_muted) memset(samples, 0, sizeof(samples));
+        if (xa2_is_active()) {
+            xa2_submit_samples((const int16_t *)samples, MIXER_FRAME_SAMPLES);
+        } else if (g_waveout.initialized) {
+            int idx = g_waveout.next_buf;
+            WAVEHDR *hdr = &g_waveout.hdrs[idx];
+            int wait_loops = 0;
+            while (!(hdr->dwFlags & WHDR_DONE) && (hdr->dwFlags & WHDR_INQUEUE)) {
+                qemu_mutex_unlock(&d->lock);
+                Sleep(1);
+                qemu_mutex_lock(&d->lock);
+                if (++wait_loops > 50) break;
+            }
+            if (!(hdr->dwFlags & WHDR_INQUEUE) || (hdr->dwFlags & WHDR_DONE)) {
+                memcpy(g_waveout.bufs[idx], samples, sizeof(samples));
+                hdr->dwBufferLength = sizeof(samples);
+                hdr->dwFlags &= ~WHDR_DONE;
+                waveOutWrite(g_waveout.hwo, hdr, sizeof(WAVEHDR));
+                g_waveout.next_buf = (idx + 1) % WAVEOUT_NUM_BUFS;
+                ++g_waveout.frames_written;
+            }
+        }
+        return;
+    }
+
     /* XAudio2 path: render and submit a buffer */
     if (xa2_is_active()) {
         int buf_size = xa2_get_buffer_size();
@@ -506,6 +623,10 @@ static void throttle(MCPXAPUState *d)
  * se_frame - Process one audio frame (VP -> GP -> EP pipeline)
  * ============================================================ */
 
+void (*g_apu_shadow_voices)(float mixbins[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME]);
+extern void hle_ds_shadow_compare(float lib[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME],
+                                  float nat[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME]);
+
 static void se_frame(MCPXAPUState *d)
 {
     mcpx_apu_update_dsp_preference(d);
@@ -529,6 +650,13 @@ static void se_frame(MCPXAPUState *d)
     memset(mixbins, 0, sizeof(mixbins));
 
     mcpx_apu_vp_frame(d, mixbins);
+    if (g_apu_shadow_voices) {
+        /* RECOMP_DS_SHADOW: the native DirectSound mixer on the same frame. */
+        float shadow[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME];
+        memset(shadow, 0, sizeof(shadow));
+        g_apu_shadow_voices(shadow);
+        hle_ds_shadow_compare(mixbins, shadow);
+    }
     mcpx_apu_dsp_frame(d, mixbins);
     mcpx_apu_monitor_frame(d);
 
@@ -540,6 +668,13 @@ static void se_frame(MCPXAPUState *d)
 /* ============================================================
  * APU frame thread (background processing)
  * ============================================================ */
+
+/* Native DirectSound (the project's HLE layer): when set, it fills the
+ * mixbins of every 32-sample frame itself and the VP/DSP pipeline, which
+ * only the original library programs, does not run. The output path (native
+ * final mix, XAudio2, PCM captures) and its 48 kHz pacing stay the same. */
+void (*g_apu_hle_voices)(float mixbins[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME]);
+extern void mcpx_apu_native_mix(MCPXAPUState *d, float mixbins[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME]);
 
 static void *mcpx_apu_frame_thread(void *arg)
 {
@@ -574,7 +709,16 @@ static void *mcpx_apu_frame_thread(void *arg)
                           !(fectl & NV_PAPU_FECTL_FEMETHMODE_TRAPPED) &&
                           !(fectl & NV_PAPU_FECTL_FEMETHMODE_HALTED);
 
-        if (apu_active && !g_test_tone.active) {
+        if (g_apu_hle_voices && !g_test_tone.active) {
+            float mixbins[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME];
+            memset(mixbins, 0, sizeof(mixbins));
+            qemu_mutex_unlock(&d->lock);
+            g_apu_hle_voices(mixbins);
+            qemu_mutex_lock(&d->lock);
+            mcpx_apu_native_mix(d, mixbins);
+            mcpx_apu_monitor_frame(d);
+            d->ep_frame_div++;
+        } else if (apu_active && !g_test_tone.active) {
             /* Full pipeline: VP voices → DSP → monitor → waveOut */
             se_frame(d);
         } else {
@@ -604,7 +748,9 @@ static void *mcpx_apu_frame_thread(void *arg)
          * select, blocked in voice_lock at raised IRQL, which in turn held
          * off every USB interrupt. */
         qemu_mutex_unlock(&d->lock);
-        SwitchToThread();
+        if (InterlockedCompareExchange(&d->host_mmio_waiters, 0, 0) != 0)
+            ++d->host_mmio_handoffs;
+        apu_frame_handoff(&d->host_mmio_waiters);
         qemu_mutex_lock(&d->lock);
     }
 
@@ -737,6 +883,8 @@ void mcpx_apu_shutdown(MCPXAPUState *d)
 
 uint64_t mcpx_apu_vp_read(void *opaque, hwaddr addr, unsigned int size);
 void mcpx_apu_vp_write(void *opaque, hwaddr addr, uint64_t val, unsigned int size);
+uint64_t mcpx_apu_dsp_mmio_read(MCPXAPUState *, uint64_t, unsigned);
+void mcpx_apu_dsp_mmio_write(MCPXAPUState *, uint64_t, uint64_t, unsigned);
 
 /* Dispatch a VP-region access (offset 0x20000-0x2FFFF from APU base) */
 void mcpx_apu_dispatch_mmio(MCPXAPUState *d, hwaddr addr, uint64_t val,
@@ -755,7 +903,9 @@ void mcpx_apu_dispatch_mmio(MCPXAPUState *d, hwaddr addr, uint64_t val,
             mcpx_apu_write(d, addr, val, size);
         }
     }
-    /* GP (0x30000) and EP (0x50000) regions ignored for now */
+    else if (is_write) {
+        mcpx_apu_dsp_mmio_write(d, addr, val, size);
+    }
 }
 
 /* ============================================================
@@ -771,13 +921,15 @@ uint64_t mcpx_apu_mmio_read(MCPXAPUState *d, uint64_t addr, unsigned int size)
     } else if (addr < 0x20000) {
         return mcpx_apu_read(d, (hwaddr)addr, size);
     }
-    return 0;
+    return mcpx_apu_dsp_mmio_read(d, addr, size);
 }
 
 void mcpx_apu_mmio_write(MCPXAPUState *d, uint64_t addr, uint64_t val, unsigned int size)
 {
     if (!d) return;
+    InterlockedIncrement(&d->host_mmio_waiters);
     mcpx_apu_dispatch_mmio(d, (hwaddr)addr, val, size, true);
+    InterlockedDecrement(&d->host_mmio_waiters);
 }
 
 /* ============================================================
@@ -1021,4 +1173,18 @@ static void mixer_render(int16_t frame_buf[][2], int num_samples)
         }
     }
     LeaveCriticalSection(&g_mixer_cs);
+}
+
+/* Native DirectSound: install the voice mixer and run the frame thread (the
+ * title never starts the APU through its registers in that mode). */
+void mcpx_apu_hle_start(void (*voices)(float mixbins[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME]))
+{
+    g_apu_hle_voices = voices;
+    if (g_state) {
+        qemu_mutex_lock(&g_state->lock);
+        g_state->pause_requested = false;
+        qemu_cond_signal(&g_state->cond);
+        qemu_mutex_unlock(&g_state->lock);
+    }
+    fprintf(stderr, "[APU] native DirectSound mixer started\n");
 }

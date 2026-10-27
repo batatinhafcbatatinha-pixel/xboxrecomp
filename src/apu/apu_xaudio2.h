@@ -21,4 +21,7 @@ int xa2_submit_samples(const int16_t *samples, int num_samples);
 /* Get the preferred buffer size in samples. */
 int xa2_get_buffer_size(void);
 
+/* Output volume 0..1 (mastering voice). */
+void xa2_set_volume(float volume);
+
 #endif /* APU_XAUDIO2_H */
