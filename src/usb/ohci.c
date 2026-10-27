@@ -8,6 +8,7 @@
  */
 #include "ohci.h"
 #include "../platform/mmio_decode.h"
+#include "../kernel/interrupt_sync.h"
 #include "../kernel/xbox_memory_layout.h"
 #include "../kernel/kernel.h"
 #include "usb_gamepad.h"
@@ -498,6 +499,8 @@ static int guest_ok(uint32_t va, uint32_t bytes)
  * again, forever. */
 static uint32_t bus_resolve(uint32_t addr)
 {
+    if (addr & XBOX_LOWRAM_PHYS_TAG)
+        return addr & ~XBOX_LOWRAM_PHYS_TAG;   /* low RAM, see the tag */
     if (addr >= g_xbox_image_lo && addr < g_xbox_image_hi)
         return addr;
     if (addr && addr < xbox_ContiguousAllocatedBytes())
@@ -529,6 +532,7 @@ static uint8_t *guest_ptr(uint32_t va, uint32_t bytes)
 /* Transfer counts for RECOMP_USB_STATS: input reports served, control
  * transfer stages, and OUT packets (rumble) by endpoint. */
 static unsigned long s_n_report, s_n_ctrl, s_n_out_ep0, s_n_out_other;
+static volatile LONG s_last_report_ms;
 
 /* Move one transfer descriptor. Returns the condition code to report. */
 static uint32_t ohci_do_td(OhciController *hc, uint32_t ed0, uint32_t td)
@@ -624,6 +628,7 @@ static uint32_t ohci_do_td(OhciController *hc, uint32_t ed0, uint32_t td)
             /* The pad's report, on its interrupt endpoint. */
             uint8_t rep[32];
             s_n_report++;
+            InterlockedExchange(&s_last_report_ms, (LONG)GetTickCount());
             int n = usb_gamepad_report(pad, rep, (int)sizeof rep);
             if (n > len) n = len;
             if (n > 0 && guest_ptr(cbp, (uint32_t)n))
@@ -861,6 +866,9 @@ static int ohci_call_isr(OhciController *hc)
     recomp_func_t fn;
     uint8_t *mem;
     int slot;
+    int cpu_token;
+    int claimed;
+    XboxGuestCpuState saved;
 
     if (!kinterrupt)
         return -1;                      /* nothing connected yet            */
@@ -889,6 +897,13 @@ static int ohci_call_isr(OhciController *hc)
         return -1;
     }
 
+    cpu_token = guest_cpu_callback_enter();
+    if (!guest_cpu_interrupt_allowed(xbox_InterruptIrql(kinterrupt))) {
+        guest_cpu_callback_leave(cpu_token);
+        xbox_worker_stack_free(slot);
+        return -1;
+    }
+    xbox_GuestCpuStateSave(&saved);
     g_esp = XBOX_WORKER_STACK_TOP(slot);
     g_eax = g_ecx = g_edx = g_ebx = g_esi = g_edi = 0;
 
@@ -896,10 +911,31 @@ static int ohci_call_isr(OhciController *hc)
     g_esp -= 4; *(uint32_t *)(mem + g_esp) = kinterrupt;   /* arg 1 */
     g_esp -= 4; *(uint32_t *)(mem + g_esp) = 0xDEADBEEFu;  /* return address */
 
-    { int _irql = xbox_IrqlEnterInterrupt(16); fn(); xbox_IrqlLeaveInterrupt(_irql); }
+    xbox_InterruptAcquire(kinterrupt);
+    { int _irql = xbox_IrqlEnterInterrupt(xbox_InterruptIrql(kinterrupt)); fn(); xbox_IrqlLeaveInterrupt(_irql); }
+    xbox_InterruptRelease(kinterrupt);
+    claimed = (int)(g_eax & 1u);
+    xbox_GuestCpuStateRestore(&saved);
+    guest_cpu_callback_leave(cpu_token);
 
     xbox_worker_stack_free(slot);
-    return (int)(g_eax & 1u);
+    return claimed;
+}
+
+void xbox_OhciServicePendingInterrupts(void)
+{
+    OhciController *hc;
+    uint32_t enable, status;
+    int token;
+    if (!s_enabled || !guest_cpu_is_serialized())
+        return;
+    token = guest_cpu_callback_enter();
+    hc = &s_hc[s_device_hc];
+    enable = hc->reg[HcInterruptEnable / 4];
+    status = hc->reg[HcInterruptStatus / 4] & enable & 0x7Fu;
+    if ((enable & INTR_MIE) && status)
+        ohci_call_isr(hc);
+    guest_cpu_callback_leave(token);
 }
 
 /* Set the status bits and, if the driver has unmasked them, call the ISR.
@@ -912,8 +948,9 @@ static void ohci_raise(OhciController *hc, uint32_t source)
 {
     uint32_t enable = hc->reg[HcInterruptEnable / 4];
     int claimed;
-
-    hc->reg[HcInterruptStatus / 4] |= source;
+    /* This is a level already asserted by the bus, not a new edge. Reasserting
+     * a cached status after a CPU safe point consumed it duplicates completions. */
+    source &= hc->reg[HcInterruptStatus / 4];
 
     if (!(enable & INTR_MIE) || !(enable & source))
         return;
@@ -1031,6 +1068,7 @@ static DWORD WINAPI ohci_thread(LPVOID unused)
         OhciController *hc = &s_hc[s_device_hc];
         uint32_t control, enable, status;
         uint32_t pass_done = 0;     /* this pass's done queue, newest first */
+        int bus_token;
 
         Sleep(OHCI_TICK_MS);
         control = hc->reg[HcControl / 4];
@@ -1039,12 +1077,28 @@ static DWORD WINAPI ohci_thread(LPVOID unused)
         /* Operational is HCFS == 10b in bits 7:6. Interrupting a controller
          * the driver has not started yet is not a test of anything. */
         if ((control & 0xC0u) != 0x80u) {
-            if (++waited > 1500)              /* 30 s and it never started */
-                break;
+            /* The controller exists while the title boots, even if startup
+             * takes minutes. Exiting here permanently removed the USB bus
+             * before FIFA's XPP driver enabled it (the 4 ms tick made the
+             * former 1500-pass timeout only six seconds). */
+            ++waited;
             continue;
         }
         if (!(enable & INTR_MIE))
             continue;
+
+        /* A lifted guest block may publish ED/TD words with plain C stores.
+         * Serialize this bus pass with that publication and with ISR/DPC
+         * retirement, so DMA never observes compiler-reordered partial lists.
+         * Keep the token through delivery: an old WDH snapshot must not be
+         * raised again after a different host thread already consumed it. */
+        bus_token = guest_cpu_callback_enter();
+        control = hc->reg[HcControl / 4];
+        enable = hc->reg[HcInterruptEnable / 4];
+        if ((control & 0xC0u) != 0x80u || !(enable & INTR_MIE)) {
+            guest_cpu_callback_leave(bus_token);
+            continue;
+        }
 
         /* Plug the device in once, after the driver is running and listening.
          * Presenting it earlier does not work: the driver clears the connect
@@ -1065,7 +1119,7 @@ static DWORD WINAPI ohci_thread(LPVOID unused)
             s_plugged_pads = 1;
             first_port = port;
             fprintf(stderr, "  [OHCI0] operational after %u ms; device "
-                            "arriving on port 1\n", waited * 20);
+                            "arriving on port 1\n", waited * OHCI_TICK_MS);
             fflush(stderr);
         }
 
@@ -1181,8 +1235,10 @@ static DWORD WINAPI ohci_thread(LPVOID unused)
          * so rather than spinning the ISR forever. */
     deliver:
         status = hc->reg[HcInterruptStatus / 4] & enable & 0x7Fu;
-        if (!status)
+        if (!status) {
+            guest_cpu_callback_leave(bus_token);
             continue;
+        }
 
         /* Bounded, because the mask is a model and not the hardware.
          *
@@ -1194,7 +1250,8 @@ static DWORD WINAPI ohci_thread(LPVOID unused)
          * asserted anyway. The common case still holds the ISR out of the
          * guest's critical section; the pathological case costs a delay
          * instead of the device. */
-        if (xbox_IrqlBlocksInterrupts() && ++held_off <= OHCI_IRQ_HOLDOFF) {
+        if (!guest_cpu_is_serialized() && xbox_IrqlBlocksInterrupts()
+            && ++held_off <= OHCI_IRQ_HOLDOFF) {
             if (!held_off_warned) {
                 held_off_warned = 1;
                 fprintf(stderr, "  [OHCI%d] irq held off by guest IRQL "
@@ -1202,6 +1259,7 @@ static DWORD WINAPI ohci_thread(LPVOID unused)
                         hc->index, xbox_IrqlRaisedCount(), status);
                 fflush(stderr);
             }
+            guest_cpu_callback_leave(bus_token);
             continue;
         }
         if (held_off > OHCI_IRQ_HOLDOFF && !held_off_forced) {
@@ -1231,6 +1289,7 @@ static DWORD WINAPI ohci_thread(LPVOID unused)
                                 "with no acknowledgement; stopping\n",
                         hc->index, status);
                 fflush(stderr);
+                guest_cpu_callback_leave(bus_token);
                 break;
             }
         } else {
@@ -1239,6 +1298,7 @@ static DWORD WINAPI ohci_thread(LPVOID unused)
             repeats     = 0;
         }
         ohci_raise(hc, status);
+        guest_cpu_callback_leave(bus_token);
     }
     return 0;
 }
@@ -1278,7 +1338,7 @@ void xbox_OhciInit(void)
     ohci_reset(&s_hc[0], XBOX_OHCI0_BASE, 0);
     ohci_reset(&s_hc[1], XBOX_OHCI1_BASE, 1);
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__x86_64__)
     /* The registers have to fault to be answered. The MCPX aperture is mapped
      * as plain committed memory, so both blocks are made inaccessible here and
      * the title's VEH routes the faults back to xbox_OhciHandleMmio.
@@ -1314,7 +1374,7 @@ void xbox_OhciInit(void)
             XBOX_OHCI0_BASE, XBOX_OHCI1_BASE, OHCI_PORTS);
     fflush(stderr);
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__x86_64__)
     {
         HANDLE th = CreateThread(NULL, 0, ohci_thread, NULL, 0, NULL);
         if (th)
@@ -1342,7 +1402,7 @@ int xbox_OhciOwnsAddress(uint32_t xbox_va)
 
 int xbox_OhciHandleMmio(void *ctx, uint32_t xbox_va)
 {
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__x86_64__)
     OhciController *hc = hc_for(xbox_va);
     int ok;
 
@@ -1371,12 +1431,58 @@ void xbox_OhciReport(void)
 
     if (!s_enabled)
         return;
-    for (i = 0; i < 2; i++)
+    fprintf(stderr, "  [OHCI] input reports=%lu setups=%lu statusOUT=%lu otherOUT=%lu"
+                    " last-report-age=%lu ms IRQL-depth=%d\n",
+            s_n_report, s_n_ctrl, s_n_out_ep0, s_n_out_other,
+            (unsigned long)((DWORD)GetTickCount() - (DWORD)s_last_report_ms),
+            xbox_IrqlRaisedCount());
+    for (i = 0; i < 2; i++) {
+        OhciController *hc = &s_hc[i];
+        uint32_t hcca = hc->reg[HcHCCA / 4];
+        uint32_t ed = hc->reg[HcControlHeadED / 4] & ED_PTR_MASK;
+        int n;
         fprintf(stderr, "  [OHCI%d] %u reads, %u writes, %u undecoded; "
                         "HcControl=%08X HcIntStatus=%08X port1=%08X\n",
                 i, s_hc[i].reads, s_hc[i].writes, s_hc[i].decode_fail,
                 s_hc[i].reg[HcControl / 4],
                 s_hc[i].reg[HcInterruptStatus / 4],
                 s_hc[i].reg[HcRhPortStatus1 / 4]);
+        fprintf(stderr, "  [OHCI%d] enable=%08X command=%08X frame=%08X ack=%u"
+                        " HCCA=%08X done=%08X HccaDone=%08X\n",
+                i, hc->reg[HcInterruptEnable / 4], hc->reg[HcCommandStatus / 4],
+                hc->reg[HcFmNumber / 4], hc->ack_seq, hcca,
+                hc->reg[HcDoneHead / 4],
+                guest_ok(hcca, 256) ? rd32(hcca + HCCA_DONE_HEAD) : 0);
+        /* Bounded read-only snapshots, without taking device/guest CPU locks:
+         * the watchdog must remain able to report a blocked ISR. */
+        for (n = 0; n < 4 && guest_ok(ed, 16); n++) {
+            fprintf(stderr, "  [OHCI%d] control ED=%08X info=%08X head=%08X tail=%08X\n",
+                    i, ed, rd32(ed), rd32(ed + 8), rd32(ed + 4));
+            ed = rd32(ed + 12) & ED_PTR_MASK;
+        }
+        if (guest_ok(hcca, 256)) {
+            uint32_t seen[8];
+            int count = 0;
+            unsigned slot;
+            for (slot = 0; slot < 32 && count < 8; slot++) {
+                int j;
+                ed = rd32(hcca + slot * 4) & ED_PTR_MASK;
+                if (!guest_ok(ed, 16)) continue;
+                for (j = 0; j < count && seen[j] != ed; j++) {}
+                if (j < count) continue;
+                seen[count++] = ed;
+                fprintf(stderr, "  [OHCI%d] periodic slot=%u ED=%08X info=%08X head=%08X tail=%08X\n",
+                        i, slot, ed, rd32(ed), rd32(ed + 8), rd32(ed + 4));
+            }
+        }
+    }
+    for (i = 0; i < USB_GAMEPAD_MAX; i++) {
+        UsbSetup *setup = &g_setup_[i];
+        fprintf(stderr, "  [OHCI] pad%d control-pending=%u setup=%02X/%02X value=%04X"
+                        " index=%04X length=%u sent=%d total=%d\n",
+                i, g_setup_pending_[i], setup->bmRequestType, setup->bRequest,
+                setup->wValue, setup->wIndex, setup->wLength,
+                g_ctrl_sent_[i], g_ctrl_len_[i]);
+    }
     fflush(stderr);
 }

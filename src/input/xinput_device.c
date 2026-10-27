@@ -14,16 +14,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* ======================================================================== */
-#if defined(_WIN32)
-/* ====================  XInput backend  ================================== */
-/* ======================================================================== */
-
-#include <xinput.h>
-#pragma comment(lib, "xinput.lib")
-
-static BOOL  g_controller_connected[XBOX_MAX_CONTROLLERS] = { FALSE };
-static DWORD g_last_packet[XBOX_MAX_CONTROLLERS] = { 0 };
+#if !defined(_WIN32)
+#ifndef VK_TAB
+#define VK_TAB   0x09
+#endif
+#ifndef VK_OEM_1
+#define VK_OEM_1 0xBA
+#endif
+#endif
 
 /* ---- keyboard, when there is no pad --------------------------------------
  *
@@ -37,13 +35,16 @@ static DWORD g_last_packet[XBOX_MAX_CONTROLLERS] = { 0 };
  * turns it on. It only ever answers for port 0, and is merged on top of a
  * pad connected there, so a real controller keeps working.
  *
- * The keys are the ones a Dreamcast or Saturn emulator would pick, which is
- * the closest thing to a convention here:
+ * The keys follow EA SPORTS FC 27's default "WASD" keyboard layout (basic
+ * actions only), on the buttons FIFA used on Xbox (A pass, B shoot, X lob,
+ * Y through ball, right trigger sprint):
  *
- *   arrows        d-pad             Enter      START
- *   Z X A S       A B X Y           Backspace  BACK
- *   Q E           white black       1 3        triggers
- *   numpad 8/2/4/6 left thumb       I/K/J/L    right thumb
+ *   W A S D       left thumb        arrows     d-pad (menus)
+ *   L             A (pass)          Enter      A + START
+ *   ; (Ç)         B (shoot)         Escape     START (pause)
+ *   K             X (lob / cross)   Backspace  B (back in menus)
+ *   O             Y (through ball)  Tab        BACK
+ *   P             right trigger (sprint)
  *
  * Keys come from the framebuffer window, which only receives them while it
  * has the focus, so typing in another window does not drive the game.
@@ -95,34 +96,39 @@ static void keyboard_state(XBOX_INPUT_STATE *pState)
     if (key_down(VK_DOWN))   b |= XBOX_GAMEPAD_DPAD_DOWN;
     if (key_down(VK_LEFT))   b |= XBOX_GAMEPAD_DPAD_LEFT;
     if (key_down(VK_RIGHT))  b |= XBOX_GAMEPAD_DPAD_RIGHT;
-    if (key_down(VK_RETURN)) b |= XBOX_GAMEPAD_START;
-    if (key_down(VK_BACK))   b |= XBOX_GAMEPAD_BACK;
-    if (key_down(VK_SHIFT))  b |= XBOX_GAMEPAD_LEFT_THUMB;
-    if (key_down(VK_CONTROL))b |= XBOX_GAMEPAD_RIGHT_THUMB;
+    /* Esc pauses, as on PC; the options screen (F1) takes Esc for itself
+     * while it is open. Enter is also START so it passes PRESS START. */
+    if (key_down(VK_RETURN) || key_down(VK_ESCAPE)) b |= XBOX_GAMEPAD_START;
+    if (key_down(VK_TAB))    b |= XBOX_GAMEPAD_BACK;
     pState->Gamepad.wButtons = b;
 
     /* Analog on the console, so a key is 255 rather than a flag -- a title
-     * that reads these as a pressure never sees a press if they are 1. */
-    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_A]        = key_down('Z') ? 255 : 0;
-    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_B]        = key_down('X') ? 255 : 0;
-    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_X]        = key_down('A') ? 255 : 0;
-    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_Y]        = key_down('S') ? 255 : 0;
-    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_WHITE]    = key_down('Q') ? 255 : 0;
-    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_BLACK]    = key_down('E') ? 255 : 0;
-    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_LTRIGGER] = key_down('1') ? 255 : 0;
-    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] = key_down('3') ? 255 : 0;
+     * that reads these as a pressure never sees a press if they are 1.
+     * VK_OEM_1 is the key right of L (';' on US layouts, 'Ç' on ABNT2). */
+    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_A] = (key_down('L') || key_down(VK_RETURN)) ? 255 : 0;
+    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_B] = (key_down(VK_OEM_1) || key_down(VK_BACK)) ? 255 : 0;
+    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_X] = key_down('K') ? 255 : 0;
+    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_Y] = key_down('O') ? 255 : 0;
+    pState->Gamepad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] = key_down('P') ? 255 : 0;
 
-    /* W/A/S/D would collide with the face buttons above, so the left thumb
-     * shares the arrow keys' row on the numeric pad instead. */
-    pState->Gamepad.sThumbLX = axis_from_keys(VK_NUMPAD4, VK_NUMPAD6);
-    pState->Gamepad.sThumbLY = axis_from_keys(VK_NUMPAD2, VK_NUMPAD8);
-    pState->Gamepad.sThumbRX = axis_from_keys('J', 'L');
-    pState->Gamepad.sThumbRY = axis_from_keys('K', 'I');
+    pState->Gamepad.sThumbLX = axis_from_keys('A', 'D');
+    pState->Gamepad.sThumbLY = axis_from_keys('S', 'W');
 
     /* The title's input layer looks for button edges, so the packet number
      * has to move whenever the state does or a press is never noticed. */
     pState->dwPacketNumber = ++packet;
 }
+
+/* ======================================================================== */
+#if defined(_WIN32)
+/* ====================  XInput backend  ================================== */
+/* ======================================================================== */
+
+#include <xinput.h>
+#pragma comment(lib, "xinput.lib")
+
+static BOOL  g_controller_connected[XBOX_MAX_CONTROLLERS] = { FALSE };
+static DWORD g_last_packet[XBOX_MAX_CONTROLLERS] = { 0 };
 
 void xbox_InputInit(void)
 {
@@ -287,6 +293,10 @@ DWORD xbox_InputGetState(DWORD dwPort, XBOX_INPUT_STATE *pState)
     SDL_GameController *c = g_pads[dwPort];
     if (!c || !SDL_GameControllerGetAttached(c)) {
         g_controller_connected[dwPort] = FALSE;
+        if (dwPort == 0 && keyboard_enabled()) {
+            keyboard_state(pState);
+            return ERROR_SUCCESS;
+        }
         return ERROR_DEVICE_NOT_CONNECTED;
     }
 
@@ -335,6 +345,20 @@ DWORD xbox_InputGetState(DWORD dwPort, XBOX_INPUT_STATE *pState)
     pState->Gamepad.sThumbRY =
         (SHORT)(-1 - SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_RIGHTY));
 
+    if (dwPort == 0 && keyboard_enabled()) {      /* as on Windows: keys add to the pad */
+        XBOX_INPUT_STATE kb;
+        int i;
+        keyboard_state(&kb);
+        pState->Gamepad.wButtons |= kb.Gamepad.wButtons;
+        for (i = 0; i < 8; i++)
+            if (kb.Gamepad.bAnalogButtons[i] > pState->Gamepad.bAnalogButtons[i])
+                pState->Gamepad.bAnalogButtons[i] = kb.Gamepad.bAnalogButtons[i];
+        if (kb.Gamepad.sThumbLX) pState->Gamepad.sThumbLX = kb.Gamepad.sThumbLX;
+        if (kb.Gamepad.sThumbLY) pState->Gamepad.sThumbLY = kb.Gamepad.sThumbLY;
+        if (kb.Gamepad.sThumbRX) pState->Gamepad.sThumbRX = kb.Gamepad.sThumbRX;
+        if (kb.Gamepad.sThumbRY) pState->Gamepad.sThumbRY = kb.Gamepad.sThumbRY;
+        pState->dwPacketNumber = kb.dwPacketNumber;
+    }
     return ERROR_SUCCESS;
 }
 

@@ -43,5 +43,8 @@ int  xbox_OhciHandleMmio(void *ctx, uint32_t xbox_va);
 
 /* Report counts at exit, so a run says whether the driver ever looked. */
 void xbox_OhciReport(void);
+/* Serialized CPU safe point, outside fault handlers: deliver asserted IRQs
+ * before deferred work and timer expiration. Preserves the caller's state. */
+void xbox_OhciServicePendingInterrupts(void);
 
 #endif /* XBOX_OHCI_H */
