@@ -78,6 +78,12 @@
  * with STATUS_BREAKPOINT the first time a title tried to print. */
 void recomp_debug_service(uint32_t service, uint32_t arg_va);
 
+/* Cooperative single-CPU scheduling at taken backward guest branches.
+ * The runtime preserves every guest register and flag across this hook. */
+void guest_cpu_yield(void);
+void guest_cpu_cli(void);
+void guest_cpu_sti(void);
+
 /* MSVC's __debugbreak() intrinsic -> gcc/clang equivalent.
  * The auto-generated code emits __debugbreak for x86 INT 3 instructions.
  * !defined(__debugbreak) is not enough on its own: MinGW declares __debugbreak

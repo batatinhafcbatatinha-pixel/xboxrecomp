@@ -83,6 +83,16 @@ class UnimplementedMarkerTest(unittest.TestCase):
         self.assertNotIn("TODO", out)
         self.assertEqual(lifter.unimplemented, {})
 
+    def test_port_reads_clear_the_destination(self):
+        lifter, out = _lift("in", "al, dx", [_reg("al"), _reg("dx")])
+        self.assertEqual(out, "SET_LO8(eax, 0); /* in port: no host device */")
+        self.assertEqual(lifter.unimplemented, {})
+
+    def test_port_writes_are_explicit_noops(self):
+        lifter, out = _lift("out", "dx, al", [_reg("dx"), _reg("al")])
+        self.assertEqual(out, "/* out port: host device bridge */")
+        self.assertEqual(lifter.unimplemented, {})
+
 
 if __name__ == "__main__":
     unittest.main()

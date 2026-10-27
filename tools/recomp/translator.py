@@ -15,6 +15,7 @@ import bisect
 import json
 import glob
 import os
+import re
 import struct
 import sys
 
@@ -36,6 +37,22 @@ from .lifter import (Lifter, lift_basic_block, detect_seh_helpers,
 # same state whatever the operands were.
 _SSE_COMPARES = frozenset({"comiss", "ucomiss", "comisd", "ucomisd"})
 _FPU_COMPARES = frozenset({"fcomi", "fcomip", "fcompi", "fucomi", "fucomip", "fucompi"})
+
+
+def _yield_guest_backedges(statements, branch_address, local_labels):
+    """Yield only on taken local backedges, after evaluating their condition.
+
+    Operate on lifted statements so fused CMP/Jcc, LOOP and switch cases all
+    use the same rule. The braces preserve an enclosing single-statement if
+    or case. The runtime hook must preserve all guest register/flag state.
+    """
+    def replace(match):
+        target = int(match.group(1), 16)
+        if target <= branch_address and target in local_labels:
+            return ("{ guest_cpu_yield(); " + match.group(0) + " }")
+        return match.group(0)
+    return [re.sub(r"goto loc_([0-9A-Fa-f]{8});", replace, statement)
+            for statement in statements]
 
 
 def _merge_flag_states(states):
@@ -1384,6 +1401,8 @@ class FunctionTranslator:
                 cc = m[3:]
             elif m.startswith("cmov") and len(m) > 4:
                 cc = m[4:]
+            elif m == "lahf":
+                cc = "b"  # lahf copies CF into AH bit 0, through the jb condition
             if (cc in FunctionTranslator._CARRY_CC
                     and (last_setter in CF_TRACKED
                          or last_setter in ("inc", "dec")
@@ -2356,7 +2375,7 @@ class FunctionTranslator:
         # corrupts multi-word arithmetic (add/adc pairs) and the shr/adc
         # idiom MSVC emits for odd trailing elements.
         self.lifter.needs_cf = has_carry
-        self.lifter.publishes_ebp = self._func_owns_a_frame(instructions)
+        self.lifter.publishes_ebp = "ebp" in used_regs
 
         # SSE and MMX are architectural state, declared globally by the
         # runtime exactly like the GPRs and the x87 stack. Declaring either
@@ -2376,14 +2395,9 @@ class FunctionTranslator:
         if has_fpu:
             lines.extend(FP_STACK_MACROS)
 
-        # For fpo_leaf functions that use ebp: initialize from g_seh_ebp.
-        # In x86, these functions inherit EBP from their caller (typically
-        # via a tail jump that shares the caller's frame). In our C translation,
-        # ebp is a local variable that would start uninitialized, causing
-        # crashes when the function reads MEM32(ebp + offset). The g_seh_ebp
-        # global bridges ebp across function boundaries.
-        if frame_type == "fpo_leaf" and "ebp" in used_regs and not has_prologue:
-            lines.append(f"    ebp = g_seh_ebp; /* fpo_leaf: inherit caller's frame */")
+        # Every EBP-using function already inherits the canonical g_ebp
+        # above. Calls, tails and returns publish that actual register value
+        # to both bridges, including frameless routines using EBP as data.
 
         lines.append(f"")
 
@@ -2526,6 +2540,8 @@ class FunctionTranslator:
                             break
 
             first = len(lines)
+            stmts = _yield_guest_backedges(
+                stmts, bb.last_insn.address, label_addrs | {start})
             for stmt in stmts:
                 lines.append(f"    {stmt}")
             last = bb.instructions[-1] if bb.instructions else None
@@ -2565,7 +2581,7 @@ class FunctionTranslator:
             if fallthrough_target in debug_slide_bypasses.values():
                 lines.append(f"loc_{fallthrough_target:08X}: ;")
             ft_name = self.lifter._call_target_name(fallthrough_target)
-            lines.append(f"    g_seh_ebp = ebp; {ft_name}(); return;"
+            lines.append(f"    g_ebp = ebp; g_seh_ebp = ebp; {ft_name}(); return;"
                          f" /* fallthrough 0x{fallthrough_target:08X} */")
             lines.append(f"")
 
@@ -3162,6 +3178,7 @@ class BatchTranslator:
                 "",
                 "#define RECOMP_GENERATED_CODE",
                 f'#include "{header_name}"',
+                '#include <stdio.h>',
                 "",
             ]
             stub_lines.append(
@@ -3185,7 +3202,9 @@ class BatchTranslator:
                 popped = self.translator._stub_ret_bytes(addr)
                 note = (f"ret {popped}" if popped else "not detected")
                 stub_lines.append(
-                    f"void {unresolved[addr]}(void) {{ g_esp += {4 + popped}; "
+                    f"void {unresolved[addr]}(void) {{ static int reported; "
+                    f'if (!reported) {{ reported = 1; fprintf(stderr, "[UNRESOLVED] direct call 0x{addr:08X} reached; body unavailable\\n"); }} '
+                    f"g_esp += {4 + popped}; "
                     f"/* 0x{addr:08X}: {note} */ }}"
                 )
             stub_lines.append("")

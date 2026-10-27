@@ -1042,11 +1042,11 @@ def _emit_cond_goto(cond_expr, jcc, desc, target, lifter):
         # Conditional tail call: same frame bridge as the unconditional tail
         # jmp in _lift_jmp, applied only on the taken path.
         if target in lifter.manual_functions:
-            return (f"if ({cond_expr}) {{ g_seh_ebp = ebp; "
+            return (f"if ({cond_expr}) {{ g_ebp = ebp; g_seh_ebp = ebp; "
                     f"RECOMP_ITAIL(0x{target:08X}u); return; }}"
                     f" /* {jcc}: {desc}, manual tail */")
         name = lifter._call_target_name(target)
-        return (f"if ({cond_expr}) {{ g_seh_ebp = ebp; {name}(); return; }}"
+        return (f"if ({cond_expr}) {{ g_ebp = ebp; g_seh_ebp = ebp; {name}(); return; }}"
                 f" /* {jcc}: {desc} */")
     return f"if ({cond_expr}) goto loc_{target:08X}; /* {jcc}: {desc} */"
 
@@ -1295,7 +1295,7 @@ class Lifter:
         self.func_start = 0  # Set per-function by translator
         self.func_end = 0
         self.needs_cf = False  # Set per-function by translator (has adc/sbb)
-        self.publishes_ebp = False  # Set per-function: has a real frame
+        self.publishes_ebp = False  # Set per-function: has a local architectural EBP
         self.trace_exit_name = None  # Set per-function when traced
         self.force_return_value = None   # Set per-function by --force-return
         # Every direct call target we emit a name for, as {addr: name}. The
@@ -1380,6 +1380,28 @@ class Lifter:
                           ops[1].mem_base == ops[0].reg and
                           not ops[1].mem_index and ops[1].mem_disp == 0):
             return [f"/* nop */"]
+
+        # CLI/STI affect guest interrupt delivery and scheduling, not host
+        # EFLAGS. Keep arithmetic flag snapshots intact across the hooks.
+        if m in ("cli", "sti"):
+            return [f"guest_cpu_{m}(); /* {m}: guest interrupt flag */"]
+
+        # Port I/O is only used by the Xbox hardware-facing code paths. The
+        # host runtime models those devices through memory-mapped bridges, so
+        # x86 port reads have no backing device here. Return zero for reads
+        # rather than leaving a stale register byte that can keep a poll loop
+        # alive forever; writes are intentionally ignored and preserve flags.
+        if m == "in" and nops >= 1 and ops[0].type == "reg":
+            dst = ops[0].reg
+            if dst in ("al", "ax", "eax"):
+                width = {"al": 8, "ax": 16, "eax": 32}[dst]
+                if width == 8:
+                    return ["SET_LO8(eax, 0); /* in port: no host device */"]
+                if width == 16:
+                    return ["SET_LO16(eax, 0); /* in port: no host device */"]
+                return ["eax = 0; /* in port: no host device */"]
+        if m == "out":
+            return ["/* out port: host device bridge */"]
 
         # ── Data movement ──
         if m == "mov":
@@ -2326,14 +2348,9 @@ class Lifter:
         if insn.call_target:
             name = self._call_target_name(insn.call_target)
             lines = []
-            # Re-publish this function's frame before every call, not just once
-            # at `mov ebp, esp`. g_ebp is "the last frame established anywhere",
-            # so a callee that sets up its own frame overwrites it and leaves it
-            # stale on return. A frameless helper called afterwards then
-            # inherits the wrong frame -- in Halo, sub_001E1BA0 called one
-            # function, returned, then called the frameless sub_001DEC07, which
-            # inherited a long-dead frame of ~0xA6 and wrote [ebp-0xa2] and
-            # [ebp-0xa0] onto Xbox VA 4 and 6: exactly the fs:[4] corruption.
+            # EBP is a C local, but x86 passes its current register value to
+            # every call. Frameless routines may use it as general data too;
+            # publish both bridges regardless of whether this is a frame owner.
             if self.publishes_ebp:
                 lines.append("g_ebp = ebp; /* frame stays current across calls */")
                 lines.append("g_seh_ebp = ebp;")
@@ -2410,11 +2427,15 @@ class Lifter:
             # "if (status < 0)" test against esi failed and XapiInitProcess
             # bailed to the dashboard.
             if insn.call_target in self.SEH_HELPERS:
-                lines.insert(0, "g_seh_ebp = ebp; /* publish frame to SEH helper */")
+                lines.insert(0, "g_ebp = ebp; g_seh_ebp = ebp; /* publish frame to SEH helper */")
                 lines.append("ebp = g_seh_ebp; /* read back frame from SEH helper */")
+            if self.publishes_ebp:
+                lines.append("ebp = g_ebp; /* read back architectural EBP */")
             return lines
         elif len(ops) >= 1:
             target = _fmt_operand_read(ops[0])
+            bridge = ["g_ebp = ebp; g_seh_ebp = ebp;"] if self.publishes_ebp else []
+            readback = ["ebp = g_ebp; /* read back architectural EBP */"] if self.publishes_ebp else []
             # Mark indirect calls for post-processing by _fixup_icall_esp_save
             #
             # The target is read into a local BEFORE the return-address push.
@@ -2436,10 +2457,10 @@ class Lifter:
                     f"if (_icall_target == 0x{t:08X}u) {{ RECOMP_ICALL_GUARD_HIT(); "
                     f"RECOMP_ABI_CALL(0x{t:08X}u, {self._call_target_name(t)}); }}"
                     for t in sorted(set(guards)))
-                return [head + arms + " else { RECOMP_ICALL_GUARD_MISS(); "
+                return bridge + [head + arms + " else { RECOMP_ICALL_GUARD_MISS(); "
                         + fallback + " }"
-                        + f" /* indirect call, guarded {len(set(guards))} */"]
-            return [head + fallback + " /* indirect call */"]
+                        + f" /* indirect call, guarded {len(set(guards))} */"] + readback
+            return bridge + [head + fallback + " /* indirect call */"] + readback
         return ["/* call: no target */"]
 
     def _lift_ret(self, insn, ops):
@@ -2447,9 +2468,9 @@ class Lifter:
         # 'ret N' also pops N extra bytes (stdcall cleanup).
         # If this function IS __SEH_prolog or __SEH_epilog, bridge ebp
         # so the caller can read back the frame pointer.
-        prefix = ""
+        prefix = "g_ebp = ebp; g_seh_ebp = ebp; " if self.publishes_ebp else ""
         if self.func_start in self.SEH_HELPERS:
-            prefix = "g_seh_ebp = ebp; "
+            prefix = "g_ebp = ebp; g_seh_ebp = ebp; "
         # Exit trace, for functions that return with a register the caller
         # relied on holding something else. Entry tracing alone cannot show
         # that: it tells you what went in, never what came back. Emitted at the
@@ -2608,7 +2629,7 @@ class Lifter:
                 # Bridge ebp so the target function can inherit our frame pointer.
                 if insn.jump_target in self.manual_functions:
                     tail = (
-                        f"g_seh_ebp = ebp; "
+                        f"g_ebp = ebp; g_seh_ebp = ebp; "
                         f"RECOMP_ITAIL(0x{insn.jump_target:08X}u); return; "
                         f"/* manual tail jmp 0x{insn.jump_target:08X} */"
                     )
@@ -2620,7 +2641,7 @@ class Lifter:
                         ]
                     return [self._forced_tail(tail)]
                 name = self._call_target_name(insn.jump_target)
-                tail = (f"g_seh_ebp = ebp; {name}(); return; "
+                tail = (f"g_ebp = ebp; g_seh_ebp = ebp; {name}(); return; "
                         f"/* tail jmp 0x{insn.jump_target:08X} */")
                 if self.trace_exit_name:
                     # Tag the exit so a trace says which one was taken. A
@@ -2640,7 +2661,7 @@ class Lifter:
                 lines = [f"{{ uint32_t _jt = {target_expr}; /* switch: {len(switch_targets)} entries, {len(unique_targets)} targets */"]
                 for t in unique_targets:
                     lines.append(f"if (_jt == 0x{t:08X}u) goto loc_{t:08X};")
-                lines.append(f"g_seh_ebp = ebp; RECOMP_ITAIL(_jt); return; }}")
+                lines.append(f"g_ebp = ebp; g_seh_ebp = ebp; RECOMP_ITAIL(_jt); return; }}")
                 return lines
             # `jmp <reg>` where the register was loaded with an address
             # inside this same function: a hand-written continuation chain,
@@ -2665,11 +2686,11 @@ class Lifter:
                              f" {len(inside)} targets */"]
                     for t in inside:
                         lines.append(f"if (_jt == 0x{t:08X}u) goto loc_{t:08X};")
-                    lines.append("g_seh_ebp = ebp; RECOMP_ITAIL(_jt); return; }")
+                    lines.append("g_ebp = ebp; g_seh_ebp = ebp; RECOMP_ITAIL(_jt); return; }")
                     return lines
             target = _fmt_operand_read(ops[0])
             return [self._forced_tail(
-                f"g_seh_ebp = ebp; RECOMP_ITAIL({target}); return;"
+                f"g_ebp = ebp; g_seh_ebp = ebp; RECOMP_ITAIL({target}); return;"
                 f" /* indirect tail jmp */")]
         return ["/* jmp: no target */"]
 
@@ -2684,7 +2705,7 @@ class Lifter:
             if target:
                 if self._is_external_target(target):
                     name = self._call_target_name(target)
-                    return [f"if ({cond}) {{ g_seh_ebp = ebp; {name}(); return; }} /* {jcc} */"]
+                    return [f"if ({cond}) {{ g_ebp = ebp; g_seh_ebp = ebp; {name}(); return; }} /* {jcc} */"]
                 return [f"if ({cond}) goto loc_{target:08X}; /* {jcc} */"]
             return [f"/* {jcc} - no target */"]
 
@@ -2710,7 +2731,7 @@ class Lifter:
         if target:
             if self._is_external_target(target):
                 name = self._call_target_name(target)
-                return [f"if ({cond} /* {jcc}: {desc} */) {{ g_seh_ebp = ebp; {name}(); return; }}"]
+                return [f"if ({cond} /* {jcc}: {desc} */) {{ g_ebp = ebp; g_seh_ebp = ebp; {name}(); return; }}"]
             return [f"if ({cond} /* {jcc}: {desc} */) goto loc_{target:08X};"]
         return [f"/* {jcc}: {desc} - no target */"]
 
