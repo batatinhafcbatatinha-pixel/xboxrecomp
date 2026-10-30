@@ -397,6 +397,15 @@ typedef VOID (__stdcall *PXBOX_SYSTEM_ROUTINE)(PVOID StartContext);
  * the layout and the bridges cannot disagree about where it is. */
 #define XBOX_CONTIG_BASE 0x80000000u
 #define XBOX_CONTIG_SIZE (64u * 1024u * 1024u)
+
+/* Called around host I/O that writes guest memory from kernel mode (ReadFile
+ * into a guest buffer): done = 0 right before, 1 right after. A host module
+ * that write-protects guest pages to watch them (a renderer tracking texture
+ * changes) installs it, because the OS fails a kernel-mode write to a
+ * read-only page with ERROR_NOACCESS instead of raising an exception its
+ * handler could resolve. NULL by default. */
+typedef void (*xbox_guest_write_hook_fn)(void *host, size_t bytes, int done);
+extern xbox_guest_write_hook_fn volatile g_xbox_guest_write_hook;
 #ifndef XBOX_LOWRAM_PHYS_TAG
 /* Low RAM (identity-mapped VAs) and the contiguous window are separate
  * storage here, though on hardware both are the same physical bytes, so a

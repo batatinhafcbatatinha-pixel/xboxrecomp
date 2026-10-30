@@ -19,6 +19,8 @@
 #include <string.h>
 #include <stdio.h>
 
+xbox_guest_write_hook_fn volatile g_xbox_guest_write_hook;
+
 #if !defined(_WIN32)
 #include <fcntl.h>
 #include <unistd.h>
@@ -242,6 +244,8 @@ NTSTATUS __stdcall xbox_NtReadFile(
     if (!IoStatusBlock)
         return STATUS_INVALID_PARAMETER;
 
+    if (g_xbox_guest_write_hook)
+        g_xbox_guest_write_hook(Buffer, Length, 0);
     if (ByteOffset && ByteOffset->QuadPart >= 0) {
         memset(&ov, 0, sizeof(ov));
         ov.Offset = ByteOffset->LowPart;
@@ -250,6 +254,8 @@ NTSTATUS __stdcall xbox_NtReadFile(
     } else {
         result = ReadFile(FileHandle, Buffer, Length, &bytes_read, NULL);
     }
+    if (g_xbox_guest_write_hook)
+        g_xbox_guest_write_hook(Buffer, Length, 1);
 
     if (result || GetLastError() == ERROR_HANDLE_EOF) {
         IoStatusBlock->Information = bytes_read;
@@ -874,7 +880,11 @@ NTSTATUS __stdcall xbox_NtReadFile(
     if (ByteOffset && ByteOffset->QuadPart >= 0)
         lseek(fd, (off_t)ByteOffset->QuadPart, SEEK_SET);
 
+    if (g_xbox_guest_write_hook)
+        g_xbox_guest_write_hook(Buffer, Length, 0);
     ssize_t n = read(fd, Buffer, Length);
+    if (g_xbox_guest_write_hook)
+        g_xbox_guest_write_hook(Buffer, Length, 1);
     if (n < 0) {
         XBOX_TRACE(XBOX_LOG_FILE, "NtReadFile(handle=%p) errno=%d", FileHandle, errno);
         IoStatusBlock->Status = STATUS_UNSUCCESSFUL;
