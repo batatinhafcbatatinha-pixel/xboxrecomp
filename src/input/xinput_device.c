@@ -6,11 +6,15 @@
  * (analog buttons as bytes, separate trigger channels) and the host
  * (digital face buttons, trigger axes).
  *
- *   _WIN32 -> Windows XInput
+ *   _WIN32 -> Windows XInput, and SDL3.dll (when present next to the
+ *             executable) for what XInput cannot see: DualShock 3/4,
+ *             DualSense, USB adapters for PS2 and original Xbox pads, and
+ *             other generic controllers
  *   POSIX  -> SDL2 GameController
  */
 
 #include "xinput_xbox.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -128,7 +132,221 @@ static void keyboard_state(XBOX_INPUT_STATE *pState)
 #pragma comment(lib, "xinput.lib")
 
 static BOOL  g_controller_connected[XBOX_MAX_CONTROLLERS] = { FALSE };
+static BOOL  g_sdl_port_connected[XBOX_MAX_CONTROLLERS] = { FALSE };
 static DWORD g_last_packet[XBOX_MAX_CONTROLLERS] = { 0 };
+
+/* ---- SDL3, for every pad that is not an XInput device ---------------------
+ *
+ * Loaded at run time: without SDL3.dll next to the executable nothing changes.
+ * An XInput pad keeps its slot and the XInput path; SDL pads fill the ports
+ * XInput leaves empty, in the order they were connected. SDL also lists XInput
+ * pads, so as many Xbox-type pads as XInput reports are skipped; an Xbox pad
+ * XInput does not see (some USB adapters for the original pad) still counts.
+ * SDL's own numbers are used directly so that no header is needed to build.
+ */
+#define SDLPAD_MAX 8
+typedef struct SDLPad SDLPad;
+static struct {
+    unsigned char (*Init)(DWORD);
+    unsigned char (*SetHint)(const char *, const char *);
+    int (*AddMappings)(const char *);
+    unsigned int *(*GetGamepads)(int *);
+    SDLPad *(*Open)(unsigned int);
+    void (*Close)(SDLPad *);
+    unsigned char (*Connected)(SDLPad *);
+    int (*GetType)(SDLPad *);
+    unsigned int (*GetId)(SDLPad *);
+    const char *(*GetName)(SDLPad *);
+    void (*Update)(void);
+    unsigned char (*Button)(SDLPad *, int);
+    short (*Axis)(SDLPad *, int);
+    unsigned char (*Rumble)(SDLPad *, unsigned short, unsigned short, unsigned int);
+    void (*Free)(void *);
+} sdl;
+static int sdl_state;                       /* 0 not tried, 1 running, -1 absent */
+static SDLPad *sdl_pads[SDLPAD_MAX];
+static int sdl_xbox_type[SDLPAD_MAX];
+static DWORD sdl_scan_tick, sdl_update_tick;
+static CRITICAL_SECTION sdl_lock;
+
+static void sdl_start(void)
+{
+    wchar_t path[MAX_PATH];
+    char dir[MAX_PATH * 3], file[MAX_PATH * 3 + 32];
+    HMODULE m;
+    DWORD n;
+    wchar_t *slash;
+
+    if (sdl_state)
+        return;
+    sdl_state = -1;
+    n = GetModuleFileNameW(NULL, path, MAX_PATH);
+    if (!n || n >= MAX_PATH || !(slash = wcsrchr(path, L'\\')))
+        return;
+    slash[1] = 0;
+    if (wcslen(path) + 9 >= MAX_PATH)
+        return;
+    wcscat(path, L"SDL3.dll");
+    m = LoadLibraryExW(path, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    if (!m)
+        return;
+#define SDLF(field, name) if (!(*(FARPROC *)&sdl.field = GetProcAddress(m, name))) return
+    SDLF(Init, "SDL_Init");
+    SDLF(SetHint, "SDL_SetHint");
+    SDLF(AddMappings, "SDL_AddGamepadMappingsFromFile");
+    SDLF(GetGamepads, "SDL_GetGamepads");
+    SDLF(Open, "SDL_OpenGamepad");
+    SDLF(Close, "SDL_CloseGamepad");
+    SDLF(Connected, "SDL_GamepadConnected");
+    SDLF(GetType, "SDL_GetGamepadType");
+    SDLF(GetId, "SDL_GetGamepadID");
+    SDLF(GetName, "SDL_GetGamepadName");
+    SDLF(Update, "SDL_UpdateGamepads");
+    SDLF(Button, "SDL_GetGamepadButton");
+    SDLF(Axis, "SDL_GetGamepadAxis");
+    SDLF(Rumble, "SDL_RumbleGamepad");
+    SDLF(Free, "SDL_free");
+#undef SDLF
+    /* There is no SDL window: pads must work anyway, on SDL's own thread. */
+    sdl.SetHint("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1");
+    sdl.SetHint("SDL_JOYSTICK_THREAD", "1");
+    if (!sdl.Init(0x2000u))                 /* SDL_INIT_GAMEPAD */
+        return;
+    n = WideCharToMultiByte(CP_UTF8, 0, path, -1, dir, sizeof dir, NULL, NULL);
+    if (n) {
+        char *end = strrchr(dir, '\\');
+        if (end) {
+            end[1] = 0;
+            snprintf(file, sizeof file, "%sgamecontrollerdb.txt", dir);
+            sdl.AddMappings(file);
+        }
+    }
+    InitializeCriticalSection(&sdl_lock);
+    sdl_state = 1;
+}
+
+/* Open newly connected pads and drop the ones that left; twice a second. */
+static void sdl_scan(void)
+{
+    int n = 0, i, j;
+    unsigned int *ids;
+
+    for (i = 0; i < SDLPAD_MAX; i++)
+        if (sdl_pads[i] && !sdl.Connected(sdl_pads[i])) {
+            sdl.Close(sdl_pads[i]);
+            sdl_pads[i] = NULL;
+        }
+    ids = sdl.GetGamepads(&n);
+    for (i = 0; ids && i < n; i++) {
+        int known = 0, slot = -1;
+        for (j = 0; j < SDLPAD_MAX; j++) {
+            if (sdl_pads[j] && sdl.GetId(sdl_pads[j]) == ids[i])
+                known = 1;
+            if (!sdl_pads[j] && slot < 0)
+                slot = j;
+        }
+        if (!known && slot >= 0 && (sdl_pads[slot] = sdl.Open(ids[i])) != NULL) {
+            int type = sdl.GetType(sdl_pads[slot]);
+            const char *name = sdl.GetName(sdl_pads[slot]);
+            sdl_xbox_type[slot] = type == 2 || type == 3;   /* XBOX360, XBOXONE */
+            fprintf(stderr, "[INPUT] SDL pad %d: %s (type %d)\n", slot, name ? name : "?", type);
+        }
+    }
+    if (ids)
+        sdl.Free(ids);
+}
+
+/* The SDL pad behind host port `port`, whose XInput slot is empty. */
+static SDLPad *sdl_pad_for(DWORD port)
+{
+    int xinput_pads = 0, skip_ports = 0, i;
+    DWORD now = GetTickCount();
+
+    if (sdl_state != 1)
+        return NULL;
+    if (!sdl_scan_tick || now - sdl_scan_tick >= 500) {
+        sdl_scan_tick = now ? now : 1;
+        sdl_scan();
+    }
+    for (i = 0; i < XBOX_MAX_CONTROLLERS; i++) {
+        if (g_controller_connected[i])
+            xinput_pads++;
+        else if ((DWORD)i < port)
+            skip_ports++;
+    }
+    for (i = 0; i < SDLPAD_MAX; i++) {
+        if (!sdl_pads[i])
+            continue;
+        if (sdl_xbox_type[i] && xinput_pads > 0) {
+            xinput_pads--;
+            continue;
+        }
+        if (skip_ports-- == 0)
+            return sdl_pads[i];
+    }
+    return NULL;
+}
+
+static DWORD sdl_get_state(DWORD port, XINPUT_STATE *out)
+{
+    static XINPUT_GAMEPAD last[XBOX_MAX_CONTROLLERS];
+    static DWORD packet[XBOX_MAX_CONTROLLERS];
+    static const struct { int button; WORD bit; } map[] = {
+        { 0, XINPUT_GAMEPAD_A }, { 1, XINPUT_GAMEPAD_B }, { 2, XINPUT_GAMEPAD_X }, { 3, XINPUT_GAMEPAD_Y },
+        { 4, XINPUT_GAMEPAD_BACK }, { 6, XINPUT_GAMEPAD_START }, { 7, XINPUT_GAMEPAD_LEFT_THUMB },
+        { 8, XINPUT_GAMEPAD_RIGHT_THUMB }, { 9, XINPUT_GAMEPAD_LEFT_SHOULDER },
+        { 10, XINPUT_GAMEPAD_RIGHT_SHOULDER }, { 11, XINPUT_GAMEPAD_DPAD_UP },
+        { 12, XINPUT_GAMEPAD_DPAD_DOWN }, { 13, XINPUT_GAMEPAD_DPAD_LEFT }, { 14, XINPUT_GAMEPAD_DPAD_RIGHT },
+    };
+    SDLPad *pad;
+    DWORD now, result = ERROR_DEVICE_NOT_CONNECTED;
+    int i;
+
+    if (sdl_state != 1)
+        return result;
+    EnterCriticalSection(&sdl_lock);
+    now = GetTickCount();
+    pad = sdl_pad_for(port);
+    if (pad) {
+        XINPUT_GAMEPAD g;
+        memset(&g, 0, sizeof g);
+        if (now != sdl_update_tick) {
+            sdl_update_tick = now;
+            sdl.Update();
+        }
+        for (i = 0; i < (int)(sizeof map / sizeof map[0]); i++)
+            if (sdl.Button(pad, map[i].button))
+                g.wButtons |= map[i].bit;
+        g.bLeftTrigger = (BYTE)(sdl.Axis(pad, 4) >> 7);
+        g.bRightTrigger = (BYTE)(sdl.Axis(pad, 5) >> 7);
+        g.sThumbLX = sdl.Axis(pad, 0);
+        g.sThumbLY = (SHORT)(-1 - sdl.Axis(pad, 1));   /* SDL's Y axis points down */
+        g.sThumbRX = sdl.Axis(pad, 2);
+        g.sThumbRY = (SHORT)(-1 - sdl.Axis(pad, 3));
+        if (memcmp(&g, &last[port], sizeof g)) {
+            last[port] = g;
+            packet[port]++;
+        }
+        out->dwPacketNumber = packet[port];
+        out->Gamepad = g;
+        result = ERROR_SUCCESS;
+    }
+    LeaveCriticalSection(&sdl_lock);
+    return result;
+}
+
+/* A host pad as XInput would report it, whichever API it came through. */
+DWORD xbox_InputGetRaw(DWORD dwPort, XINPUT_STATE *out)
+{
+    DWORD result = XInputGetState(dwPort, out);
+    if (dwPort >= XBOX_MAX_CONTROLLERS)
+        return result;
+    g_controller_connected[dwPort] = result == ERROR_SUCCESS;
+    if (result != ERROR_SUCCESS)
+        result = sdl_get_state(dwPort, out);
+    g_sdl_port_connected[dwPort] = !g_controller_connected[dwPort] && result == ERROR_SUCCESS;
+    return result;
+}
 
 void xbox_InputInit(void)
 {
@@ -137,6 +355,7 @@ void xbox_InputInit(void)
         DWORD result = XInputGetState(i, &state);
         g_controller_connected[i] = (result == ERROR_SUCCESS);
     }
+    sdl_start();
 }
 
 DWORD xbox_InputGetState(DWORD dwPort, XBOX_INPUT_STATE *pState)
@@ -147,9 +366,8 @@ DWORD xbox_InputGetState(DWORD dwPort, XBOX_INPUT_STATE *pState)
     if (dwPort >= XBOX_MAX_CONTROLLERS || !pState)
         return ERROR_DEVICE_NOT_CONNECTED;
 
-    result = XInputGetState(dwPort, &xi_state);
+    result = xbox_InputGetRaw(dwPort, &xi_state);
     if (result != ERROR_SUCCESS) {
-        g_controller_connected[dwPort] = FALSE;
         if (dwPort == 0 && keyboard_enabled()) {
             keyboard_state(pState);
             return ERROR_SUCCESS;
@@ -157,7 +375,6 @@ DWORD xbox_InputGetState(DWORD dwPort, XBOX_INPUT_STATE *pState)
         return result;
     }
 
-    g_controller_connected[dwPort] = TRUE;
     g_last_packet[dwPort] = xi_state.dwPacketNumber;
 
     memset(pState, 0, sizeof(XBOX_INPUT_STATE));
@@ -225,13 +442,23 @@ DWORD xbox_InputSetState(DWORD dwPort, const XBOX_VIBRATION *pVibration)
 
     xi_vib.wLeftMotorSpeed = pVibration->wLeftMotorSpeed;
     xi_vib.wRightMotorSpeed = pVibration->wRightMotorSpeed;
+    if (!g_controller_connected[dwPort] && sdl_state == 1) {
+        SDLPad *pad;
+        DWORD result = ERROR_DEVICE_NOT_CONNECTED;
+        EnterCriticalSection(&sdl_lock);
+        pad = sdl_pad_for(dwPort);
+        if (pad && sdl.Rumble(pad, xi_vib.wLeftMotorSpeed, xi_vib.wRightMotorSpeed, 1000))
+            result = ERROR_SUCCESS;
+        LeaveCriticalSection(&sdl_lock);
+        return result;
+    }
     return XInputSetState(dwPort, &xi_vib);
 }
 
 BOOL xbox_InputIsConnected(DWORD dwPort)
 {
     if (dwPort >= XBOX_MAX_CONTROLLERS) return FALSE;
-    return g_controller_connected[dwPort];
+    return g_controller_connected[dwPort] || g_sdl_port_connected[dwPort];
 }
 
 DWORD xbox_InputGetCapabilities(DWORD dwPort, DWORD dwFlags, XBOX_INPUT_CAPABILITIES *pCaps)
@@ -243,7 +470,13 @@ DWORD xbox_InputGetCapabilities(DWORD dwPort, DWORD dwFlags, XBOX_INPUT_CAPABILI
         return ERROR_DEVICE_NOT_CONNECTED;
 
     result = XInputGetCapabilities(dwPort, dwFlags, &xi_caps);
-    if (result != ERROR_SUCCESS) return result;
+    if (result != ERROR_SUCCESS) {
+        if (!g_sdl_port_connected[dwPort]) return result;
+        memset(pCaps, 0, sizeof(XBOX_INPUT_CAPABILITIES));
+        pCaps->Type = XINPUT_DEVTYPE_GAMEPAD;
+        pCaps->SubType = XINPUT_DEVSUBTYPE_GAMEPAD;
+        return ERROR_SUCCESS;
+    }
 
     memset(pCaps, 0, sizeof(XBOX_INPUT_CAPABILITIES));
     pCaps->Type = xi_caps.Type;
