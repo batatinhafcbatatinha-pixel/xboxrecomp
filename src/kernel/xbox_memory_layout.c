@@ -2018,6 +2018,7 @@ static DWORD WINAPI xbox_watchdog_thread(LPVOID unused)
     }
     fflush(stderr);
     /* Preserve the guest sample before expensive framebuffer diagnostics. */
+    extern void nv2a_pb_scan_report(void);
     nv2a_pb_scan_report();
     fflush(stderr);
     _exit(3);
