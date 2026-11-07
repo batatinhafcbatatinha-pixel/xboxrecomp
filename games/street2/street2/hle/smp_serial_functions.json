@@ -1,0 +1,898 @@
+{
+ "002544C5": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002544C5",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0016198D"
+ },
+ "00254537": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00254537",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "001619FF"
+ },
+ "002545E2": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002545E2",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161AAA"
+ },
+ "002545F4": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002545F4",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161AB0"
+ },
+ "002545E8": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002545E8",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161AB6"
+ },
+ "002545EE": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002545EE",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161ABC"
+ },
+ "002545FA": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002545FA",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161AC2"
+ },
+ "00278E90": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00278E90",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161AC8"
+ },
+ "00222ACF": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222ACF",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161ACE"
+ },
+ "00222B17": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222B17",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161B16"
+ },
+ "00222B4D": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222B4D",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161B4C"
+ },
+ "00222BA2": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222BA2",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161BA1"
+ },
+ "00221EBD": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00221EBD",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161BEB"
+ },
+ "00221EF4": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00221EF4",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161C22"
+ },
+ "00221F5F": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00221F5F",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161C8D"
+ },
+ "00222365": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222365",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161E07"
+ },
+ "002223AD": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002223AD",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161E4F"
+ },
+ "002223FC": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002223FC",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161E9E"
+ },
+ "0022248C": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022248C",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161F2E"
+ },
+ "0022249E": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022249E",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00161F40"
+ },
+ "002220D9": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002220D9",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0016231B"
+ },
+ "00222143": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222143",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00162385"
+ },
+ "002222C2": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002222C2",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00162504"
+ },
+ "002222FE": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002222FE",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00162540"
+ },
+ "00222331": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222331",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00162573"
+ },
+ "00222BEC": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222BEC",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "001625A7"
+ },
+ "00222BFD": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222BFD",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "001625B8"
+ },
+ "00222C06": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222C06",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "001625C1"
+ },
+ "00221CD3": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00221CD3",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "001625EF"
+ },
+ "00222D95": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222D95",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00162667"
+ },
+ "00222C34": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222C34",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00162693"
+ },
+ "00222879": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222879",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "001627F4"
+ },
+ "0022FB91": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022FB91",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00227CB4"
+ },
+ "0022FC89": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022FC89",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00227DAC"
+ },
+ "000549F0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_000549F0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00227DE0"
+ },
+ "0015A960": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0015A960",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00227E70"
+ },
+ "00222818": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00222818",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00228270"
+ },
+ "0015B1D0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0015B1D0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00228320"
+ },
+ "0015B700": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0015B700",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002283C0"
+ },
+ "0015B660": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0015B660",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002283E0"
+ },
+ "0015B470": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0015B470",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002285F0"
+ },
+ "0025DBA0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0025DBA0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002372F0"
+ },
+ "002623F0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002623F0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002373B0"
+ },
+ "002626F0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002626F0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00237620"
+ },
+ "0025E950": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0025E950",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00237850"
+ },
+ "0025ED30": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0025ED30",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002378D0"
+ },
+ "002629A0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002629A0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002378F0"
+ },
+ "0021F91C": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021F91C",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00237FE2"
+ },
+ "0021F939": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021F939",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00237FFF"
+ },
+ "0021F956": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021F956",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023801C"
+ },
+ "0021F9A4": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021F9A4",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023806A"
+ },
+ "0021F9EA": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021F9EA",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002380B0"
+ },
+ "0021FA27": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021FA27",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002380ED"
+ },
+ "0021FA4F": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021FA4F",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238115"
+ },
+ "0021FA9D": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021FA9D",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238163"
+ },
+ "0021FAC9": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021FAC9",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023818F"
+ },
+ "0021FC20": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021FC20",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002382E6"
+ },
+ "0021FC48": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021FC48",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023830E"
+ },
+ "0021FC83": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021FC83",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238349"
+ },
+ "0021FDB0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021FDB0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238476"
+ },
+ "0021FDD1": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0021FDD1",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238497"
+ },
+ "00220034": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00220034",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002386FA"
+ },
+ "0022005E": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022005E",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238724"
+ },
+ "0022009C": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022009C",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238762"
+ },
+ "002200D5": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002200D5",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023879B"
+ },
+ "002200FA": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002200FA",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002387C0"
+ },
+ "0022019D": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022019D",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238863"
+ },
+ "0022024B": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022024B",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238911"
+ },
+ "002202EB": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002202EB",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002389B1"
+ },
+ "00220310": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00220310",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002389D6"
+ },
+ "00220335": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00220335",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002389FB"
+ },
+ "00220367": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00220367",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238A2D"
+ },
+ "0022038F": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022038F",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238A55"
+ },
+ "002203B4": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002203B4",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238A7A"
+ },
+ "00220431": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00220431",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238AF7"
+ },
+ "00220462": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00220462",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238B28"
+ },
+ "00220504": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00220504",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238BCA"
+ },
+ "002206D2": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002206D2",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238D98"
+ },
+ "0022071D": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0022071D",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238DE3"
+ },
+ "002207A0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002207A0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238E66"
+ },
+ "00220937": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00220937",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00238FFD"
+ },
+ "00220A2F": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00220A2F",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002390F5"
+ },
+ "00219B11": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_00219B11",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239875"
+ },
+ "0026E215": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E215",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002398A0"
+ },
+ "0026E24D": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E24D",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002398D8"
+ },
+ "0026E261": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E261",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002398EC"
+ },
+ "002701CC": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002701CC",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239900"
+ },
+ "002701E9": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002701E9",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023991D"
+ },
+ "002702B5": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_002702B5",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "002399E9"
+ },
+ "0027005E": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0027005E",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239A97"
+ },
+ "0026F1A6": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F1A6",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239B6A"
+ },
+ "0026F1F2": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F1F2",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239BB6"
+ },
+ "0026F23B": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F23B",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239BFF"
+ },
+ "0026F0B5": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F0B5",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239C07"
+ },
+ "0026F243": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F243",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239C63"
+ },
+ "0026F27D": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F27D",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239D23"
+ },
+ "0026F2CF": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F2CF",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239D75"
+ },
+ "0026F2D9": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F2D9",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239D7F"
+ },
+ "0026F2EC": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F2EC",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239D92"
+ },
+ "0026F340": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F340",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239DE6"
+ },
+ "0026E278": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E278",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239DF0"
+ },
+ "0026ECE0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026ECE0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239E70"
+ },
+ "0026ED50": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026ED50",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "00239EE0"
+ },
+ "0026F4F0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F4F0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A170"
+ },
+ "0027064D": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0027064D",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A1B1"
+ },
+ "0026E7E5": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E7E5",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A62F"
+ },
+ "0026F120": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F120",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A690"
+ },
+ "0026F37D": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F37D",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A716"
+ },
+ "0026F3DA": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F3DA",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A773"
+ },
+ "0026F408": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F408",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A7A1"
+ },
+ "0026F4A8": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F4A8",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A841"
+ },
+ "0026F4B9": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F4B9",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A852"
+ },
+ "0026F4D4": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F4D4",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A86D"
+ },
+ "0026F4DD": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F4DD",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A876"
+ },
+ "0026EBE6": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026EBE6",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A87F"
+ },
+ "0026EC66": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026EC66",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A8FF"
+ },
+ "0026EC8E": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026EC8E",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A927"
+ },
+ "0026ECC0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026ECC0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A959"
+ },
+ "0026ECC6": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026ECC6",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A95F"
+ },
+ "0026E7B6": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E7B6",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A971"
+ },
+ "0026E7C3": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E7C3",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A97E"
+ },
+ "0026E83D": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E83D",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A9A0"
+ },
+ "0026E895": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E895",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023A9F8"
+ },
+ "0026E8A0": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026E8A0",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023AA00"
+ },
+ "0026F914": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026F914",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023AB24"
+ },
+ "0026FABD": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026FABD",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023ACCD"
+ },
+ "0026FAD4": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026FAD4",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023ACE4"
+ },
+ "0026FB60": {
+  "lib": "GAME",
+  "conv": "any",
+  "name": "smp_serial_0026FB60",
+  "native": "project/src/hle_smp_serial.c",
+  "street1": "0023AD00"
+ }
+}

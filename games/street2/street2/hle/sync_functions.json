@@ -1,0 +1,158 @@
+{
+ "00293320": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "CDevice_KickOff",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "sites": 4,
+  "street1": "00251BB0"
+ },
+ "00297A11": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_RegisterBase",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "00259D01"
+ },
+ "00297A3C": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_ReadConfig",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "00259D2C"
+ },
+ "00297A7D": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_InitClocksInstance",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "00259D6D"
+ },
+ "00297B00": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_InitEngines",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "00259DF0"
+ },
+ "00297BF2": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_CreateDmaObject",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "00259EE2"
+ },
+ "00297CC1": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_CreateGrObject",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "00259FB1"
+ },
+ "0029797A": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_CreateChannel",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "00259C6A"
+ },
+ "002979DD": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_HashEntry",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "00259CCD"
+ },
+ "0028FF40": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "CDevice_GpuBusy",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "00253AD0"
+ },
+ "00298066": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_SetTileRegisters",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "0025A356"
+ },
+ "00298254": {
+  "lib": "D3D8",
+  "conv": "thiscall",
+  "name": "Miniport_ClearTileRegisters",
+  "args": [
+   {
+    "loc": "ecx",
+    "name": "this"
+   }
+  ],
+  "native": "project/src/hle_device.c",
+  "street1": "0025A544"
+ }
+}

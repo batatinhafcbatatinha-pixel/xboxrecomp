@@ -1,0 +1,12 @@
+# Rename only original definitions; direct/indirect calls retain public native entries.
+file(GLOB _chunks "${CMAKE_CURRENT_LIST_DIR}/src/recomp/gen/recomp_00*.c")
+foreach(_chunk IN LISTS _chunks)
+    file(READ "${_chunk}" _before)
+    set(_after "${_before}")
+    foreach(_addr 00197B50 00197BD0 00197F50 00198040 00198150 001978A0 00197920 00197D90 00197E70 0014F730 001A1EF0 001A48D0 0014DC10)
+        string(REPLACE "void sub_${_addr}(void)" "void sub_${_addr}_gen(void)" _after "${_after}")
+    endforeach()
+    if(NOT _before STREQUAL _after)
+        file(WRITE "${_chunk}" "${_after}")
+    endif()
+endforeach()

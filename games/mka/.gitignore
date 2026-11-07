@@ -1,0 +1,9 @@
+# Never published: game files, generated code, builds, logs, saves.
+game_files
+saves/
+**/recomp/gen/
+build*/
+recomp-work/
+*.log
+*.exe
+*.pdb

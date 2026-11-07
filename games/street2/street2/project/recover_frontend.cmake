@@ -1,0 +1,15 @@
+# sub_0016F2C0 is translated from your XBE: tools/build_local.py lists its boundaries,
+# because a false gap prologue at 0x16F29E hides it from the disassembler.
+set(STREET2_RECOVERED_SOURCE "")
+set(_stubs "${CMAKE_CURRENT_LIST_DIR}/src/recomp/gen/recomp_stubs_unresolved.c")
+if(EXISTS "${_stubs}")
+    file(STRINGS "${_stubs}" _lines)
+    foreach(_line IN LISTS _lines)
+        string(FIND "${_line}" "void sub_0016F2C0(void)" _entry)
+        if(NOT _entry EQUAL -1)
+            file(READ "${_stubs}" _before)
+            string(REPLACE "${_line}" "" _after "${_before}")
+            file(WRITE "${_stubs}" "${_after}")
+        endif()
+    endforeach()
+endif()

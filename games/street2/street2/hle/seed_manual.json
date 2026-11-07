@@ -1,0 +1,7 @@
+[
+{"start": "0x00029C10", "observed": true, "note": "push 0x29C10 at 0x29C7E (callback registered with 0x230728); sub_00029BAA swallowed it"},
+{"start": "0x000A28A0", "observed": true, "note": "vtable 0x2C0680 slot 2, goal-replay update; [ICALL] Failed 0xA28A0 in runs 20261017-1120xx (replay never ended)"},
+{"start": "0x000F8E10", "observed": true, "note": "mov [ecx+0x238], 0xF8E10 at 0x1032F3; sweep walked the byte table before it as code"},
+{"start": "0x000FA9A0", "observed": true, "note": "mov [ecx+0x238], 0xFA9A0 at 0x102BDD; [ICALL] Failed 0xFA9A0 in run 20261017-121121 (player creator); seed 0xFA980 is a jump table"},
+{"start": "0x00213C19", "observed": true, "note": "mov [edx], 0x213C19 at 0x215030; seed 0x213BF9 is a table"}
+]

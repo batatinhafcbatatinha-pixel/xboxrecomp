@@ -1,0 +1,3601 @@
+#include "hle_game.h"
+#if HLE_GAME == HLE_GAME_STREET1
+/*
+ * In-game options.
+ *
+ * F1 on the keyboard, or Back+Start on a controller, opens a menu drawn over
+ * the game by the native renderer. While it is open the game is held at its
+ * Swap (the game thread waits here with the guest CPU released, the sound is
+ * muted) and every key goes to the menu instead of the pad stand-in.
+ *
+ * Settings live in fifastreet.ini next to the executable ([opcoes]). Display
+ * mode, monitor, refresh rate, vsync, frame limiter, FXAA, anisotropic
+ * filtering and volume apply at once. Internal resolution, aspect ratio, GPU
+ * and the game's language are read once at boot (RECOMP_HLE_SCALE/ASPECT/
+ * ADAPTER, RECOMP_LANGUAGE): the menu marks them and can restart the game.
+ * An environment variable that is already set wins over the ini, so test
+ * runs stay reproducible; RECOMP_OPTIONS=0 ignores the ini altogether.
+ *
+ * Text is drawn with GDI (Segoe UI, so accents and arrows render) into a DIB
+ * that becomes a texture only when the menu changes.
+ */
+#elif HLE_GAME == HLE_GAME_MKA
+/*
+ * In-game options.
+ *
+ * F1 on the keyboard, or Back+Start on a controller, opens a menu drawn over
+ * the game by the native renderer. While it is open the game is held at its
+ * Swap (the game thread waits here with the guest CPU released, the sound is
+ * muted) and every key goes to the menu instead of the pad stand-in.
+ *
+ * Settings live in mka.ini next to the executable ([opcoes]). Display
+ * mode, monitor, refresh rate, vsync, frame limiter, FXAA, anisotropic
+ * filtering and volume apply at once. Internal resolution, aspect ratio, GPU
+ * and the game's language are read once at boot (RECOMP_HLE_SCALE/ASPECT/
+ * ADAPTER, RECOMP_LANGUAGE): the menu marks them and can restart the game.
+ * An environment variable that is already set wins over the ini, so test
+ * runs stay reproducible; RECOMP_OPTIONS=0 ignores the ini altogether.
+ *
+ * Text is drawn with GDI (Segoe UI, so accents and arrows render) into a DIB
+ * that becomes a texture only when the menu changes.
+ */
+#elif HLE_GAME == HLE_GAME_BLACK
+/*
+ * In-game options.
+ *
+ * F1 on the keyboard, or Back+Start on a controller, opens a menu drawn over
+ * the game by the native renderer. While it is open the game is held at its
+ * Swap (the game thread waits here with the guest CPU released, the sound is
+ * muted) and every key goes to the menu instead of the pad stand-in.
+ *
+ * Settings live in black-pc.ini next to the executable ([opcoes]). Display
+ * mode, monitor, refresh rate, vsync, frame limiter, FXAA, anisotropic
+ * filtering and volume apply at once. Internal resolution, aspect ratio and GPU are read once at boot (RECOMP_HLE_SCALE/ASPECT/
+ * ADAPTER, RECOMP_LANGUAGE): the menu marks them and can restart the game.
+ * An environment variable that is already set wins over the ini, so test
+ * runs stay reproducible; RECOMP_OPTIONS=0 ignores the ini altogether.
+ *
+ * Text is drawn with GDI (Segoe UI, so accents and arrows render) into a DIB
+ * that becomes a texture only when the menu changes.
+ */
+#else /* street2 */
+/*
+ * In-game options.
+ *
+ * F1 on the keyboard, or Back+Start on a controller, opens a menu drawn over
+ * the game by the native renderer. While it is open the game is held at its
+ * Swap (the game thread waits here with the guest CPU released, the sound is
+ * muted) and every key goes to the menu instead of the pad stand-in.
+ *
+ * Settings live in fifastreet2.ini next to the executable ([opcoes]). Display
+ * mode, monitor, refresh rate, vsync, frame limiter, FXAA, anisotropic
+ * filtering and volume apply at once. Internal resolution, aspect ratio, GPU
+ * and the game's language are read once at boot (RECOMP_HLE_SCALE/ASPECT/
+ * ADAPTER, RECOMP_LANGUAGE): the menu marks them and can restart the game.
+ * An environment variable that is already set wins over the ini, so test
+ * runs stay reproducible; RECOMP_OPTIONS=0 ignores the ini altogether.
+ *
+ * Text is drawn with GDI (Segoe UI, so accents and arrows render) into a DIB
+ * that becomes a texture only when the menu changes.
+ */
+#endif /* HLE_GAME */
+#include "hle_options.h"
+#include "hle_gpu_api.h"
+#include "hle_d3d11_internal.h"
+#if HLE_GAME == HLE_GAME_BLACK
+#include "../recomp/recomp_types.h"
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+#include <dxgi1_2.h>
+#include <d3dcompiler.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wchar.h>
+#include <math.h>
+#ifdef _WIN32
+#include <xinput.h>
+#if HLE_GAME == HLE_GAME_BLACK
+/* The executable hands in xbox_InputGetRaw (xinput_device.c: XInput or SDL pads). */
+static unsigned long (*s_pad_reader)(unsigned long, void *);
+void hle_options_set_pad_reader(unsigned long (*reader)(unsigned long, void *)) { s_pad_reader = reader; }
+static DWORD pad_get_state(DWORD port, XINPUT_STATE *st)
+{
+    return s_pad_reader ? (DWORD)s_pad_reader(port, st) : XInputGetState(port, st);
+}
+#else /* street1 street2 mka */
+DWORD xbox_InputGetRaw(DWORD port, XINPUT_STATE *out);   /* xinput_device.c: XInput or SDL pads */
+#define pad_get_state xbox_InputGetRaw
+#endif /* HLE_GAME */
+
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "user32.lib")
+#else
+/* Linux/macOS: GDI over a DIB (hle_gdi_posix.c), SDL2 for monitors, display
+ * modes, fullscreen and controllers. */
+#include "hle_gdi_posix.h"
+#include <SDL2/SDL.h>
+#define CCHDEVICENAME 32
+#define ERROR_SUCCESS 0
+#define VK_UP 0x26
+#define VK_DOWN 0x28
+#define VK_LEFT 0x25
+#define VK_RIGHT 0x27
+#define VK_RETURN 0x0D
+#define VK_ESCAPE 0x1B
+#define VK_SPACE 0x20
+#define VK_BACK 0x08
+#define VK_F1 0x70
+#define WM_KEYDOWN 0x0100
+#define WM_SYSKEYDOWN 0x0104
+#define WM_SYSKEYUP 0x0105
+#define XINPUT_GAMEPAD_DPAD_UP 0x0001
+#define XINPUT_GAMEPAD_DPAD_DOWN 0x0002
+#define XINPUT_GAMEPAD_DPAD_LEFT 0x0004
+#define XINPUT_GAMEPAD_DPAD_RIGHT 0x0008
+#define XINPUT_GAMEPAD_START 0x0010
+#define XINPUT_GAMEPAD_BACK 0x0020
+#define XINPUT_GAMEPAD_A 0x1000
+#define XINPUT_GAMEPAD_B 0x2000
+typedef struct { WORD wButtons; BYTE bLeftTrigger, bRightTrigger; SHORT sThumbLX, sThumbLY, sThumbRX, sThumbRY; } XINPUT_GAMEPAD;
+typedef struct { DWORD dwPacketNumber; XINPUT_GAMEPAD Gamepad; } XINPUT_STATE;
+
+#define pad_get_state XInputGetState
+/* The menu's view of controller i, as XInput would give it. */
+static DWORD XInputGetState(DWORD i, XINPUT_STATE *st)
+{
+    static SDL_GameController *pads[4];
+    SDL_GameController *c;
+    int k, n = 0;
+    if (i >= 4)
+        return 1;
+    if (!pads[i] || !SDL_GameControllerGetAttached(pads[i])) {
+        pads[i] = NULL;
+        for (k = 0; k < SDL_NumJoysticks(); k++)
+            if (SDL_IsGameController(k) && n++ == (int)i) {
+                pads[i] = SDL_GameControllerOpen(k);
+                break;
+            }
+        if (!pads[i])
+            return 1;
+    }
+    c = pads[i];
+    SDL_GameControllerUpdate();
+    memset(st, 0, sizeof *st);
+    if (SDL_GameControllerGetButton(c, SDL_CONTROLLER_BUTTON_DPAD_UP)) st->Gamepad.wButtons |= XINPUT_GAMEPAD_DPAD_UP;
+    if (SDL_GameControllerGetButton(c, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) st->Gamepad.wButtons |= XINPUT_GAMEPAD_DPAD_DOWN;
+    if (SDL_GameControllerGetButton(c, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) st->Gamepad.wButtons |= XINPUT_GAMEPAD_DPAD_LEFT;
+    if (SDL_GameControllerGetButton(c, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) st->Gamepad.wButtons |= XINPUT_GAMEPAD_DPAD_RIGHT;
+    if (SDL_GameControllerGetButton(c, SDL_CONTROLLER_BUTTON_START)) st->Gamepad.wButtons |= XINPUT_GAMEPAD_START;
+    if (SDL_GameControllerGetButton(c, SDL_CONTROLLER_BUTTON_BACK)) st->Gamepad.wButtons |= XINPUT_GAMEPAD_BACK;
+    if (SDL_GameControllerGetButton(c, SDL_CONTROLLER_BUTTON_A)) st->Gamepad.wButtons |= XINPUT_GAMEPAD_A;
+    if (SDL_GameControllerGetButton(c, SDL_CONTROLLER_BUTTON_B)) st->Gamepad.wButtons |= XINPUT_GAMEPAD_B;
+    st->Gamepad.sThumbLX = SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_LEFTX);
+    st->Gamepad.sThumbLY = (SHORT)(-1 - SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_LEFTY));
+    return ERROR_SUCCESS;
+}
+#endif
+
+extern void xbox_FramebufferKeyEvent(int vk, int down);
+#if HLE_GAME == HLE_GAME_BLACK
+void black_options_volume(float volume);
+void black_options_timing(void);
+#else /* street1 street2 mka */
+extern void xa2_set_volume(float volume);
+#endif /* HLE_GAME */
+int guest_cpu_suspend(void);
+void guest_cpu_resume(int token);
+void hle_native_represent(void);
+
+#if HLE_GAME == HLE_GAME_BLACK
+HleOptions g_opt = { 1, 0, 0, 1, 0, 0, 0, 0, 16, 0, -1, 1, 100, 1 };
+#else /* street1 street2 mka */
+HleOptions g_opt = { 0, 0, 0, 0, 60, 1, 0, 0, 0, 0, -1, 1, 100, 1 };
+#endif /* HLE_GAME */
+static const wchar_t *ui_text(const wchar_t *pt, const wchar_t *en)
+{
+    return g_opt.ui_language ? en : pt;
+}
+
+static HleOptions s_boot;               /* what this process was started with */
+static wchar_t s_ini[MAX_PATH];
+static int s_use_ini = 1;
+
+/* "21:9" is what ultrawide monitors really are: 3440x1440, 43:18. */
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+static const wchar_t *const k_aspect_name[] = { L"4:3 (original)", L"16:9", L"16:10", L"21:9 (ultrawide)", L"32:9" };
+static const char *const k_aspect_env[] = { "", "16:9", "16:10", "43:18", "32:9" };
+static const float k_aspect_value[] = { 4.0f / 3.0f, 16.0f / 9.0f, 1.6f, 43.0f / 18.0f, 32.0f / 9.0f };
+#define N_ASPECT 5
+#else /* street2 mka */
+static const wchar_t *const k_aspect_name[] = { L"4:3 (original)", L"16:9", L"16:10", L"21:9 (ultrawide)", L"32:9",
+                                                L"21:9 hor+" };
+static const char *const k_aspect_env[] = { "", "16:9", "16:10", "43:18", "32:9", "43:18" };
+static const float k_aspect_value[] = { 4.0f / 3.0f, 16.0f / 9.0f, 1.6f, 43.0f / 18.0f, 32.0f / 9.0f, 43.0f / 18.0f };
+/* The game's widescreen TV setting: its 16:9 camera, shown with bars on wider
+ * shapes. "21:9 hor+" leaves it off, so the 4:3 camera is widened to the whole
+ * 21:9 picture (HUD centred, scenery to the edges). */
+static const int k_aspect_widescreen[] = { 0, 1, 1, 1, 1, 0 };
+#define N_ASPECT 6
+#endif /* HLE_GAME */
+/* Internal resolution presets: lines drawn (the game is 480) and the aspect
+ * the preset implies (-1: the monitor's). Picking one also sets the aspect;
+ * the aspect item can still change it afterwards. */
+static const struct { int h, aspect; const wchar_t *name; } k_res[] = {
+    { 0, -1, L"Resolução do monitor" },
+    { 480, 0, L"Original" },
+    { 720, 1, L"720p HD" },
+    { 1080, 1, L"1080p Full HD" },
+    { 1080, 3, L"1080p ultrawide" },
+    { 1440, 1, L"1440p (2K)" },
+    { 1440, 3, L"1440p ultrawide" },
+    { 2160, 1, L"2160p (4K)" },
+    { 4320, 1, L"4320p (8K)" },
+};
+#define N_RES ((int)(sizeof k_res / sizeof k_res[0]))
+static const int k_fps[] = { 60, 30, 0 };
+static const int k_aniso[] = { 0, 2, 4, 8, 16 };
+static const int k_msaa[] = { 0, -1, 2, 4, 8 };
+
+/* ------------------------------------------------------------- ini file */
+
+static void vibration_publish(void)
+{
+#ifdef _WIN32
+    SetEnvironmentVariableA("XBOX_VIBRATION_OFF", g_opt.vibration ? "0" : "1");
+#else
+    setenv("XBOX_VIBRATION_OFF", g_opt.vibration ? "0" : "1", 1);
+#endif
+}
+
+static int ini_get(const wchar_t *key, int def)
+{
+    wchar_t b[32];
+    if (!s_use_ini)
+        return def;
+    GetPrivateProfileStringW(L"opcoes", key, L"", b, 32, s_ini);
+    if (!b[0])
+        return def;
+    if (!_wcsicmp(b, L"auto"))
+        return -1;
+    return _wtoi(b);
+}
+
+#if HLE_GAME == HLE_GAME_BLACK
+#ifdef _WIN32
+/* The ini's narrow path, for its [controles] section (black_controls.c). */
+static const char *mouse_ini(void)
+{
+    static char a[MAX_PATH * 3];
+    WideCharToMultiByte(CP_ACP, 0, s_ini, -1, a, sizeof a, NULL, NULL);
+    return a;
+}
+#endif
+
+/* black_controls.c lives in the game module: it reads these two process variables once a second,
+ * so the sliders act while the game is held in this menu's next frames. */
+static void mouse_publish(void)
+{
+    char v[32];
+    snprintf(v, sizeof v, "%.2f", g_opt.mouse_sens / 100.0);
+#ifdef _WIN32
+    SetEnvironmentVariableA("BLACK_MOUSE_SENS_LIVE", v);
+    SetEnvironmentVariableA("BLACK_MOUSE_INVERT_LIVE", g_opt.mouse_invert ? "1" : "0");
+    if (s_use_ini) {
+        WritePrivateProfileStringA("controles", "sensibilidade_mouse", v, mouse_ini());
+        WritePrivateProfileStringA("controles", "inverter_mouse", g_opt.mouse_invert ? "1" : "0", mouse_ini());
+    }
+#else
+    _putenv_s("BLACK_MOUSE_SENS_LIVE", v);
+    _putenv_s("BLACK_MOUSE_INVERT_LIVE", g_opt.mouse_invert ? "1" : "0");
+#endif
+}
+
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+static void ini_put(const wchar_t *key, int v)
+{
+    wchar_t b[32];
+    if (v < 0 && !wcscmp(key, L"gpu"))
+        wcscpy(b, L"auto");
+    else
+        swprintf(b, 32, L"%d", v);
+    WritePrivateProfileStringW(L"opcoes", key, b, s_ini);
+}
+
+static void save_ini(void)
+{
+    if (!s_use_ini)
+        return;
+    ini_put(L"modo_tela", g_opt.display);
+    ini_put(L"monitor", g_opt.monitor);
+    ini_put(L"taxa_hz", g_opt.refresh);
+    ini_put(L"vsync", g_opt.vsync);
+    ini_put(L"limite_fps", g_opt.fps);
+    ini_put(L"resolucao", g_opt.scale);
+    ini_put(L"proporcao", g_opt.aspect);
+    ini_put(L"fxaa", g_opt.aa);
+    ini_put(L"msaa", g_opt.msaa);
+    ini_put(L"anisotropico", g_opt.aniso);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+    ini_put(L"motion_blur", g_opt.motion_blur);
+#endif /* HLE_GAME */
+    ini_put(L"api_grafica", g_opt.api);
+    ini_put(L"gpu", g_opt.adapter);
+    ini_put(L"idioma", g_opt.language);
+    ini_put(L"volume", g_opt.volume);
+    ini_put(L"vibracao", g_opt.vibration);
+#if HLE_GAME == HLE_GAME_BLACK
+    ini_put(L"mostrar_fps", g_opt.show_fps);
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    ini_put(L"idioma_menu", g_opt.ui_language);
+#if HLE_GAME == HLE_GAME_BLACK
+    mouse_publish();
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+}
+
+static int clampi(int v, int lo, int hi)
+{
+    return v < lo ? lo : v > hi ? hi : v;
+}
+
+/* Boot-time settings travel to the rest of the runtime as environment
+ * variables, read where they always were. */
+#if HLE_GAME == HLE_GAME_STREET1
+/* Game languages, by Xbox EEPROM language ID. A release ships the resource
+ * pair data/FE<code>.loc + data/MC<code>.loc for each language it has (USA:
+ * English/Spanish, Europe: English/French/German); only those are offered. */
+static const struct { int id; const char *code; const wchar_t *name; } k_languages[] = {
+    { 1, "ENG", L"English" }, { 3, "GER", L"Deutsch" }, { 4, "FR", L"Français" }, { 5, "SP", L"Español" },
+};
+#define N_LANGUAGES ((int)(sizeof k_languages / sizeof k_languages[0]))
+
+static int language_installed(int id)
+{
+    int i;
+    for (i = 0; i < N_LANGUAGES; i++) {
+        char path[64];
+        FILE *f;
+        if (k_languages[i].id != id)
+            continue;
+        snprintf(path, sizeof path, "game_files/data/FE%s.loc", k_languages[i].code);
+        if (!(f = fopen(path, "rb")))
+            return 0;
+        fclose(f);
+        snprintf(path, sizeof path, "game_files/data/MC%s.loc", k_languages[i].code);
+        if (!(f = fopen(path, "rb")))
+            return 0;
+        fclose(f);
+        return 1;
+    }
+    return 0;
+}
+
+static int installed_languages(int *list)
+{
+    int i, n = 0;
+    for (i = 0; i < N_LANGUAGES; i++)
+        if (language_installed(k_languages[i].id))
+            list[n++] = k_languages[i].id;
+    if (!n)
+        list[n++] = 1;
+    return n;
+}
+
+static const wchar_t *language_name(int id)
+{
+    int i;
+    for (i = 0; i < N_LANGUAGES; i++)
+        if (k_languages[i].id == id)
+            return k_languages[i].name;
+    return L"English";
+}
+
+#elif HLE_GAME == HLE_GAME_BLACK
+/* Black USA: no FIFA language resource probing. */
+#define N_LANGUAGES 1
+static int installed_languages(int *list) { list[0] = 1; return 1; }
+static const wchar_t *language_name(int id) { (void)id; return L"English (USA)"; }
+
+#else /* street2 mka */
+#endif /* HLE_GAME */
+static void env_sync(const char *name, int *v, int lo, int hi, int unset_value)
+{
+    const char *e = getenv(name);
+    char b[16];
+    if (e && *e) {
+        int x = atoi(e);
+        if (x >= lo && x <= hi)
+            *v = x;
+        return;
+    }
+    if (*v == unset_value)
+        return;
+    snprintf(b, sizeof b, "%d", *v);
+    _putenv_s(name, b);
+}
+
+static void scale_publish(void)
+{
+    char b[16];
+    if (k_res[g_opt.scale].h)
+        snprintf(b, sizeof b, "%.4f", k_res[g_opt.scale].h / 480.0);
+    else
+        strcpy(b, "native");
+    _putenv_s("RECOMP_HLE_SCALE", b);
+    snprintf(b, sizeof b, "%d", g_opt.scale);
+    _putenv_s("RECOMP_HLE_RES", b);
+}
+
+static void env_publish(void)
+{
+    char b[16];
+    scale_publish();
+#if HLE_GAME == HLE_GAME_STREET1
+    _putenv_s("RECOMP_HLE_ASPECT", k_aspect_env[g_opt.aspect]);
+    _putenv_s("RECOMP_XBOX_WIDESCREEN", g_opt.aspect ? "1" : "0");
+#elif HLE_GAME == HLE_GAME_BLACK
+    _putenv_s("RECOMP_HLE_ASPECT", g_opt.scale == 0 ? "" : k_aspect_env[g_opt.aspect]);
+    _putenv_s("RECOMP_XBOX_WIDESCREEN", g_opt.scale != 0 && g_opt.aspect ? "1" : "0");
+#else /* street2 mka */
+    _putenv_s("RECOMP_HLE_ASPECT", k_aspect_env[g_opt.aspect]);
+    _putenv_s("RECOMP_XBOX_WIDESCREEN", k_aspect_widescreen[g_opt.aspect] ? "1" : "0");
+#endif /* HLE_GAME */
+    snprintf(b, sizeof b, "%d", g_opt.language);
+    _putenv_s("RECOMP_LANGUAGE", b);
+    if (g_opt.adapter >= 0)
+        snprintf(b, sizeof b, "%d", g_opt.adapter);
+    else
+        b[0] = 0;
+    _putenv_s("RECOMP_HLE_ADAPTER", b);
+    _putenv_s("RECOMP_HLE_API", g_opt.api ? "vulkan" : "d3d11");
+    snprintf(b, sizeof b, "%d", g_opt.fps);
+    _putenv_s("RECOMP_HLE_FPS", b);
+    snprintf(b, sizeof b, "%d", g_opt.msaa);
+    _putenv_s("RECOMP_HLE_MSAA", b);
+}
+
+#if HLE_GAME == HLE_GAME_BLACK
+static void native_monitor_defaults(void);
+
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+void hle_options_init(void)
+{
+    const char *e = getenv("RECOMP_OPTIONS");
+    wchar_t *slash;
+    s_use_ini = !(e && *e == '0');
+    GetModuleFileNameW(NULL, s_ini, MAX_PATH);
+    slash = wcsrchr(s_ini, L'\\');
+#if HLE_GAME == HLE_GAME_STREET1
+    wcscpy(slash ? slash + 1 : s_ini, L"fifastreet.ini");
+#elif HLE_GAME == HLE_GAME_MKA
+    wcscpy(slash ? slash + 1 : s_ini, L"mka.ini");
+#elif HLE_GAME == HLE_GAME_BLACK
+    wcscpy(slash ? slash + 1 : s_ini, L"black-pc.ini");
+#else /* street2 */
+    wcscpy(slash ? slash + 1 : s_ini, L"fifastreet2.ini");
+#endif /* HLE_GAME */
+
+#if HLE_GAME == HLE_GAME_BLACK
+    g_opt.mouse_sens = 100;
+#ifdef _WIN32
+    {
+        char v[32];
+        GetPrivateProfileStringA("controles", "sensibilidade_mouse", "1.0", v, sizeof v, mouse_ini());
+        g_opt.mouse_sens = clampi((int)(atof(v) * 100.0 + 0.5), 10, 500);
+        g_opt.mouse_invert = GetPrivateProfileIntA("controles", "inverter_mouse", 0, mouse_ini()) != 0;
+    }
+#endif
+    g_opt.display = clampi(ini_get(L"modo_tela", 1), 0, 2);
+#else /* street1 street2 mka */
+    g_opt.display = clampi(ini_get(L"modo_tela", 0), 0, 2);
+#endif /* HLE_GAME */
+    g_opt.monitor = clampi(ini_get(L"monitor", 0), 0, 15);
+    g_opt.refresh = clampi(ini_get(L"taxa_hz", 0), 0, 1000);
+    g_opt.vsync = ini_get(L"vsync", 1) != 0;          /* on unless chosen off: no tearing */
+#if HLE_GAME == HLE_GAME_BLACK
+    g_opt.fps = clampi(ini_get(L"limite_fps", 0), 0, 1000);
+#else /* street1 street2 mka */
+    g_opt.fps = clampi(ini_get(L"limite_fps", 60), 0, 1000);
+#endif /* HLE_GAME */
+    g_opt.scale = clampi(ini_get(L"resolucao", 0), 0, N_RES - 1);
+    g_opt.aspect = clampi(ini_get(L"proporcao", 0), 0, N_ASPECT - 1);
+    g_opt.aa = clampi(ini_get(L"fxaa", 0), 0, 1);
+    g_opt.msaa = ini_get(L"msaa", 0);
+#if HLE_GAME == HLE_GAME_STREET1
+    g_opt.aniso = clampi(ini_get(L"anisotropico", 0), 0, 16);
+#elif HLE_GAME == HLE_GAME_BLACK
+    g_opt.aniso = clampi(ini_get(L"anisotropico", 16), 0, 16);
+#else /* street2 mka */
+    g_opt.aniso = clampi(ini_get(L"anisotropico", 0), 0, 16);
+    g_opt.motion_blur = ini_get(L"motion_blur", 1) != 0;
+#endif /* HLE_GAME */
+    g_opt.api = clampi(ini_get(L"api_grafica", 0), 0, 1);
+    g_opt.adapter = clampi(ini_get(L"gpu", -1), -1, 15);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    {
+        int langs[N_LANGUAGES], nl = installed_languages(langs), want = ini_get(L"idioma", 1), i;
+        g_opt.language = langs[0];
+        for (i = 0; i < nl; i++)
+            if (langs[i] == want)
+                g_opt.language = want;
+    }
+#else /* street2 mka */
+    g_opt.language = ini_get(L"idioma", 1) == 5 ? 5 : 1;
+#endif /* HLE_GAME */
+    g_opt.volume = clampi(ini_get(L"volume", 100), 0, 100);
+    g_opt.vibration = clampi(ini_get(L"vibracao", 1), 0, 1);
+#if HLE_GAME == HLE_GAME_BLACK
+    g_opt.show_fps = clampi(ini_get(L"mostrar_fps", 0), 0, 1);
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    vibration_publish();
+    g_opt.ui_language = clampi(ini_get(L"idioma_menu", 1), 0, 1);
+
+    /* RECOMP_HLE_RES: the preset a restart from the menu asked for. A bare
+     * RECOMP_HLE_SCALE (test runs) is left for the renderer as it is. */
+    e = getenv("RECOMP_HLE_RES");
+    if (e && *e)
+        g_opt.scale = clampi(atoi(e), 0, N_RES - 1);
+    e = getenv("RECOMP_HLE_SCALE");
+    if (!(e && *e))
+        scale_publish();
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    env_sync("RECOMP_LANGUAGE", &g_opt.language, 1, 9, -99);
+#else /* street2 mka */
+    env_sync("RECOMP_LANGUAGE", &g_opt.language, 1, 5, -99);
+#endif /* HLE_GAME */
+    env_sync("RECOMP_HLE_ADAPTER", &g_opt.adapter, -1, 15, -1);
+    env_sync("RECOMP_HLE_FPS", &g_opt.fps, 0, 1000, -99);
+    env_sync("RECOMP_HLE_MSAA", &g_opt.msaa, -1, 8, -99);
+    if (g_opt.msaa != -1 && g_opt.msaa != 2 && g_opt.msaa != 4 && g_opt.msaa != 8)
+        g_opt.msaa = 0;
+    e = getenv("RECOMP_HLE_VSYNC");                  /* test runs; not published */
+    if (e && *e)
+        g_opt.vsync = atoi(e) != 0;
+    e = getenv("RECOMP_HLE_MONITOR");                /* test runs: which monitor (0 = primary) */
+    if (e && *e)
+        g_opt.monitor = clampi(atoi(e), 0, 15);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+    e = getenv("RECOMP_HLE_ANISO");                  /* test runs; not published */
+    if (e && *e)
+        g_opt.aniso = clampi(atoi(e), 0, 16);
+#endif /* HLE_GAME */
+    /* RECOMP_HLE_API (vulkan|d3d11) wins over the ini, like the others. */
+    e = getenv("RECOMP_HLE_API");
+    if (e && *e)
+        g_opt.api = *e == 'v' || *e == 'V' || *e == '1';
+    else if (g_opt.api)
+        _putenv_s("RECOMP_HLE_API", "vulkan");
+    if (!hle_gpu_d3d11_available())
+        g_opt.api = 1;                          /* Linux/macOS: Vulkan (DXVK native) only */
+    e = getenv("RECOMP_HLE_ASPECT");
+    if (e && *e) {
+        float a = 0.0f, b = 0.0f;
+        int i, best = 0;
+        if (sscanf(e, "%f:%f", &a, &b) == 2 && b > 0.0f)
+            a /= b;
+        for (i = 1; i < N_ASPECT; i++)
+            if (a > 1.0f && fabsf(k_aspect_value[i] - a) < fabsf(k_aspect_value[best] - a))
+                best = i;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+        e = getenv("RECOMP_XBOX_WIDESCREEN");
+        if (best == 3 && e && *e == '0')
+            best = 5;                           /* 21:9 with the game's widescreen off: hor+ */
+#endif /* HLE_GAME */
+        g_opt.aspect = best;
+#if HLE_GAME == HLE_GAME_BLACK
+    } else if (g_opt.aspect && g_opt.scale != 0) {
+        _putenv_s("RECOMP_HLE_ASPECT", g_opt.scale == 0 ? "" : k_aspect_env[g_opt.aspect]);
+#else /* street1 street2 mka */
+    } else if (g_opt.aspect) {
+        _putenv_s("RECOMP_HLE_ASPECT", k_aspect_env[g_opt.aspect]);
+#endif /* HLE_GAME */
+    }
+#if HLE_GAME == HLE_GAME_STREET1
+    /* A wide picture: tell the game the Xbox is set to a widescreen TV, so it
+     * frames and culls its own camera for 16:9 (kernel_xbox.c). An explicit
+     * RECOMP_XBOX_WIDESCREEN (0 = the old stretched view) wins. */
+    e = getenv("RECOMP_XBOX_WIDESCREEN");
+    if (!(e && *e))
+        _putenv_s("RECOMP_XBOX_WIDESCREEN", g_opt.aspect ? "1" : "0");
+#elif HLE_GAME == HLE_GAME_BLACK
+    native_monitor_defaults();
+#else /* street2 mka */
+    /* A wide picture: tell the game the Xbox is set to a widescreen TV, so it
+     * frames and culls its own camera for 16:9 (kernel_xbox.c). An explicit
+     * RECOMP_XBOX_WIDESCREEN (0 = the old stretched view) wins. */
+    e = getenv("RECOMP_XBOX_WIDESCREEN");
+    if (!(e && *e))
+        _putenv_s("RECOMP_XBOX_WIDESCREEN", k_aspect_widescreen[g_opt.aspect] ? "1" : "0");
+#endif /* HLE_GAME */
+    s_boot = g_opt;
+#if HLE_GAME == HLE_GAME_BLACK
+    save_ini();
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    fprintf(stderr, "[OPTIONS] %ls%s: display %d, monitor %d, %d Hz, vsync %d, fps %d, scale %d, aspect %d, "
+            "fxaa %d, aniso %d, api %d, gpu %d, language %d, volume %d\n",
+            s_ini, s_use_ini ? "" : " (ignored, RECOMP_OPTIONS=0)", g_opt.display, g_opt.monitor,
+            g_opt.refresh, g_opt.vsync, g_opt.fps, g_opt.scale, g_opt.aspect, g_opt.aa, g_opt.aniso,
+            g_opt.api, g_opt.adapter, g_opt.language, g_opt.volume);
+}
+
+/* ---------------------------------------------------- monitors and GPUs */
+
+typedef struct Monitor {
+    RECT rc, work;
+    wchar_t device[CCHDEVICENAME];
+    wchar_t name[96];
+    int sdl_index;                      /* Linux/macOS: SDL display */
+} Monitor;
+
+static Monitor s_mon[8];
+static int s_nmon;
+static int s_rates[24], s_nrates;
+static wchar_t s_gpu_name[8][128];
+static int s_gpu_index[8], s_ngpu = -1;
+
+#ifdef _WIN32
+static BOOL CALLBACK monitor_cb(HMONITOR h, HDC dc, LPRECT r, LPARAM lp)
+{
+    MONITORINFOEXW mi;
+    DISPLAY_DEVICEW dd;
+    Monitor m;
+    (void)dc; (void)r; (void)lp;
+    if (s_nmon >= 8)
+        return FALSE;
+    memset(&mi, 0, sizeof mi);
+    mi.cbSize = sizeof mi;
+    if (!GetMonitorInfoW(h, (MONITORINFO *)&mi))
+        return TRUE;
+    memset(&m, 0, sizeof m);
+    m.rc = mi.rcMonitor;
+    m.work = mi.rcWork;
+    wcsncpy(m.device, mi.szDevice, CCHDEVICENAME - 1);
+    memset(&dd, 0, sizeof dd);
+    dd.cb = sizeof dd;
+    swprintf(m.name, 96, L"%ldx%ld", (long)(m.rc.right - m.rc.left), (long)(m.rc.bottom - m.rc.top));
+    if (EnumDisplayDevicesW(mi.szDevice, 0, &dd, 0) && dd.DeviceString[0]) {
+        wchar_t t[96];
+        swprintf(t, 96, L"%ls (%ls)", m.name, dd.DeviceString);
+        wcscpy(m.name, t);
+    }
+    if (mi.dwFlags & MONITORINFOF_PRIMARY) {      /* the primary monitor is number 1 */
+        memmove(&s_mon[1], &s_mon[0], sizeof(Monitor) * (size_t)s_nmon);
+        s_mon[0] = m;
+    } else {
+        s_mon[s_nmon] = m;
+    }
+    s_nmon++;
+    return TRUE;
+}
+
+static void monitors_refresh(void)
+{
+    s_nmon = 0;
+    EnumDisplayMonitors(NULL, NULL, monitor_cb, 0);
+    if (!s_nmon) {
+        memset(&s_mon[0], 0, sizeof s_mon[0]);
+        SetRect(&s_mon[0].rc, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+        s_mon[0].work = s_mon[0].rc;
+        wcscpy(s_mon[0].name, ui_text(L"Principal", L"Primary"));
+        s_nmon = 1;
+    }
+}
+
+#else
+static void monitors_refresh(void)
+{
+    int i, n = SDL_GetNumVideoDisplays();
+    s_nmon = 0;
+    for (i = 0; i < n && s_nmon < 8; i++) {
+        SDL_Rect r, u;
+        const char *nm = SDL_GetDisplayName(i);
+        Monitor *m = &s_mon[s_nmon];
+        if (SDL_GetDisplayBounds(i, &r) != 0)
+            continue;
+        if (SDL_GetDisplayUsableBounds(i, &u) != 0)
+            u = r;
+        memset(m, 0, sizeof *m);
+        SetRect(&m->rc, r.x, r.y, r.x + r.w, r.y + r.h);
+        SetRect(&m->work, u.x, u.y, u.x + u.w, u.y + u.h);
+        m->sdl_index = i;
+        swprintf(m->name, 96, L"%dx%d (%s)", r.w, r.h, nm ? nm : "?");
+        s_nmon++;
+    }
+    if (!s_nmon) {
+        memset(&s_mon[0], 0, sizeof s_mon[0]);
+        SetRect(&s_mon[0].rc, 0, 0, 1280, 720);
+        s_mon[0].work = s_mon[0].rc;
+        wcscpy(s_mon[0].name, ui_text(L"Principal", L"Primary"));
+        s_nmon = 1;
+    }
+}
+#endif
+
+static Monitor *monitor_current(void)
+{
+    if (!s_nmon)
+        monitors_refresh();
+    return &s_mon[g_opt.monitor < s_nmon ? g_opt.monitor : 0];
+}
+
+#if HLE_GAME == HLE_GAME_BLACK
+/* The native preset publishes both dimensions, not just a 480-line scale.
+ * Explicit environment overrides still win for reproducible diagnostics. */
+static void native_monitor_defaults(void)
+{
+    const char *aspect = getenv("RECOMP_HLE_ASPECT");
+    const char *scale = getenv("RECOMP_HLE_SCALE");
+    if (g_opt.scale == 0 && scale && !strcmp(scale, "native") && !(aspect && *aspect)) {
+        Monitor *m = monitor_current();
+        int w = m->rc.right - m->rc.left, h = m->rc.bottom - m->rc.top;
+        char value[48];
+        snprintf(value, sizeof value, "%d:%d", w, h);
+        _putenv_s("RECOMP_HLE_ASPECT", value);
+        /* Keep the exact monitor aspect; the renderer otherwise clamps
+         * anamorphic output to 16:9. No FSR or post-process upscaler. */
+        if (!getenv("RECOMP_XBOX_WIDESCREEN") || !*getenv("RECOMP_XBOX_WIDESCREEN"))
+            _putenv_s("RECOMP_XBOX_WIDESCREEN", "0");
+        for (int i = 0; i < N_ASPECT; ++i)
+            if (fabsf(k_aspect_value[i] - (float)w / h) <
+                fabsf(k_aspect_value[g_opt.aspect] - (float)w / h)) g_opt.aspect = i;
+    }
+}
+
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+float hle_options_native_scale(void)
+{
+    Monitor *m = monitor_current();
+    float k = (float)(m->rc.bottom - m->rc.top) / 480.0f;
+#if HLE_GAME == HLE_GAME_BLACK
+    return k < 1.0f ? 1.0f : k > 9.0f ? 9.0f : k;
+#else /* street1 street2 mka */
+    return k < 1.0f ? 1.0f : k > 6.0f ? 6.0f : k;
+#endif /* HLE_GAME */
+}
+
+#ifdef _WIN32
+/* Refresh rates the monitor offers at its current resolution. */
+static void rates_refresh(void)
+{
+    Monitor *m = monitor_current();
+    DEVMODEW cur, dm;
+    DWORD i;
+    s_nrates = 0;
+    memset(&cur, 0, sizeof cur);
+    cur.dmSize = sizeof cur;
+    if (!EnumDisplaySettingsW(m->device[0] ? m->device : NULL, ENUM_CURRENT_SETTINGS, &cur))
+        return;
+    for (i = 0; s_nrates < 24; i++) {
+        int j, f;
+        memset(&dm, 0, sizeof dm);
+        dm.dmSize = sizeof dm;
+        if (!EnumDisplaySettingsW(m->device[0] ? m->device : NULL, i, &dm))
+            break;
+        if (dm.dmPelsWidth != cur.dmPelsWidth || dm.dmPelsHeight != cur.dmPelsHeight || dm.dmDisplayFrequency <= 1)
+            continue;
+        f = (int)dm.dmDisplayFrequency;
+        for (j = 0; j < s_nrates && s_rates[j] != f; j++)
+            ;
+        if (j < s_nrates)
+            continue;
+        for (j = s_nrates; j > 0 && s_rates[j - 1] > f; j--)
+            s_rates[j] = s_rates[j - 1];
+        s_rates[j] = f;
+        s_nrates++;
+    }
+}
+
+static int monitor_current_hz(void)
+{
+    Monitor *m = monitor_current();
+    DEVMODEW cur;
+    memset(&cur, 0, sizeof cur);
+    cur.dmSize = sizeof cur;
+    if (EnumDisplaySettingsW(m->device[0] ? m->device : NULL, ENUM_CURRENT_SETTINGS, &cur))
+        return (int)cur.dmDisplayFrequency;
+    return 0;
+}
+
+#else
+static void rates_refresh(void)
+{
+    Monitor *m = monitor_current();
+    SDL_DisplayMode cur, dm;
+    int i, j, n;
+    s_nrates = 0;
+    if (SDL_GetDesktopDisplayMode(m->sdl_index, &cur) != 0)
+        return;
+    n = SDL_GetNumDisplayModes(m->sdl_index);
+    for (i = 0; i < n && s_nrates < 24; i++) {
+        if (SDL_GetDisplayMode(m->sdl_index, i, &dm) != 0 || dm.w != cur.w || dm.h != cur.h || dm.refresh_rate <= 1)
+            continue;
+        for (j = 0; j < s_nrates && s_rates[j] != dm.refresh_rate; j++)
+            ;
+        if (j < s_nrates)
+            continue;
+        for (j = s_nrates; j > 0 && s_rates[j - 1] > dm.refresh_rate; j--)
+            s_rates[j] = s_rates[j - 1];
+        s_rates[j] = dm.refresh_rate;
+        s_nrates++;
+    }
+}
+
+static int monitor_current_hz(void)
+{
+    SDL_DisplayMode cur;
+    if (SDL_GetDesktopDisplayMode(monitor_current()->sdl_index, &cur) == 0)
+        return cur.refresh_rate;
+    return 0;
+}
+#endif
+
+static void gpus_refresh(void)
+{
+    IDXGIFactory1 *f = NULL;
+    IDXGIAdapter1 *a = NULL;
+    UINT i;
+    s_ngpu = 0;
+    if (FAILED(CreateDXGIFactory1(&IID_IDXGIFactory1, (void **)&f)))
+        return;
+    for (i = 0; s_ngpu < 8 && IDXGIFactory1_EnumAdapters1(f, i, &a) != DXGI_ERROR_NOT_FOUND; i++) {
+        DXGI_ADAPTER_DESC1 d;
+        if (SUCCEEDED(IDXGIAdapter1_GetDesc1(a, &d)) && !(d.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) {
+            wcsncpy(s_gpu_name[s_ngpu], d.Description, 127);
+            s_gpu_name[s_ngpu][127] = 0;
+            s_gpu_index[s_ngpu++] = (int)i;
+        }
+        IDXGIAdapter1_Release(a);
+    }
+    IDXGIFactory1_Release(f);
+}
+
+/* -------------------------------------------------------- display mode */
+
+static volatile LONG s_display_dirty = 1;
+static volatile LONG s_toggle_fullscreen;
+static unsigned s_fs_check;
+
+#ifdef _WIN32
+void hle_options_initial_window(DWORD *style, RECT *r)
+{
+    Monitor *m = monitor_current();
+    if (g_opt.display) {
+        *style = WS_POPUP | WS_VISIBLE;
+        *r = m->rc;
+    } else {
+        RECT a = *r;
+        int w, h;
+        AdjustWindowRect(&a, WS_OVERLAPPEDWINDOW, FALSE);
+        w = a.right - a.left;
+        h = a.bottom - a.top;
+        *style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+        r->left = m->work.left + ((m->work.right - m->work.left) - w) / 2;
+        r->top = m->work.top + ((m->work.bottom - m->work.top) - h) / 2;
+        if (r->top < m->work.top)
+            r->top = m->work.top;
+        r->right = r->left + w;
+        r->bottom = r->top + h;
+    }
+}
+
+static int s_exclusive_failed;          /* 1 refused, 2 waiting for the focus */
+static int s_dirty;                     /* the menu needs drawing again */
+
+static void exclusive_enter(Monitor *m)
+{
+    DXGI_MODE_DESC md;
+    HRESULT hr;
+    memset(&md, 0, sizeof md);
+    md.Width = (UINT)(m->rc.right - m->rc.left);
+    md.Height = (UINT)(m->rc.bottom - m->rc.top);
+    md.RefreshRate.Numerator = (UINT)(g_opt.refresh ? g_opt.refresh : monitor_current_hz());
+    md.RefreshRate.Denominator = md.RefreshRate.Numerator ? 1 : 0;
+    md.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    IDXGISwapChain1_ResizeTarget(g_hle.swap, &md);
+    hr = IDXGISwapChain1_SetFullscreenState(g_hle.swap, TRUE, NULL);
+    if (FAILED(hr)) {
+        /* NOT_CURRENTLY_AVAILABLE: the window is not in front; the check in
+         * hle_options_apply_display retries once it is. */
+        s_exclusive_failed = hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE ? 2 : 1;
+        s_dirty = 1;
+        fprintf(stderr, "[OPTIONS] exclusive fullscreen failed 0x%08lX: staying borderless\n", (unsigned long)hr);
+        return;
+    }
+    s_exclusive_failed = 0;
+    s_dirty = 1;
+    IDXGISwapChain1_ResizeTarget(g_hle.swap, &md);
+    g_hle.swap_w = 0;                         /* buffers resized at the next present */
+    fprintf(stderr, "[OPTIONS] exclusive fullscreen %ux%u @ %u Hz\n", md.Width, md.Height, md.RefreshRate.Numerator);
+}
+
+void hle_options_apply_display(uint32_t pw, uint32_t ph)
+{
+    Monitor *m;
+    BOOL fs = FALSE;
+    if (InterlockedExchange(&s_toggle_fullscreen, 0)) {
+        g_opt.display = g_opt.display ? 0 : 1;
+        s_display_dirty = 1;
+        save_ini();
+    }
+    if (g_opt.display == 2 && g_hle.swap && ++s_fs_check % 60 == 0 &&
+        SUCCEEDED(IDXGISwapChain1_GetFullscreenState(g_hle.swap, &fs, NULL)) && !fs &&
+        GetForegroundWindow() == g_hle.hwnd)
+        s_display_dirty = 1;                      /* came back from Alt+Tab */
+    if (!InterlockedExchange(&s_display_dirty, 0) || !g_hle.hwnd)
+        return;
+    monitors_refresh();
+    m = monitor_current();
+#if HLE_GAME == HLE_GAME_BLACK
+    fprintf(stderr, "[OPTIONS] display=%d monitor=%ldx%ld@%dHz picture=%ux%u vsync=%d fps=%d\n",
+            g_opt.display, m->rc.right-m->rc.left, m->rc.bottom-m->rc.top,
+            monitor_current_hz(), pw, ph, g_opt.vsync, g_opt.fps);
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    fs = FALSE;
+    if (g_hle.swap && SUCCEEDED(IDXGISwapChain1_GetFullscreenState(g_hle.swap, &fs, NULL)) && fs && g_opt.display != 2) {
+        IDXGISwapChain1_SetFullscreenState(g_hle.swap, FALSE, NULL);
+        g_hle.swap_w = 0;
+    }
+    if (g_opt.display == 0) {
+        int ww = (int)(pw ? pw : 640), wh = (int)(ph ? ph : 480);
+        int aw = (m->work.right - m->work.left) * 9 / 10, ah = (m->work.bottom - m->work.top) * 9 / 10;
+        RECT r;
+        if (ww > aw) { wh = wh * aw / ww; ww = aw; }
+        if (wh > ah) { ww = ww * ah / wh; wh = ah; }
+        SetRect(&r, 0, 0, ww, wh);
+        AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
+        SetWindowLongPtrW(g_hle.hwnd, GWL_STYLE, WS_OVERLAPPEDWINDOW | WS_VISIBLE);
+        SetWindowPos(g_hle.hwnd, HWND_NOTOPMOST,
+                     m->work.left + ((m->work.right - m->work.left) - (r.right - r.left)) / 2,
+                     m->work.top + ((m->work.bottom - m->work.top) - (r.bottom - r.top)) / 2,
+                     r.right - r.left, r.bottom - r.top, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+    } else {
+        SetWindowLongPtrW(g_hle.hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+        SetWindowPos(g_hle.hwnd, HWND_TOP, m->rc.left, m->rc.top, m->rc.right - m->rc.left,
+                     m->rc.bottom - m->rc.top, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+        if (g_opt.display == 2) {
+            if (g_hle.swap)
+                exclusive_enter(m);
+            else
+                s_display_dirty = 1;              /* once the swap chain exists */
+        }
+    }
+}
+
+#else
+void hle_options_initial_window_sdl(int *x, int *y, int *w, int *h, unsigned *flags)
+{
+    Monitor *m = monitor_current();
+    if (g_opt.display) {
+        *x = m->rc.left;
+        *y = m->rc.top;
+        *w = m->rc.right - m->rc.left;
+        *h = m->rc.bottom - m->rc.top;
+        *flags |= g_opt.display == 2 ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_FULLSCREEN_DESKTOP;
+    } else {
+        *x = m->work.left + ((m->work.right - m->work.left) - *w) / 2;
+        *y = m->work.top + ((m->work.bottom - m->work.top) - *h) / 2;
+        if (*y < m->work.top)
+            *y = m->work.top;
+    }
+}
+
+static int s_exclusive_failed;          /* 1 refused, 2 waiting for the focus */
+static int s_dirty;                     /* the menu needs drawing again */
+static Uint32 s_display_event = (Uint32)-1;
+static uint32_t s_pic_w, s_pic_h;
+
+/* Runs on the window thread (SDL wants its window driven from there): the
+ * present path only posts the request. */
+static void display_apply_now(void)
+{
+    SDL_Window *win = (SDL_Window *)g_hle.hwnd;
+    Monitor *m;
+    monitors_refresh();
+    m = monitor_current();
+    if (g_opt.display == 0) {
+        int ww = (int)(s_pic_w ? s_pic_w : 640), wh = (int)(s_pic_h ? s_pic_h : 480);
+        int aw = (m->work.right - m->work.left) * 9 / 10, ah = (m->work.bottom - m->work.top) * 9 / 10;
+        if (ww > aw) { wh = wh * aw / ww; ww = aw; }
+        if (wh > ah) { ww = ww * ah / wh; wh = ah; }
+        SDL_SetWindowFullscreen(win, 0);
+        SDL_SetWindowBordered(win, SDL_TRUE);
+        SDL_SetWindowSize(win, ww, wh);
+        SDL_SetWindowPosition(win, m->work.left + ((m->work.right - m->work.left) - ww) / 2,
+                              m->work.top + ((m->work.bottom - m->work.top) - wh) / 2);
+    } else {
+        SDL_SetWindowFullscreen(win, 0);
+        SDL_SetWindowPosition(win, m->rc.left, m->rc.top);
+        if (g_opt.display == 2) {
+            SDL_DisplayMode want, got;
+            memset(&want, 0, sizeof want);
+            want.w = m->rc.right - m->rc.left;
+            want.h = m->rc.bottom - m->rc.top;
+            want.refresh_rate = g_opt.refresh ? g_opt.refresh : monitor_current_hz();
+            if (SDL_GetClosestDisplayMode(m->sdl_index, &want, &got))
+                SDL_SetWindowDisplayMode(win, &got);
+            s_exclusive_failed = SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN) != 0;
+            if (s_exclusive_failed) {
+                fprintf(stderr, "[OPTIONS] exclusive fullscreen failed (%s): staying borderless\n", SDL_GetError());
+                SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN_DESKTOP);
+            } else {
+                fprintf(stderr, "[OPTIONS] exclusive fullscreen %dx%d @ %d Hz\n", got.w, got.h, got.refresh_rate);
+            }
+        } else {
+            SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        }
+    }
+    s_dirty = 1;
+}
+
+void hle_window_sdl_events(SDL_Event *e)
+{
+    if (s_display_event != (Uint32)-1 && e->type == s_display_event)
+        display_apply_now();
+}
+
+void hle_options_apply_display(uint32_t pw, uint32_t ph)
+{
+    SDL_Event e;
+    if (InterlockedExchange(&s_toggle_fullscreen, 0)) {
+        g_opt.display = g_opt.display ? 0 : 1;
+        s_display_dirty = 1;
+        save_ini();
+    }
+    if (!InterlockedExchange(&s_display_dirty, 0) || !g_hle.hwnd)
+        return;
+    if (s_display_event == (Uint32)-1)
+        s_display_event = SDL_RegisterEvents(1);
+    s_pic_w = pw;
+    s_pic_h = ph;
+    memset(&e, 0, sizeof e);
+    e.type = s_display_event;
+    SDL_PushEvent(&e);
+}
+
+#endif
+
+/* ------------------------------------------------------------ the menu */
+
+enum {
+#if HLE_GAME == HLE_GAME_STREET1
+    IT_DISPLAY, IT_MONITOR, IT_REFRESH, IT_VSYNC, IT_FPS, IT_SCALE, IT_ASPECT, IT_AA, IT_MSAA, IT_ANISO,
+    IT_API, IT_GPU, IT_UI_LANG, IT_LANG, IT_VOLUME, IT_VIBRATION, IT_RESUME, IT_RESTART, IT_QUIT, IT_COUNT
+#elif HLE_GAME == HLE_GAME_BLACK
+    IT_DISPLAY, IT_MONITOR, IT_REFRESH, IT_VSYNC, IT_FPS, IT_SHOW_FPS, IT_SCALE, IT_ASPECT, IT_AA, IT_MSAA, IT_ANISO,
+    IT_API, IT_GPU, IT_UI_LANG, IT_LANG, IT_VOLUME, IT_VIBRATION, IT_MOUSE_SENS, IT_MOUSE_INV, IT_RESUME, IT_RESTART, IT_QUIT, IT_COUNT
+#else /* street2 mka */
+    IT_DISPLAY, IT_MONITOR, IT_REFRESH, IT_VSYNC, IT_FPS, IT_SCALE, IT_ASPECT, IT_AA, IT_MSAA, IT_ANISO, IT_MBLUR,
+    IT_API, IT_GPU, IT_UI_LANG, IT_LANG, IT_VOLUME, IT_VIBRATION, IT_RESUME, IT_RESTART, IT_QUIT, IT_COUNT
+#endif /* HLE_GAME */
+};
+
+static volatile LONG s_request;             /* asked to open (window thread or pad) */
+static volatile LONG s_open;
+static int s_sel, s_dirty = 1;
+static volatile LONG s_kq_w;
+static LONG s_kq_r;
+static volatile WPARAM s_kq[64];
+
+static int restart_pending(void)
+{
+    return g_opt.scale != s_boot.scale || g_opt.aspect != s_boot.aspect ||
+           g_opt.adapter != s_boot.adapter || g_opt.language != s_boot.language ||
+           g_opt.api != s_boot.api || g_opt.msaa != s_boot.msaa;
+}
+
+static int item_restart(int it)
+{
+    switch (it) {
+    case IT_SCALE: return g_opt.scale != s_boot.scale;
+    case IT_ASPECT: return g_opt.aspect != s_boot.aspect;
+    case IT_API: return g_opt.api != s_boot.api;
+    case IT_GPU: return g_opt.adapter != s_boot.adapter;
+    case IT_LANG: return g_opt.language != s_boot.language;
+    case IT_MSAA: return g_opt.msaa != s_boot.msaa;
+    }
+    return 0;
+}
+
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+/* The front-end screen on show (game_hooks.c reports each screen load). The
+ * main menu, the options list and the pause menu carry the settings button. */
+#else /* street2 mka */
+/* The front-end screen on show (game_hooks.c reports each screen load). The
+ * main menu (f_MAIN_i_0100), Options (0350) and its settings list (0300)
+ * carry the settings button. */
+#endif /* HLE_GAME */
+static char s_screen[48];
+
+static int screen_has_button(void)
+{
+#if HLE_GAME == HLE_GAME_STREET1
+    return !strcmp(s_screen, "f_MAIN_i_0100") || !strcmp(s_screen, "f_MAIN_i_0300") || !strcmp(s_screen, "f_OPTIONS_i_0100") ||
+           !strcmp(s_screen, "f_INGAME_i_0200");
+#elif HLE_GAME == HLE_GAME_BLACK
+    /* Black's active front-end/pause page (0x2F36EC, null while a level plays): title, main menu, options and
+     * pause show the "(BACK) PC settings" button; Back (or Backspace, or a click on it) opens this menu. */
+    return g_hle.primary && MEM32(0x2F36ECu) != 0;
+#else /* street2 mka */
+    return !strcmp(s_screen, "f_MAIN_i_0100") || !strcmp(s_screen, "f_MAIN_i_0350") ||
+           !strcmp(s_screen, "f_MAIN_i_0300");
+#endif /* HLE_GAME */
+}
+
+int hle_options_key(UINT msg, WPARAM vk, LPARAM lp)
+{
+    int down = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN;
+    if (vk == VK_RETURN && (msg == WM_SYSKEYDOWN || msg == WM_SYSKEYUP) && (lp & (1 << 29))) {
+        if (msg == WM_SYSKEYDOWN && !(lp & (1 << 30)))
+            InterlockedExchange(&s_toggle_fullscreen, 1);   /* Alt+Enter */
+        return 1;
+    }
+    if (!s_open && !s_request) {
+        if (down && (vk == VK_F1 || (vk == VK_BACK && screen_has_button()))) {
+            InterlockedExchange(&s_request, 1);
+            xbox_FramebufferKeyEvent(-1, 0);
+            return 1;
+        }
+        return 0;
+    }
+    if (down) {
+        LONG w = s_kq_w;
+        if (w - s_kq_r < 64) {
+            s_kq[w & 63] = vk;
+            InterlockedExchange(&s_kq_w, w + 1);
+        }
+    }
+    return 1;
+}
+
+/* The mouse works the menu: pointing selects a line, left click changes it
+ * forward (or runs it; on the "<" end, backward), right click backward, the
+ * wheel steps through the lines. Events ride the key queue as these codes. */
+enum { MK_MOVE = 0x10001, MK_LEFT, MK_RIGHT, MK_WHEEL_UP, MK_WHEEL_DOWN };
+static int s_pw, s_ph;                  /* the menu surface (defined with the drawing code) */
+static volatile LONG s_mouse_x = -1, s_mouse_y = -1;
+static RECT s_row[IT_COUNT], s_row_left[IT_COUNT], s_hint_a, s_hint_b;
+
+int hle_options_mouse(UINT msg, int x, int y, int wheel, int cw, int ch)
+{
+    WPARAM code;
+    LONG w;
+    if (!s_open)
+        return 0;
+    if (cw > 0 && ch > 0 && s_pw > 0 && s_ph > 0) {     /* client -> menu pixels */
+        x = (int)((long long)x * s_pw / cw);
+        y = (int)((long long)y * s_ph / ch);
+    }
+    InterlockedExchange(&s_mouse_x, x);
+    InterlockedExchange(&s_mouse_y, y);
+    switch (msg) {
+    case 0x0200: code = MK_MOVE; break;                       /* WM_MOUSEMOVE */
+    case 0x0201: code = MK_LEFT; break;                       /* WM_LBUTTONDOWN */
+    case 0x0204: code = MK_RIGHT; break;                      /* WM_RBUTTONDOWN */
+    case 0x020A: code = wheel > 0 ? MK_WHEEL_UP : MK_WHEEL_DOWN; break;   /* WM_MOUSEWHEEL */
+    default: return 1;
+    }
+    w = s_kq_w;
+    if (code == MK_MOVE && w != s_kq_r && s_kq[(w - 1) & 63] == MK_MOVE)
+        return 1;                                             /* coalesce moves */
+    if (w - s_kq_r < 64) {
+        s_kq[w & 63] = code;
+        InterlockedExchange(&s_kq_w, w + 1);
+    }
+    return 1;
+}
+
+int hle_options_hide_cursor(void)
+{
+    return g_opt.display != 0 && !s_open;
+}
+
+static int cycle(const int *list, int n, int cur, int d)
+{
+    int i;
+    for (i = 0; i < n && list[i] != cur; i++)
+        ;
+    if (i == n)
+        return list[0];
+    return list[(i + n + d) % n];
+}
+
+static void change(int it, int d)
+{
+    int list[32], n = 0, i;
+    switch (it) {
+    case IT_DISPLAY:
+        g_opt.display = (g_opt.display + 3 + d) % 3;
+        s_display_dirty = 1;
+        break;
+    case IT_MONITOR:
+        monitors_refresh();
+        g_opt.monitor = (g_opt.monitor + s_nmon + d) % s_nmon;
+        rates_refresh();
+        s_display_dirty = 1;
+        break;
+    case IT_REFRESH:
+        list[n++] = 0;
+        for (i = 0; i < s_nrates && n < 32; i++)
+            list[n++] = s_rates[i];
+        g_opt.refresh = cycle(list, n, g_opt.refresh, d);
+        if (g_opt.display == 2)
+            s_display_dirty = 1;
+        break;
+    case IT_VSYNC: g_opt.vsync = !g_opt.vsync; break;
+    case IT_FPS: g_opt.fps = cycle(k_fps, 3, g_opt.fps, d); break;
+#if HLE_GAME == HLE_GAME_BLACK
+    case IT_SHOW_FPS: g_opt.show_fps = !g_opt.show_fps; break;
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    case IT_SCALE:
+        g_opt.scale = (g_opt.scale + N_RES + d) % N_RES;
+        if (k_res[g_opt.scale].aspect >= 0) {
+            g_opt.aspect = k_res[g_opt.scale].aspect;
+        } else {                                /* the monitor's own shape */
+            Monitor *m = monitor_current();
+            float a = (float)(m->rc.right - m->rc.left) / (float)(m->rc.bottom - m->rc.top);
+            g_opt.aspect = 0;
+            for (i = 1; i < N_ASPECT; i++)
+                if (fabsf(k_aspect_value[i] - a) < fabsf(k_aspect_value[g_opt.aspect] - a))
+                    g_opt.aspect = i;
+        }
+        break;
+    case IT_ASPECT: g_opt.aspect = (g_opt.aspect + N_ASPECT + d) % N_ASPECT; break;
+    case IT_AA: g_opt.aa = !g_opt.aa; break;
+#if HLE_GAME == HLE_GAME_BLACK
+    case IT_MSAA:
+        g_opt.msaa = cycle(k_msaa, 5, g_opt.msaa, d);
+        if (g_opt.msaa < 0 && g_hle.game_msaa <= 1)   /* the game asks for none: no "game default" */
+            g_opt.msaa = cycle(k_msaa, 5, g_opt.msaa, d);
+        break;
+#else /* street1 street2 mka */
+    case IT_MSAA: g_opt.msaa = cycle(k_msaa, 5, g_opt.msaa, d); break;
+#endif /* HLE_GAME */
+    case IT_ANISO: g_opt.aniso = cycle(k_aniso, 5, g_opt.aniso, d); break;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+    case IT_MBLUR: g_opt.motion_blur = !g_opt.motion_blur; break;
+#endif /* HLE_GAME */
+    case IT_API:
+        if (!hle_gpu_vulkan_available() || !hle_gpu_d3d11_available())
+            break;
+        g_opt.api = !g_opt.api;
+        /* GPU numbers are the chosen API's (DXGI vs Vulkan devices). */
+        g_opt.adapter = g_opt.api == s_boot.api ? s_boot.adapter : -1;
+        break;
+    case IT_GPU:
+        if (g_opt.api != s_boot.api)
+            break;                              /* the list is the running API's */
+        list[n++] = -1;
+        for (i = 0; i < s_ngpu; i++)
+            list[n++] = s_gpu_index[i];
+        g_opt.adapter = cycle(list, n, g_opt.adapter, d);
+        break;
+    case IT_UI_LANG: g_opt.ui_language = !g_opt.ui_language; break;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    case IT_LANG:
+        n = installed_languages(list);
+        g_opt.language = cycle(list, n, g_opt.language, d);
+        break;
+#else /* street2 mka */
+    case IT_LANG: g_opt.language = g_opt.language == 1 ? 5 : 1; break;
+#endif /* HLE_GAME */
+    case IT_VOLUME: g_opt.volume = clampi(g_opt.volume + 10 * d, 0, 100); break;
+    case IT_VIBRATION: g_opt.vibration = !g_opt.vibration; vibration_publish(); break;
+#if HLE_GAME == HLE_GAME_BLACK
+    case IT_MOUSE_SENS: g_opt.mouse_sens = clampi(g_opt.mouse_sens + 10 * d, 10, 500); mouse_publish(); break;
+    case IT_MOUSE_INV: g_opt.mouse_invert = !g_opt.mouse_invert; mouse_publish(); break;
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    }
+    s_dirty = 1;
+}
+
+static void leave_fullscreen(void)
+{
+#ifdef _WIN32
+    BOOL fs = FALSE;
+    EnterCriticalSection(&g_hle.lock);
+    if (g_hle.swap && SUCCEEDED(IDXGISwapChain1_GetFullscreenState(g_hle.swap, &fs, NULL)) && fs)
+        IDXGISwapChain1_SetFullscreenState(g_hle.swap, FALSE, NULL);
+    LeaveCriticalSection(&g_hle.lock);
+#else
+    if (g_hle.hwnd)
+        SDL_SetWindowFullscreen((SDL_Window *)g_hle.hwnd, 0);
+#endif
+}
+
+static void restart_game(void)
+{
+#ifdef _WIN32
+    wchar_t exe[MAX_PATH];
+    STARTUPINFOW si;
+    PROCESS_INFORMATION pi;
+#endif
+    save_ini();
+    env_publish();                              /* the new choices win over the old boot values */
+    _putenv_s("RECOMP_OPTIONS_AUTOTEST", "");     /* a scripted test restarts once, not for ever */
+    leave_fullscreen();
+#ifndef _WIN32
+    {
+        /* Same process image, same environment (the new choices are in it). */
+        char exe[MAX_PATH];
+        ssize_t n = readlink("/proc/self/exe", exe, sizeof exe - 1);
+        fprintf(stderr, "[OPTIONS] restarting to apply scale %d, aspect %d, api %d, gpu %d, language %d\n",
+                g_opt.scale, g_opt.aspect, g_opt.api, g_opt.adapter, g_opt.language);
+        fflush(stdout);
+        fflush(stderr);
+        if (n > 0) {
+            exe[n] = 0;
+            execl(exe, exe, (char *)NULL);
+        }
+        fprintf(stderr, "[OPTIONS] restart failed\n");
+        return;
+    }
+#else
+    GetModuleFileNameW(NULL, exe, MAX_PATH);
+    memset(&si, 0, sizeof si);
+    si.cb = sizeof si;
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    fprintf(stderr, "[OPTIONS] restarting to apply scale %d, aspect %d, api %d, gpu %d, language %d\n",
+            g_opt.scale, g_opt.aspect, g_opt.api, g_opt.adapter, g_opt.language);
+    fflush(stdout);
+    fflush(stderr);
+    if (CreateProcessW(exe, GetCommandLineW(), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        ExitProcess(0);
+    }
+    fprintf(stderr, "[OPTIONS] restart failed (%lu)\n", (unsigned long)GetLastError());
+#endif
+}
+
+static int row_at(int x, int y)
+{
+    POINT p;
+    int it;
+    p.x = x;
+    p.y = y;
+    for (it = 0; it < IT_COUNT; it++)
+        if (PtInRect(&s_row[it], p))
+            return it;
+    return -1;
+}
+
+static void menu_key(int vk);
+
+static void menu_mouse(int code)
+{
+    POINT p;
+    int row;
+    p.x = s_mouse_x;
+    p.y = s_mouse_y;
+    row = row_at(p.x, p.y);
+    switch (code) {
+    case MK_MOVE:
+        if (row >= 0 && row != s_sel) {
+            s_sel = row;
+            s_dirty = 1;
+        }
+        break;
+    case MK_LEFT: case MK_RIGHT:
+        if (PtInRect(&s_hint_b, p)) { menu_key(VK_ESCAPE); break; }
+        if (PtInRect(&s_hint_a, p)) { menu_key(VK_RETURN); break; }
+        if (row < 0) {
+            if (code == MK_RIGHT)
+                menu_key(VK_ESCAPE);                         /* right click outside: back */
+            break;
+        }
+        s_sel = row;
+        s_dirty = 1;
+        if (code == MK_RIGHT || PtInRect(&s_row_left[row], p))
+            menu_key(VK_LEFT);
+        else
+            menu_key(VK_RETURN);
+        break;
+    case MK_WHEEL_UP: menu_key(VK_UP); break;
+    case MK_WHEEL_DOWN: menu_key(VK_DOWN); break;
+    }
+}
+
+static void menu_key(int vk)
+{
+    if (vk >= MK_MOVE) {
+        menu_mouse(vk);
+        return;
+    }
+    switch (vk) {
+    case VK_UP:
+        do s_sel = (s_sel + IT_COUNT - 1) % IT_COUNT; while (s_sel == IT_RESTART && !restart_pending());
+        s_dirty = 1;
+        break;
+    case VK_DOWN:
+        do s_sel = (s_sel + 1) % IT_COUNT; while (s_sel == IT_RESTART && !restart_pending());
+        s_dirty = 1;
+        break;
+    case VK_LEFT: change(s_sel, -1); break;
+    case VK_RIGHT: change(s_sel, 1); break;
+    case VK_RETURN: case VK_SPACE:
+        if (s_sel == IT_RESUME)
+            s_open = 0;
+        else if (s_sel == IT_RESTART)
+            restart_game();
+        else if (s_sel == IT_QUIT) {
+            save_ini();
+            leave_fullscreen();
+            fflush(stderr);
+            ExitProcess(0);
+        } else
+            change(s_sel, 1);
+        break;
+    case VK_ESCAPE: case VK_F1: case VK_BACK:
+        s_open = 0;
+        break;
+    }
+}
+
+/* Every connected pad's buttons OR'd, the left stick as a d-pad. A slot
+ * without a pad is probed only now and then: XInputGetState on an empty
+ * slot is slow. */
+static int s_pad_seen[4];
+static unsigned s_pad_probe;
+
+static WORD pads_read(int probe_all)
+{
+    WORD b = 0;
+    int i;
+    s_pad_probe++;
+    for (i = 0; i < 4; i++) {
+        XINPUT_STATE st;
+        if (!s_pad_seen[i] && !probe_all && (s_pad_probe % 240u) != (unsigned)i * 60u)
+            continue;
+        if (pad_get_state((DWORD)i, &st) != ERROR_SUCCESS) {
+            s_pad_seen[i] = 0;
+            continue;
+        }
+        if (!s_pad_seen[i])
+            fprintf(stderr, "[OPTIONS] controller %d connected\n", i);
+        s_pad_seen[i] = 1;
+        b |= st.Gamepad.wButtons;
+        /* RECOMP_OPTIONS_PADLOG: each change of the buttons the menu sees. */
+        {
+            static int padlog = -1;
+            static WORD last[4];
+            if (padlog < 0)
+                padlog = getenv("RECOMP_OPTIONS_PADLOG") != NULL;
+            if (padlog && st.Gamepad.wButtons != last[i])
+                fprintf(stderr, "[OPTIONS] pad %d buttons %04X (screen %s)\n", i, st.Gamepad.wButtons, s_screen);
+            last[i] = st.Gamepad.wButtons;
+        }
+        if (st.Gamepad.sThumbLY > 16000) b |= XINPUT_GAMEPAD_DPAD_UP;
+        if (st.Gamepad.sThumbLY < -16000) b |= XINPUT_GAMEPAD_DPAD_DOWN;
+        if (st.Gamepad.sThumbLX > 16000) b |= XINPUT_GAMEPAD_DPAD_RIGHT;
+        if (st.Gamepad.sThumbLX < -16000) b |= XINPUT_GAMEPAD_DPAD_LEFT;
+    }
+    return b;
+}
+
+/* RECOMP_OPTIONS_AUTOTEST=<swap>[:<script>]: at that Swap the menu opens by
+ * itself and plays the script -- evidence for a run nobody is at the keyboard
+ * for. Swap 0: nothing opens it, the first session opened any other way (the
+ * game's Options > Video) plays the script. Script letters, one every 6
+ * menu frames: U D L R arrows, E Enter, X Esc, C capture, W wait 20 frames.
+ * Default "WCUUUUUURWCX": capture, FXAA on, capture, close. Captures go next
+ * to the frame dumps (RECOMP_FB_DUMP) as <prefix>-options-c<N>.bmp. */
+static int s_autotest = -1, s_auto_step, s_auto_wait, s_auto_shots;
+static char s_auto_script[128] = "WCUUUUUURWCX";
+static const char *volatile s_capture;
+static char s_capture_tag[16];
+
+const char *hle_options_capture_tag(void)
+{
+    /* RECOMP_OPTIONS_SHOT_EVERY=<swaps>: the presented frame (menu button
+     * included) every so many swaps, as <prefix>-options-s<swap>.bmp. */
+    static int every = -1;
+    static char tag[24];
+    const char *t = s_capture;
+    s_capture = NULL;
+    if (every < 0) {
+        const char *e = getenv("RECOMP_OPTIONS_SHOT_EVERY");
+        every = e ? atoi(e) : 0;
+    }
+    if (!t && every > 0 && !s_open && g_hle.swaps % (uint64_t)every == 0) {
+        snprintf(tag, sizeof tag, "s%06llu", (unsigned long long)g_hle.swaps);
+        t = tag;
+    }
+    return t;
+}
+
+static void autotest_step(void)
+{
+    char c;
+    if (s_auto_wait > 0) {
+        s_auto_wait--;
+        return;
+    }
+    c = s_auto_script[s_auto_step];
+    if (!c)
+        return;
+    s_auto_step++;
+    s_auto_wait = c == 'W' ? 20 : 6;
+    switch (c) {
+    case 'U': menu_key(VK_UP); break;
+    case 'D': menu_key(VK_DOWN); break;
+    case 'L': menu_key(VK_LEFT); break;
+    case 'R': menu_key(VK_RIGHT); break;
+    case 'E': menu_key(VK_RETURN); break;
+    case 'X': menu_key(VK_ESCAPE); break;
+    case 'C':
+        snprintf(s_capture_tag, sizeof s_capture_tag, "c%d", ++s_auto_shots);
+        s_capture = s_capture_tag;
+        break;
+    }
+}
+
+static void menu_loop(void)
+{
+    const WORD dirs = XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_DPAD_DOWN |
+                      XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_DPAD_RIGHT;
+    WORD prev, b, rep_b = 0;
+    DWORD rep_t = 0;
+    int token, i;
+
+    s_kq_r = s_kq_w;
+    if (s_autotest == -2)
+        s_autotest = 0;
+    s_auto_step = s_auto_wait = 0;
+    InterlockedExchange(&s_open, 1);
+    InterlockedExchange(&s_request, 0);
+    xbox_FramebufferKeyEvent(-1, 0);
+    monitors_refresh();
+    rates_refresh();
+    if (s_ngpu < 0)
+        gpus_refresh();
+    s_sel = IT_RESUME;
+    s_dirty = 1;
+    fprintf(stderr, "[OPTIONS] menu open: game paused\n");
+    fflush(stderr);
+    token = guest_cpu_suspend();
+#if HLE_GAME == HLE_GAME_BLACK
+    black_options_volume(0.0f);
+#else /* street1 street2 mka */
+    xa2_set_volume(0.0f);
+#endif /* HLE_GAME */
+    prev = pads_read(1);                     /* the buttons that opened it do not count */
+    while (s_open) {
+        WORD edge;
+        DWORD now = GetTickCount();
+        LONG w = s_kq_w;
+        while (s_kq_r != w) {
+            menu_key((int)s_kq[s_kq_r & 63]);
+            s_kq_r++;
+        }
+        b = pads_read(0);
+        edge = b & (WORD)~prev;
+        if (edge & dirs) {
+            rep_b = edge & dirs;
+            rep_t = now + 350;
+        } else if ((b & dirs) && (b & dirs) == rep_b && (LONG)(now - rep_t) >= 0) {
+            edge |= rep_b;
+            rep_t = now + 110;
+        }
+        if (!(b & dirs))
+            rep_b = 0;
+        prev = b;
+        if (edge & XINPUT_GAMEPAD_DPAD_UP) menu_key(VK_UP);
+        if (edge & XINPUT_GAMEPAD_DPAD_DOWN) menu_key(VK_DOWN);
+        if (edge & XINPUT_GAMEPAD_DPAD_LEFT) menu_key(VK_LEFT);
+        if (edge & XINPUT_GAMEPAD_DPAD_RIGHT) menu_key(VK_RIGHT);
+        if (edge & XINPUT_GAMEPAD_A) menu_key(VK_RETURN);
+        if (edge & (XINPUT_GAMEPAD_B | XINPUT_GAMEPAD_START | XINPUT_GAMEPAD_BACK)) menu_key(VK_ESCAPE);
+        if (s_autotest == 0)
+            autotest_step();
+        hle_native_represent();
+        Sleep(15);
+    }
+    /* A button still held would reach the game as a fresh press. */
+    for (i = 0; i < 100 && pads_read(0); i++)
+        Sleep(15);
+    save_ini();
+#if HLE_GAME == HLE_GAME_BLACK
+    black_options_volume((float)g_opt.volume / 100.0f);
+#else /* street1 street2 mka */
+    xa2_set_volume((float)g_opt.volume / 100.0f);
+#endif /* HLE_GAME */
+    s_dirty = 1;
+    if (s_autotest == 0)
+        s_autotest = 0x7FFFFFFF;
+    guest_cpu_resume(token);
+    fprintf(stderr, "[OPTIONS] menu closed: display %d, vsync %d, fps %d, fxaa %d, msaa %d, aniso %d, volume %d%s\n",
+            g_opt.display, g_opt.vsync, g_opt.fps, g_opt.aa, g_opt.msaa, g_opt.aniso, g_opt.volume,
+            restart_pending() ? " (restart pending)" : "");
+}
+
+void hle_options_frame(void)
+{
+#if HLE_GAME == HLE_GAME_BLACK
+    black_options_timing();
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    static WORD prev;
+    static int volume_set = -1;
+    static unsigned frames;
+    WORD b;
+    if (s_autotest < 0) {
+        const char *e = getenv("RECOMP_OPTIONS_AUTOTEST");
+        const char *colon = e ? strchr(e, ':') : NULL;
+        s_autotest = e && *e ? atoi(e) : 0x7FFFFFFF;
+        if (colon && colon[1])
+            snprintf(s_auto_script, sizeof s_auto_script, "%s", colon + 1);
+        if (s_autotest == 0)
+            s_autotest = -2;                          /* script the first session */
+    }
+    if (s_autotest != 0x7FFFFFFF && s_autotest > 0 && ++frames >= (unsigned)s_autotest) {
+        s_autotest = 0;                               /* this session is scripted */
+        InterlockedExchange(&s_request, 1);
+    }
+    if (volume_set != g_opt.volume) {
+        volume_set = g_opt.volume;
+#if HLE_GAME == HLE_GAME_BLACK
+        black_options_volume((float)g_opt.volume / 100.0f);
+#else /* street1 street2 mka */
+        xa2_set_volume((float)g_opt.volume / 100.0f);
+#endif /* HLE_GAME */
+    }
+    b = pads_read(0);
+    if ((b & (XINPUT_GAMEPAD_BACK | XINPUT_GAMEPAD_START)) == (XINPUT_GAMEPAD_BACK | XINPUT_GAMEPAD_START) &&
+        (prev & (XINPUT_GAMEPAD_BACK | XINPUT_GAMEPAD_START)) != (XINPUT_GAMEPAD_BACK | XINPUT_GAMEPAD_START))
+        InterlockedExchange(&s_request, 1);
+    /* Back alone on a screen showing the button. */
+    if (screen_has_button() && (b & XINPUT_GAMEPAD_BACK) && !(b & XINPUT_GAMEPAD_START) &&
+        !(prev & XINPUT_GAMEPAD_BACK))
+        InterlockedExchange(&s_request, 1);
+    prev = b;
+    if (s_request && !s_open)
+        menu_loop();
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+}
+
+#else /* street2 mka */
+}
+
+static int s_standalone;
+
+void hle_options_standalone(void)
+{
+    s_standalone = 1;
+    InterlockedExchange(&s_request, 1);
+    hle_options_frame();
+    s_standalone = 0;
+}
+
+#endif /* HLE_GAME */
+/* -------------------------------------------------------------- drawing */
+
+static HDC s_dc;
+static HBITMAP s_bmp;
+static uint32_t *s_bits;
+static HFONT s_font, s_font_bold, s_font_small;
+static int s_pw, s_ph, s_lh;
+static ID3D11Texture2D *s_tex;
+static ID3D11ShaderResourceView *s_srv;
+static ID3D11VertexShader *s_vs;
+static ID3D11PixelShader *s_ps;
+static ID3D11BlendState *s_blend;
+static ID3D11SamplerState *s_samp;
+
+#define BG_RGB      RGB(10, 16, 30)
+#define BG_PIXEL    0x0A101Eu                 /* the same colour as a DIB pixel */
+
+static int overlay_resources(void)
+{
+    static const char src[] =
+        "Texture2D<float4> t:register(t0); SamplerState s:register(s0);"
+        "struct V{float4 p:SV_Position; float2 uv:TEXCOORD0;};"
+        "V vs(uint id:SV_VertexID){V o; float2 q=float2(id==1?2:0,id==2?2:0);"
+        "o.p=float4(q.x*2-1,1-q.y*2,0,1); o.uv=q; return o;}"
+        "float4 ps(V i):SV_Target{return t.Sample(s,i.uv);}";
+    ID3DBlob *vs = NULL, *ps = NULL, *err = NULL;
+    HRESULT hr;
+    if (s_vs && s_ps && s_blend && s_samp)
+        return 1;
+    hr = hle_d3d_compile(src, sizeof src - 1, "options", NULL, NULL, "vs", "vs_5_0", 0, 0, &vs, &err);
+    if (err) { fprintf(stderr, "[OPTIONS] %s\n", (const char *)ID3D10Blob_GetBufferPointer(err)); ID3D10Blob_Release(err); err = NULL; }
+    if (SUCCEEDED(hr))
+        hr = hle_d3d_compile(src, sizeof src - 1, "options", NULL, NULL, "ps", "ps_5_0", 0, 0, &ps, &err);
+    if (err) { fprintf(stderr, "[OPTIONS] %s\n", (const char *)ID3D10Blob_GetBufferPointer(err)); ID3D10Blob_Release(err); }
+    if (SUCCEEDED(hr))
+        hr = ID3D11Device_CreateVertexShader(g_hle.dev, ID3D10Blob_GetBufferPointer(vs), ID3D10Blob_GetBufferSize(vs), NULL, &s_vs);
+    if (SUCCEEDED(hr))
+        hr = ID3D11Device_CreatePixelShader(g_hle.dev, ID3D10Blob_GetBufferPointer(ps), ID3D10Blob_GetBufferSize(ps), NULL, &s_ps);
+    if (vs) ID3D10Blob_Release(vs);
+    if (ps) ID3D10Blob_Release(ps);
+    if (SUCCEEDED(hr)) {
+        D3D11_BLEND_DESC bd;
+        memset(&bd, 0, sizeof bd);
+        bd.RenderTarget[0].BlendEnable = TRUE;
+        bd.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+        bd.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        bd.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+        bd.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+        bd.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+        bd.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+        bd.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+        hr = ID3D11Device_CreateBlendState(g_hle.dev, &bd, &s_blend);
+    }
+    if (SUCCEEDED(hr)) {
+        D3D11_SAMPLER_DESC sd;
+        memset(&sd, 0, sizeof sd);
+        sd.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        sd.AddressU = sd.AddressV = sd.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        sd.MaxLOD = D3D11_FLOAT32_MAX;
+        hr = ID3D11Device_CreateSamplerState(g_hle.dev, &sd, &s_samp);
+    }
+    if (FAILED(hr))
+        fprintf(stderr, "[OPTIONS] overlay setup failed 0x%08lX\n", (unsigned long)hr);
+    return SUCCEEDED(hr);
+}
+
+static HFONT s_font_title;
+
+#if HLE_GAME == HLE_GAME_STREET1
+/* The game's own faces, read from the disc at run time (never shipped):
+ * aptanims/aptfntz.big holds the front end's font archive aptfnts.big
+ * (RefPack), with _title.ttf (FreeStyle European Bold, the orange screen
+ * titles) and _body.ttf (Euromode Bold, the menu lines). Segoe UI when the
+ * files are missing. */
+#define FACE_TITLE L"FreeStyle_European_Bold"
+#define FACE_BODY  L"Euromode"
+static int s_game_fonts = -1;
+
+static uint32_t be32(const uint8_t *p)
+{
+    return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3];
+}
+
+static uint8_t *refpack_decode(const uint8_t *s, size_t n, size_t *out_len)
+{
+    size_t p = 2, o = 0, len, lit, cnt, dist;
+    int large, stop = 0;
+    uint8_t *d;
+    if (n < 6 || (s[0] & 0x0E) || s[1] != 0xFB)
+        return NULL;
+    large = (s[0] & 0x80) != 0;
+    if (s[0] & 0x01)
+        p += large ? 4 : 3;
+    if (p + 4 > n)
+        return NULL;
+    len = large ? be32(s + p) : ((size_t)s[p] << 16 | (size_t)s[p + 1] << 8 | s[p + 2]);
+    p += large ? 4 : 3;
+    if (!len || !(d = (uint8_t *)malloc(len)))
+        return NULL;
+    while (!stop && p < n) {
+        uint8_t b0 = s[p++];
+        if (!(b0 & 0x80)) {                                  /* 0DDRRRPP DDDDDDDD */
+            if (p + 1 > n) break;
+            lit = b0 & 3; dist = ((size_t)(b0 & 0x60) << 3) + s[p] + 1; cnt = ((b0 >> 2) & 7) + 3; p += 1;
+        } else if (!(b0 & 0x40)) {                           /* 10RRRRRR PPDDDDDD DDDDDDDD */
+            if (p + 2 > n) break;
+            lit = s[p] >> 6; dist = ((size_t)(s[p] & 0x3F) << 8) + s[p + 1] + 1; cnt = (b0 & 0x3F) + 4; p += 2;
+        } else if (!(b0 & 0x20)) {                           /* 110DRRPP DDDDDDDD DDDDDDDD RRRRRRRR */
+            if (p + 3 > n) break;
+            lit = b0 & 3; dist = ((size_t)(b0 & 0x10) << 12) + ((size_t)s[p] << 8) + s[p + 1] + 1;
+            cnt = ((size_t)(b0 & 0x0C) << 6) + s[p + 2] + 5; p += 3;
+        } else {                                             /* 111RRRRR literals, or the end */
+            lit = (size_t)(b0 & 0x1F) * 4 + 4; cnt = 0; dist = 0;
+            if (lit > 0x70) { lit = b0 & 3; stop = 1; }
+        }
+        if (p + lit > n || o + lit + cnt > len || dist > o + lit)
+            break;
+        memcpy(d + o, s + p, lit);
+        p += lit;
+        o += lit;
+        for (; cnt; cnt--, o++)
+            d[o] = d[o - dist];
+    }
+    if (o != len) {
+        free(d);
+        return NULL;
+    }
+    *out_len = len;
+    return d;
+}
+
+/* An entry of an EA BIG archive (BIGF: entry count big-endian at 8, then
+ * offset, size and NUL-terminated name), unpacked when it is RefPack. */
+static uint8_t *big_entry(const uint8_t *b, size_t n, const char *name, size_t *len)
+{
+    uint32_t count, i;
+    size_t p = 16;
+    if (n < 16 || memcmp(b, "BIGF", 4))
+        return NULL;
+    count = be32(b + 8);
+    for (i = 0; i < count && p + 9 <= n; i++) {
+        uint32_t off = be32(b + p), sz = be32(b + p + 4);
+        const char *nm = (const char *)b + p + 8;
+        size_t nl = 0;
+        uint8_t *out;
+        while (p + 8 + nl < n && nm[nl])
+            nl++;
+        p += 8 + nl + 1;
+        if (p > n || strcmp(nm, name) || off > n || sz > n - off)
+            continue;
+        if (sz > 2 && b[off + 1] == 0xFB)
+            return refpack_decode(b + off, sz, len);
+        if ((out = (uint8_t *)malloc(sz)) != NULL) {
+            memcpy(out, b + off, sz);
+            *len = sz;
+        }
+        return out;
+    }
+    return NULL;
+}
+
+/* Some of the game's fonts keep their Windows character map as an old byte
+ * table (cmap format 0), which GDI reads in the Mac character set ("ç"
+ * comes out as "Á"). Point that record at the font's Unicode (0,3)
+ * format 4 map, which has the same glyphs. */
+static void cmap_fix(uint8_t *ttf, size_t len)
+{
+    uint32_t ntab, i, cmap = 0, cnt, uni = 0;
+    if (len < 12)
+        return;
+    ntab = (uint32_t)ttf[4] << 8 | ttf[5];
+    for (i = 0; i < ntab && 12 + 16 * (size_t)i + 16 <= len; i++)
+        if (!memcmp(ttf + 12 + 16 * i, "cmap", 4))
+            cmap = be32(ttf + 12 + 16 * i + 8);
+    if (!cmap || (size_t)cmap + 4 > len)
+        return;
+    cnt = (uint32_t)ttf[cmap + 2] << 8 | ttf[cmap + 3];
+    for (i = 0; i < cnt && (size_t)cmap + 12 + 8 * (size_t)i <= len; i++) {
+        const uint8_t *r = ttf + cmap + 4 + 8 * i;
+        uint32_t so = be32(r + 4);
+        if (r[1] == 0 && r[3] == 3 && (size_t)cmap + so + 2 <= len && ttf[cmap + so] == 0 && ttf[cmap + so + 1] == 4)
+            uni = so;                                        /* platform 0, encoding 3 */
+    }
+    for (i = 0; uni && i < cnt && (size_t)cmap + 12 + 8 * (size_t)i <= len; i++) {
+        uint8_t *r = ttf + cmap + 4 + 8 * i;
+        uint32_t so = be32(r + 4);
+        if (r[1] == 3 && r[3] == 1 && (size_t)cmap + so + 2 <= len && !(ttf[cmap + so] == 0 && ttf[cmap + so + 1] == 4)) {
+            r[4] = (uint8_t)(uni >> 24); r[5] = (uint8_t)(uni >> 16); r[6] = (uint8_t)(uni >> 8); r[7] = (uint8_t)uni;
+        }
+    }
+}
+
+static int register_face(const wchar_t *family, const uint8_t *archive, size_t n, const char *entry)
+{
+    size_t len = 0;
+    uint8_t *ttf = big_entry(archive, n, entry, &len);       /* kept for the process's life */
+    if (ttf)
+        cmap_fix(ttf, len);
+#ifdef _WIN32
+    DWORD count = 0;
+    (void)family;
+    return ttf && AddFontMemResourceEx(ttf, (DWORD)len, NULL, &count) && count;
+#else
+    return ttf && hle_gdi_register_face(family, ttf, len);
+#endif
+}
+
+static int game_fonts(void)
+{
+    FILE *f;
+    uint8_t *outer = NULL, *inner = NULL;
+    size_t n = 0, inner_len = 0;
+    if (s_game_fonts >= 0)
+        return s_game_fonts;
+    s_game_fonts = 0;
+    if ((f = fopen("game_files/data/aptanims/aptfntz.big", "rb")) != NULL) {
+        fseek(f, 0, SEEK_END);
+        n = (size_t)ftell(f);
+        fseek(f, 0, SEEK_SET);
+        if (n && (outer = (uint8_t *)malloc(n)) != NULL && fread(outer, 1, n, f) != n)
+            n = 0;
+        fclose(f);
+    }
+    if (outer && n)
+        inner = big_entry(outer, n, "aptfnts.big", &inner_len);
+    if (inner)
+        s_game_fonts = register_face(FACE_TITLE, inner, inner_len, "_title.ttf") &&
+                       register_face(FACE_BODY, inner, inner_len, "_body.ttf");
+    free(inner);
+    free(outer);
+    fprintf(stderr, "[OPTIONS] game fonts %s\n", s_game_fonts ? "loaded (FreeStyle European, Euromode)" : "not found: Segoe UI");
+    return s_game_fonts;
+}
+#elif HLE_GAME == HLE_GAME_BLACK
+/* Native Windows fonts: no game-specific assets are required. */
+#define FACE_TITLE L"Segoe UI"
+#define FACE_BODY L"Segoe UI"
+#else /* street2 mka */
+/* The game's own faces, read from the disc at run time (never shipped):
+ * aptanims/aptfnts.big, the front end's font archive, holds _leigh.ttf
+ * (FifaStreet_Title Leigh, the graffiti screen titles) and _body.ttf (EAS
+ * SansCondensed Bold, the menu lines). Segoe UI when the files are
+ * missing. */
+#define FACE_TITLE L"FifaStreet_Title Leigh"
+#define FACE_BODY  L"EAS SansCondensed"
+static int s_game_fonts = -1;
+
+static uint32_t be32(const uint8_t *p)
+{
+    return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3];
+}
+
+static uint8_t *refpack_decode(const uint8_t *s, size_t n, size_t *out_len)
+{
+    size_t p = 2, o = 0, len, lit, cnt, dist;
+    int large, stop = 0;
+    uint8_t *d;
+    if (n < 6 || (s[0] & 0x0E) || s[1] != 0xFB)
+        return NULL;
+    large = (s[0] & 0x80) != 0;
+    if (s[0] & 0x01)
+        p += large ? 4 : 3;
+    if (p + 4 > n)
+        return NULL;
+    len = large ? be32(s + p) : ((size_t)s[p] << 16 | (size_t)s[p + 1] << 8 | s[p + 2]);
+    p += large ? 4 : 3;
+    if (!len || !(d = (uint8_t *)malloc(len)))
+        return NULL;
+    while (!stop && p < n) {
+        uint8_t b0 = s[p++];
+        if (!(b0 & 0x80)) {                                  /* 0DDRRRPP DDDDDDDD */
+            if (p + 1 > n) break;
+            lit = b0 & 3; dist = ((size_t)(b0 & 0x60) << 3) + s[p] + 1; cnt = ((b0 >> 2) & 7) + 3; p += 1;
+        } else if (!(b0 & 0x40)) {                           /* 10RRRRRR PPDDDDDD DDDDDDDD */
+            if (p + 2 > n) break;
+            lit = s[p] >> 6; dist = ((size_t)(s[p] & 0x3F) << 8) + s[p + 1] + 1; cnt = (b0 & 0x3F) + 4; p += 2;
+        } else if (!(b0 & 0x20)) {                           /* 110DRRPP DDDDDDDD DDDDDDDD RRRRRRRR */
+            if (p + 3 > n) break;
+            lit = b0 & 3; dist = ((size_t)(b0 & 0x10) << 12) + ((size_t)s[p] << 8) + s[p + 1] + 1;
+            cnt = ((size_t)(b0 & 0x0C) << 6) + s[p + 2] + 5; p += 3;
+        } else {                                             /* 111RRRRR literals, or the end */
+            lit = (size_t)(b0 & 0x1F) * 4 + 4; cnt = 0; dist = 0;
+            if (lit > 0x70) { lit = b0 & 3; stop = 1; }
+        }
+        if (p + lit > n || o + lit + cnt > len || dist > o + lit)
+            break;
+        memcpy(d + o, s + p, lit);
+        p += lit;
+        o += lit;
+        for (; cnt; cnt--, o++)
+            d[o] = d[o - dist];
+    }
+    if (o != len) {
+        free(d);
+        return NULL;
+    }
+    *out_len = len;
+    return d;
+}
+
+/* An entry of an EA BIG archive (BIGF: entry count big-endian at 8, then
+ * offset, size and NUL-terminated name), unpacked when it is RefPack. */
+static uint8_t *big_entry(const uint8_t *b, size_t n, const char *name, size_t *len)
+{
+    uint32_t count, i;
+    size_t p = 16;
+    if (n < 16 || memcmp(b, "BIGF", 4))
+        return NULL;
+    count = be32(b + 8);
+    for (i = 0; i < count && p + 9 <= n; i++) {
+        uint32_t off = be32(b + p), sz = be32(b + p + 4);
+        const char *nm = (const char *)b + p + 8;
+        size_t nl = 0;
+        uint8_t *out;
+        while (p + 8 + nl < n && nm[nl])
+            nl++;
+        p += 8 + nl + 1;
+        if (p > n || strcmp(nm, name) || off > n || sz > n - off)
+            continue;
+        if (sz > 2 && b[off + 1] == 0xFB)
+            return refpack_decode(b + off, sz, len);
+        if ((out = (uint8_t *)malloc(sz)) != NULL) {
+            memcpy(out, b + off, sz);
+            *len = sz;
+        }
+        return out;
+    }
+    return NULL;
+}
+
+/* Some of the game's fonts keep their Windows character map as an old byte
+ * table (cmap format 0), which GDI reads in the Mac character set ("ç"
+ * comes out as "Á"). Point that record at the font's Unicode (0,3)
+ * format 4 map, which has the same glyphs. */
+static void cmap_fix(uint8_t *ttf, size_t len)
+{
+    uint32_t ntab, i, cmap = 0, cnt, uni = 0;
+    if (len < 12)
+        return;
+    ntab = (uint32_t)ttf[4] << 8 | ttf[5];
+    for (i = 0; i < ntab && 12 + 16 * (size_t)i + 16 <= len; i++)
+        if (!memcmp(ttf + 12 + 16 * i, "cmap", 4))
+            cmap = be32(ttf + 12 + 16 * i + 8);
+    if (!cmap || (size_t)cmap + 4 > len)
+        return;
+    cnt = (uint32_t)ttf[cmap + 2] << 8 | ttf[cmap + 3];
+    for (i = 0; i < cnt && (size_t)cmap + 12 + 8 * (size_t)i <= len; i++) {
+        const uint8_t *r = ttf + cmap + 4 + 8 * i;
+        uint32_t so = be32(r + 4);
+        if (r[1] == 0 && r[3] == 3 && (size_t)cmap + so + 2 <= len && ttf[cmap + so] == 0 && ttf[cmap + so + 1] == 4)
+            uni = so;                                        /* platform 0, encoding 3 */
+    }
+    for (i = 0; uni && i < cnt && (size_t)cmap + 12 + 8 * (size_t)i <= len; i++) {
+        uint8_t *r = ttf + cmap + 4 + 8 * i;
+        uint32_t so = be32(r + 4);
+        if (r[1] == 3 && r[3] == 1 && (size_t)cmap + so + 2 <= len && !(ttf[cmap + so] == 0 && ttf[cmap + so + 1] == 4)) {
+            r[4] = (uint8_t)(uni >> 24); r[5] = (uint8_t)(uni >> 16); r[6] = (uint8_t)(uni >> 8); r[7] = (uint8_t)uni;
+        }
+    }
+}
+
+static int register_face(const wchar_t *family, const uint8_t *archive, size_t n, const char *entry)
+{
+    size_t len = 0;
+    uint8_t *ttf = big_entry(archive, n, entry, &len);       /* kept for the process's life */
+    if (ttf)
+        cmap_fix(ttf, len);
+#ifdef _WIN32
+    DWORD count = 0;
+    (void)family;
+    return ttf && AddFontMemResourceEx(ttf, (DWORD)len, NULL, &count) && count;
+#else
+    return ttf && hle_gdi_register_face(family, ttf, len);
+#endif
+}
+
+static int game_fonts(void)
+{
+    FILE *f;
+    uint8_t *archive = NULL;
+    size_t n = 0;
+    if (s_game_fonts >= 0)
+        return s_game_fonts;
+    s_game_fonts = 0;
+    if ((f = fopen("game_files/data/aptanims/aptfnts.big", "rb")) != NULL) {
+        fseek(f, 0, SEEK_END);
+        n = (size_t)ftell(f);
+        fseek(f, 0, SEEK_SET);
+        if (n && (archive = (uint8_t *)malloc(n)) != NULL && fread(archive, 1, n, f) != n)
+            n = 0;
+        fclose(f);
+    }
+    if (archive && n)
+        s_game_fonts = register_face(FACE_TITLE, archive, n, "_leigh.ttf") &&
+                       register_face(FACE_BODY, archive, n, "_body.ttf");
+    free(archive);
+    fprintf(stderr, "[OPTIONS] game fonts %s\n", s_game_fonts ? "loaded (FifaStreet_Title Leigh, EAS SansCondensed)" : "not found: Segoe UI");
+    return s_game_fonts;
+}
+#endif /* HLE_GAME */
+
+static HFONT make_face(const wchar_t *face, int px, int weight, int italic)
+{
+#if HLE_GAME == HLE_GAME_BLACK
+#else /* street1 street2 mka */
+    if (!game_fonts())
+        face = L"Segoe UI";
+#endif /* HLE_GAME */
+    return CreateFontW(-px, 0, 0, 0, weight, (DWORD)italic, 0, 0, DEFAULT_CHARSET, OUT_TT_PRECIS,
+                       CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH, face);
+}
+
+static HFONT make_font(int px, int weight, int italic)
+{
+    return make_face(FACE_BODY, px, weight, italic);
+}
+
+/* The screen covers the whole window: a DIB of the window's size. */
+static void surface_resize(int pw, int ph, int lh)
+{
+    BITMAPINFO bi;
+    D3D11_TEXTURE2D_DESC td;
+    if (s_srv) { ID3D11ShaderResourceView_Release(s_srv); s_srv = NULL; }
+    if (s_tex) { ID3D11Texture2D_Release(s_tex); s_tex = NULL; }
+    if (s_bmp) { DeleteObject(s_bmp); s_bmp = NULL; s_bits = NULL; }
+    if (s_font) {
+        DeleteObject(s_font); DeleteObject(s_font_bold); DeleteObject(s_font_small); DeleteObject(s_font_title);
+        s_font = NULL;
+    }
+    if (!s_dc)
+        s_dc = CreateCompatibleDC(NULL);
+    memset(&bi, 0, sizeof bi);
+    bi.bmiHeader.biSize = sizeof bi.bmiHeader;
+    bi.bmiHeader.biWidth = pw;
+    bi.bmiHeader.biHeight = -ph;
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+    s_bmp = CreateDIBSection(s_dc, &bi, DIB_RGB_COLORS, (void **)&s_bits, NULL, 0);
+    if (!s_bmp)
+        return;
+    SelectObject(s_dc, s_bmp);
+#if HLE_GAME == HLE_GAME_STREET1
+    s_font = make_font(lh * 74 / 100, FW_BOLD, 0);
+    s_font_bold = make_font(lh * 74 / 100, FW_BOLD, 0);
+    s_font_small = make_font(lh * 54 / 100, FW_BOLD, 0);
+    s_font_title = make_face(FACE_TITLE, lh * 250 / 100, FW_NORMAL, 0);
+#elif HLE_GAME == HLE_GAME_BLACK
+    s_font = make_font(lh * 74 / 100, FW_BOLD, 0);
+    s_font_bold = make_font(lh * 74 / 100, FW_BOLD, 0);
+    s_font_small = make_font(lh * 54 / 100, FW_BOLD, 0);
+    s_font_title = make_face(FACE_TITLE, lh * 155 / 100, FW_BOLD, 0);
+#else /* street2 mka */
+    s_font = make_font(lh * 86 / 100, FW_BOLD, 0);
+    s_font_bold = make_font(lh * 86 / 100, FW_BOLD, 0);
+    s_font_small = make_font(lh * 66 / 100, FW_BOLD, 0);
+    s_font_title = make_face(FACE_TITLE, lh * 250 / 100, FW_NORMAL, 0);
+#endif /* HLE_GAME */
+    memset(&td, 0, sizeof td);
+    td.Width = (UINT)pw;
+    td.Height = (UINT)ph;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_DEFAULT;
+    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    if (SUCCEEDED(ID3D11Device_CreateTexture2D(g_hle.dev, &td, NULL, &s_tex)))
+        ID3D11Device_CreateShaderResourceView(g_hle.dev, (ID3D11Resource *)s_tex, NULL, &s_srv);
+    s_pw = pw;
+    s_ph = ph;
+    s_lh = lh;
+    s_dirty = 1;
+}
+
+#if HLE_GAME == HLE_GAME_BLACK
+/* The game's own menu font, language\\fonts\\Big.bin in the player's game files (read at run time,
+ * never shipped): a 256x256 DXT3 atlas after a D3D texture header, and from 0x220 on one 40-byte record
+ * per character: u, v, width, height, x offset, y offset, advance (fractions of the atlas), then the
+ * Windows-1252 code. Capitals only, as the game writes its menus. */
+/* Where game_text draws: the menu's screen DIB unless a caller (the menu
+ * button, the FPS counter) points it at its own bitmap. */
+static uint32_t *s_gt_bits;
+static int s_gt_w, s_gt_h;
+
+#ifdef _WIN32
+typedef struct { float u, v, w, h, xo, yo, adv; int used; } GameGlyph;
+static struct { uint8_t *alpha; int size; GameGlyph g[256]; int tried; } s_gf;
+
+static void game_font_load(void)
+{
+    char dir[MAX_PATH], path[MAX_PATH + 40];
+    FILE *fp;
+    uint8_t *d = NULL;
+    long n;
+    uint32_t tex, fmt, off;
+    int w, h, bx, by, i;
+
+    if (s_gf.tried)
+        return;
+    s_gf.tried = 1;
+    if (!GetEnvironmentVariableA("BLACK_GAME_DIR", dir, sizeof dir))
+        return;
+    snprintf(path, sizeof path, "%s\\language\\fonts\\Big.bin", dir);
+    if (!(fp = fopen(path, "rb")))
+        return;
+    fseek(fp, 0, SEEK_END);
+    n = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    if (n > 0x300 && (d = (uint8_t *)malloc((size_t)n)) && fread(d, 1, (size_t)n, fp) != (size_t)n) {
+        free(d);
+        d = NULL;
+    }
+    fclose(fp);
+    if (!d)
+        return;
+    memcpy(&tex, d + 4, 4);
+    if (memcmp(d, "4.1v", 4) || tex + 144 > (uint32_t)n)
+        goto done;
+    memcpy(&fmt, d + tex + 12, 4);
+    w = 1 << ((fmt >> 20) & 15);
+    h = 1 << ((fmt >> 24) & 15);
+    if (((fmt >> 8) & 255) != 0x0E || w != h || (long)tex + 128 + (long)w * h > n)   /* DXT3 */
+        goto done;
+    if (!(s_gf.alpha = (uint8_t *)malloc((size_t)w * h)))
+        goto done;
+    s_gf.size = w;
+    for (by = 0; by < h / 4; by++)
+        for (bx = 0; bx < w / 4; bx++) {
+            const uint8_t *b = d + tex + 128 + (by * (w / 4) + bx) * 16;
+            for (i = 0; i < 16; i++)
+                s_gf.alpha[(by * 4 + i / 4) * w + bx * 4 + i % 4] = (uint8_t)(((b[i / 2] >> (4 * (i & 1))) & 15) * 17);
+        }
+    for (off = 0x220; off + 40 <= tex; off += 40) {
+        float r[7];
+        uint32_t code;
+        memcpy(r, d + off, sizeof r);
+        memcpy(&code, d + off + 28, 4);
+        if (code < 256) {
+            GameGlyph *g = &s_gf.g[code];
+            g->u = r[0]; g->v = r[1]; g->w = r[2]; g->h = r[3]; g->xo = r[4]; g->yo = r[5]; g->adv = r[6];
+            g->used = 1;
+        }
+    }
+    fprintf(stderr, "[OPTIONS] game font loaded: %dx%d\n", w, h);
+done:
+    free(d);
+}
+
+static const GameGlyph *game_glyph(wchar_t c)
+{
+    if (c >= L'a' && c <= L'z')
+        c = (wchar_t)(c - 32);
+    else if (c >= 0xE0 && c <= 0xFE && c != 0xF7)
+        c = (wchar_t)(c - 32);
+    if (c == 0x2014 || c == 0x2013)
+        c = L'-';
+    if (c == 0x2190 || c == 0x2192)
+        c = L' ';
+    if (c >= 256 || !s_gf.g[c].used)
+        return s_gf.g[L' '].used ? &s_gf.g[L' '] : NULL;
+    return &s_gf.g[c];
+}
+
+/* Text height in pixels for each of the menu's four sizes. */
+static float game_font_scale(HFONT f)
+{
+    int px;
+    if (f == s_font_title) px = s_lh * 150 / 100;
+    else if (f == s_font_small) px = s_lh * 58 / 100;
+    else if (f == s_font || f == s_font_bold) px = s_lh * 72 / 100;   /* room between rows */
+    else {                                   /* any other font: its own height */
+        LOGFONTW lf;
+        px = GetObjectW(f, sizeof lf, &lf) ? (lf.lfHeight < 0 ? -lf.lfHeight : lf.lfHeight) * 88 / 74 : 12;
+    }
+    return (float)px / (0.0859375f * (float)s_gf.size);
+}
+
+/* Extra space between letters: the atlas advances alone read cramped. */
+static float game_font_tracking(float scale)
+{
+    return 0.0859375f * (float)s_gf.size * scale * 0.0f;
+}
+
+static int game_text_width(const wchar_t *s, float scale)
+{
+    float w = 0.0f;
+    for (; *s; s++) {
+        const GameGlyph *g = game_glyph(*s);
+        if (g)
+            w += g->adv * (float)s_gf.size * scale + (s[1] ? game_font_tracking(scale) : 0.0f);
+    }
+    return (int)(w + 0.5f);
+}
+
+static void game_text(const wchar_t *s, int x0, int y0, int x1, int y1, COLORREF c, HFONT f, UINT align)
+{
+    float scale = game_font_scale(f), x, size = (float)s_gf.size;
+    int width = game_text_width(s, scale), top;
+    int r = GetRValue(c), g = GetGValue(c), b = GetBValue(c);
+    uint32_t *bits = s_gt_bits ? s_gt_bits : s_bits;
+    int bw = s_gt_bits ? s_gt_w : s_pw, bh = s_gt_bits ? s_gt_h : s_ph;
+
+    GdiFlush();
+    if (!bits)
+        return;
+    x = (float)((align & DT_RIGHT) ? x1 - width : (align & DT_CENTER) ? (x0 + x1 - width) / 2 : x0);
+    top = (y0 + y1) / 2 - (int)(0.0859375f * size * scale / 2.0f);
+    for (; *s; s++) {
+        const GameGlyph *gl = game_glyph(*s);
+        int px, py, w, h;
+        if (!gl)
+            continue;
+        w = (int)(gl->w * size * scale + 0.5f);
+        h = (int)(gl->h * size * scale + 0.5f);
+        for (py = 0; py < h; py++) {
+            int dy = top + py;
+            if (dy < 0 || dy >= bh)
+                continue;
+            for (px = 0; px < w; px++) {
+                int dx = (int)x + px, sx0, sy0, a, ia;
+                float fx, fy, sx, sy, v;
+                uint32_t *d;
+                uint8_t *row;
+                if (dx < x0 || dx >= x1 || dx < 0 || dx >= bw)
+                    continue;
+                sx = (gl->u + gl->w * ((float)px + 0.5f) / (float)w) * size - 0.5f;
+                sy = (gl->v + gl->h * ((float)py + 0.5f) / (float)h) * size - 0.5f;
+                sx0 = (int)sx; sy0 = (int)sy;
+                if (sx0 < 0 || sy0 < 0 || sx0 + 1 >= s_gf.size || sy0 + 1 >= s_gf.size)
+                    continue;
+                fx = sx - (float)sx0; fy = sy - (float)sy0;
+                row = s_gf.alpha + sy0 * s_gf.size + sx0;
+                v = (row[0] * (1.0f - fx) + row[1] * fx) * (1.0f - fy) +
+                    (row[s_gf.size] * (1.0f - fx) + row[s_gf.size + 1] * fx) * fy;
+                a = (int)v;
+                if (a <= 0)
+                    continue;
+                ia = 255 - a;
+                d = bits + dy * bw + dx;
+                *d = (((((*d >> 16) & 255) * ia + r * a) / 255) << 16) |
+                     (((((*d >> 8) & 255) * ia + g * a) / 255) << 8) |
+                     ((((*d & 255) * ia + b * a) / 255));
+            }
+        }
+        x += gl->adv * size * scale + game_font_tracking(scale);
+    }
+}
+#endif
+
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+static void text(const wchar_t *s, int x0, int y0, int x1, int y1, COLORREF c, HFONT f, UINT align)
+{
+    RECT r;
+#if HLE_GAME == HLE_GAME_BLACK
+#ifdef _WIN32
+    game_font_load();
+    if (s_gf.alpha) {
+        game_text(s, x0, y0, x1, y1, c, f, align);
+        return;
+    }
+#endif
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    SetRect(&r, x0, y0, x1, y1);
+    SelectObject(s_dc, f);
+    SetTextColor(s_dc, c);
+    DrawTextW(s_dc, s, -1, &r, align | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS);
+}
+
+static void fill(int x0, int y0, int x1, int y1, COLORREF c)
+{
+    RECT r;
+    HBRUSH b = CreateSolidBrush(c);
+    SetRect(&r, x0, y0, x1, y1);
+    FillRect(s_dc, &r, b);
+    DeleteObject(b);
+}
+
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+/* The game's menu text: light lines carry a dark drop shadow. */
+static void text_sh(const wchar_t *s, int x0, int y0, int x1, int y1, COLORREF c, HFONT f, UINT align)
+{
+    int o = s_lh / 14 + 1;
+    text(s, x0 + o, y0 + o, x1 + o, y1 + o, RGB(6, 10, 18), f, align);
+    text(s, x0, y0, x1, y1, c, f, align);
+}
+
+#else /* street2 mka */
+#endif /* HLE_GAME */
+static int text_width(const wchar_t *s, HFONT f)
+{
+    SIZE sz;
+#if HLE_GAME == HLE_GAME_BLACK
+#ifdef _WIN32
+    game_font_load();
+    if (s_gf.alpha)
+        return game_text_width(s, game_font_scale(f));
+#endif
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    SelectObject(s_dc, f);
+    GetTextExtentPoint32W(s_dc, s, (int)wcslen(s), &sz);
+    return sz.cx;
+}
+
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+/* Menu lines are capitals, as on the game's screens; "1366x768" keeps its x. */
+static void upper(wchar_t *s)
+#else /* street2 mka */
+/* Lettering with a black rim, like the game's graffiti titles. */
+static void text_outline(const wchar_t *s, int x0, int y0, int x1, int y1, COLORREF c, HFONT f, UINT align, int o)
+#endif /* HLE_GAME */
+{
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+    static const int dx[8] = { -1, 0, 1, -1, 1, -1, 0, 1 }, dy[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+#endif /* HLE_GAME */
+    int i;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    for (i = 0; s[i]; i++)
+        if ((s[i] >= L'a' && s[i] <= L'z' && !(s[i] == L'x' && i && s[i - 1] >= L'0' && s[i - 1] <= L'9')) ||
+            (s[i] >= 0xE0 && s[i] <= 0xFE && s[i] != 0xF7))
+            s[i] = (wchar_t)(s[i] - 0x20);
+#else /* street2 mka */
+    for (i = 0; i < 8; i++)
+        text(s, x0 + dx[i] * o, y0 + dy[i] * o, x1 + dx[i] * o, y1 + dy[i] * o, RGB(12, 12, 12), f, align);
+    text(s, x0, y0, x1, y1, c, f, align);
+#endif /* HLE_GAME */
+}
+
+static void poly(const POINT *p, int n, COLORREF c)
+{
+    HBRUSH b = CreateSolidBrush(c);
+    HPEN pen = CreatePen(PS_SOLID, 1, c);
+    SelectObject(s_dc, b);
+    SelectObject(s_dc, pen);
+    Polygon(s_dc, p, n);
+    DeleteObject(b);
+    DeleteObject(pen);
+}
+
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+/* A triangle pointing left (dir < 0) or right, tip at (x, y). */
+static void arrow(int x, int y, int size, int dir, COLORREF c)
+#else /* street2 mka */
+/* The game's big white arrows with a black rim, pointing left (dir < 0) or
+ * right, tip at (x, y). */
+static void arrow(int x, int y, int size, int dir)
+#endif /* HLE_GAME */
+{
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    POINT p[3];
+    p[0].x = x; p[0].y = y;
+    p[1].x = x - dir * size * 9 / 10; p[1].y = y - size;
+    p[2].x = x - dir * size * 9 / 10; p[2].y = y + size;
+    poly(p, 3, c);
+#else /* street2 mka */
+    POINT p[7];
+    int pass;
+    for (pass = 0; pass < 2; pass++) {
+        int g = pass ? 0 : size / 6 + 1, s = size;
+        p[0].x = x + dir * g;                 p[0].y = y;
+        p[1].x = x - dir * (s + g / 2);       p[1].y = y - s - g;
+        p[2].x = x - dir * (s + g / 2);       p[2].y = y - s / 2 - g / 2;
+        p[3].x = x - dir * (s * 2 + g);       p[3].y = y - s / 2 - g / 2;
+        p[4].x = x - dir * (s * 2 + g);       p[4].y = y + s / 2 + g / 2;
+        p[5].x = x - dir * (s + g / 2);       p[5].y = y + s / 2 + g / 2;
+        p[6].x = x - dir * (s + g / 2);       p[6].y = y + s + g;
+        poly(p, 7, pass ? RGB(250, 250, 250) : RGB(12, 12, 12));
+    }
+#endif /* HLE_GAME */
+}
+
+/* Left-to-right colour ramp. */
+static void hramp(int x0, int x1, int y0, int y1, COLORREF a, COLORREF b)
+{
+    int x, n = x1 - x0;
+    for (x = x0; x < x1; x += 2) {
+        int t = n > 0 ? (x - x0) * 256 / n : 256;
+        fill(x, y0, x + 2, y1, RGB((GetRValue(a) * (256 - t) + GetRValue(b) * t) >> 8,
+                                   (GetGValue(a) * (256 - t) + GetGValue(b) * t) >> 8,
+                                   (GetBValue(a) * (256 - t) + GetBValue(b) * t) >> 8));
+    }
+}
+
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+/* A rough paint stroke, like the white brush lines framing the game's
+ * screens: short quads of uneven width with a few gaps. */
+static void brush(int ax, int ay, int bx, int by, int th, COLORREF c, unsigned seed)
+#else /* street2 mka */
+/* A sheet of paper with torn edges (the game's posters and its bottom
+ * strip): points every half line along each side, pushed in or out. */
+static void torn(int x0, int y0, int x1, int y1, int jag, COLORREF c, unsigned seed)
+#endif /* HLE_GAME */
+{
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    double dx = bx - ax, dy = by - ay, len = sqrt(dx * dx + dy * dy), nx, ny;
+    int i, steps;
+    if (len < 1.0)
+        return;
+    nx = -dy / len;
+    ny = dx / len;
+    steps = (int)(len / (th * 0.7)) + 1;
+    for (i = 0; i < steps; i++) {
+        double t0 = (double)i / steps, t1 = (double)(i + 1) / steps, h0, h1;
+        POINT p[4];
+        seed = seed * 1103515245u + 12345u;
+        if (((seed >> 16) & 63) == 0 && i && i + 1 < steps)
+            continue;                                        /* a dry gap */
+        h0 = th * (0.36 + ((seed >> 8) & 63) / 384.0);
+        seed = seed * 1103515245u + 12345u;
+        h1 = th * (0.36 + ((seed >> 8) & 63) / 384.0);
+        p[0].x = (LONG)(ax + dx * t0 + nx * h0); p[0].y = (LONG)(ay + dy * t0 + ny * h0);
+        p[1].x = (LONG)(ax + dx * t1 + nx * h1 + dx / len); p[1].y = (LONG)(ay + dy * t1 + ny * h1 + dy / len);
+        p[2].x = (LONG)(ax + dx * t1 - nx * h1 + dx / len); p[2].y = (LONG)(ay + dy * t1 - ny * h1 + dy / len);
+        p[3].x = (LONG)(ax + dx * t0 - nx * h0); p[3].y = (LONG)(ay + dy * t0 - ny * h0);
+        poly(p, 4, c);
+    }
+#else /* street2 mka */
+    POINT p[1024];
+    int n = 0, step = s_lh / 2 > 4 ? s_lh / 2 : 4, x, y;
+#define JAG() (seed = seed * 1103515245u + 12345u, (int)((seed >> 16) % (unsigned)(jag * 2 + 1)) - jag)
+    for (x = x0; x < x1 && n < 250; x += step) { p[n].x = x; p[n].y = y0 + JAG(); n++; }
+    for (y = y0; y < y1 && n < 500; y += step) { p[n].x = x1 + JAG(); p[n].y = y; n++; }
+    for (x = x1; x > x0 && n < 750; x -= step) { p[n].x = x; p[n].y = y1 + JAG(); n++; }
+    for (y = y1; y > y0 && n < 1000; y -= step) { p[n].x = x0 + JAG(); p[n].y = y; n++; }
+#undef JAG
+    poly(p, n, c);
+#endif /* HLE_GAME */
+}
+
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+/* A controller button as the game draws it: a coloured disc with a white
+ * letter, then the caption in capitals. Returns the x after it. */
+#else /* street2 mka */
+/* A controller button as the game draws it: a coloured disc with a white
+ * letter, then the caption. Returns the x after it. */
+#endif /* HLE_GAME */
+static int button_hint(int x, int y, int lh, wchar_t letter, COLORREF c, const wchar_t *caption)
+{
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    wchar_t l[2] = { letter, 0 }, cap[64];
+#else /* street2 mka */
+    wchar_t l[2] = { letter, 0 };
+#endif /* HLE_GAME */
+    int d = lh * 72 / 100, w;
+    HBRUSH b = CreateSolidBrush(c);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    HPEN pen = CreatePen(PS_SOLID, 1, RGB(235, 235, 235));
+#else /* street2 mka */
+    HPEN pen = CreatePen(PS_SOLID, 1, RGB(40, 40, 40));
+#endif /* HLE_GAME */
+    SelectObject(s_dc, b);
+    SelectObject(s_dc, pen);
+    Ellipse(s_dc, x, y + (lh - d) / 2, x + d, y + (lh - d) / 2 + d);
+    DeleteObject(b);
+    DeleteObject(pen);
+    text(l, x, y, x + d, y + lh, RGB(255, 255, 255), s_font_small, DT_CENTER);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    swprintf(cap, 64, L"%ls", caption);
+    upper(cap);
+    w = text_width(cap, s_font_small);
+    text_sh(cap, x + d + lh / 4, y, x + d + lh / 4 + w + 4, y + lh, RGB(240, 240, 240), s_font_small, DT_LEFT);
+    return x + d + lh / 4 + w + lh;
+#else /* street2 mka */
+    w = text_width(caption, s_font_small);
+    text(caption, x + d + lh / 5, y, x + d + lh / 5 + w + 4, y + lh, RGB(40, 38, 36), s_font_small, DT_LEFT);
+    return x + d + lh / 5 + w + lh;
+#endif /* HLE_GAME */
+}
+
+static void item_text(int it, wchar_t *label, wchar_t *value, int *greyed)
+{
+    uint32_t bw = g_hle.pp_w ? g_hle.pp_w : 640, bh = g_hle.pp_h ? g_hle.pp_h : 480;
+    int i;
+    *greyed = 0;
+    value[0] = 0;
+    switch (it) {
+    case IT_DISPLAY:
+        wcscpy(label, ui_text(L"Modo de tela", L"Display mode"));
+        wcscpy(value, g_opt.display == 0 ? ui_text(L"Janela", L"Windowed") : g_opt.display == 1 ? ui_text(L"Tela cheia (sem bordas)", L"Borderless fullscreen") :
+               s_exclusive_failed == 2 ? ui_text(L"Tela cheia exclusiva (ao focar a janela)", L"Exclusive fullscreen (when focused)") :
+               s_exclusive_failed ? ui_text(L"Exclusiva recusada pelo Windows: sem bordas", L"Exclusive unavailable: borderless") : ui_text(L"Tela cheia exclusiva", L"Exclusive fullscreen"));
+        break;
+    case IT_MONITOR:
+        wcscpy(label, L"Monitor");
+        swprintf(value, 128, L"%d: %ls", (g_opt.monitor < s_nmon ? g_opt.monitor : 0) + 1, monitor_current()->name);
+        break;
+    case IT_REFRESH:
+        wcscpy(label, ui_text(L"Taxa de atualização", L"Refresh rate"));
+        if (g_opt.refresh)
+            swprintf(value, 128, L"%d Hz", g_opt.refresh);
+        else
+            swprintf(value, 128, ui_text(L"A do monitor (%d Hz)", L"Monitor refresh rate (%d Hz)"), monitor_current_hz());
+        *greyed = g_opt.display != 2;
+        break;
+    case IT_VSYNC:
+        wcscpy(label, ui_text(L"Sincronia vertical (VSync)", L"Vertical sync (VSync)"));
+        wcscpy(value, g_opt.vsync ? ui_text(L"Ligada", L"On") : ui_text(L"Desligada", L"Off"));
+        break;
+    case IT_FPS:
+        wcscpy(label, ui_text(L"Limite de quadros", L"Frame limit"));
+        if (g_opt.fps == 60) wcscpy(value, L"60 fps (original)");
+        else if (g_opt.fps) swprintf(value, 128, L"%d fps", g_opt.fps);
+#if HLE_GAME == HLE_GAME_BLACK
+        else wcscpy(value, ui_text(L"Sem limite", L"Unlimited"));
+#else /* street1 street2 mka */
+        else wcscpy(value, ui_text(L"Sem limite (acelera o jogo)", L"Unlimited (speeds up the game)"));
+#endif /* HLE_GAME */
+        break;
+    case IT_SCALE:
+        wcscpy(label, ui_text(L"Resolução interna", L"Internal resolution"));
+    {
+        unsigned ih = k_res[g_opt.scale].h ? (unsigned)k_res[g_opt.scale].h
+                                           : (unsigned)((float)bh * hle_options_native_scale() + 0.5f);
+        unsigned iw = (unsigned)((float)ih * (g_opt.aspect ? k_aspect_value[g_opt.aspect] : (float)bw / (float)bh) + 0.5f);
+#if HLE_GAME == HLE_GAME_BLACK
+        if (g_opt.scale == 0) {
+            Monitor *m = monitor_current();
+            iw = m->rc.right - m->rc.left;
+            ih = m->rc.bottom - m->rc.top;
+        }
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+        swprintf(value, 128, L"%ls (%ux%u)", (g_opt.scale == 0 ? ui_text(L"Resolução do monitor", L"Monitor resolution") : k_res[g_opt.scale].name), (iw + 1) & ~1u, ih);
+    }
+#if HLE_GAME == HLE_GAME_BLACK
+        break;
+    case IT_SHOW_FPS:
+        wcscpy(label, ui_text(L"Mostrar FPS", L"Show FPS"));
+        wcscpy(value, g_opt.show_fps ? ui_text(L"Ligado", L"On") : ui_text(L"Desligado", L"Off"));
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+        break;
+    case IT_ASPECT:
+        wcscpy(label, ui_text(L"Proporção da imagem", L"Aspect ratio"));
+        wcscpy(value, k_aspect_name[g_opt.aspect]);
+        break;
+    case IT_AA:
+        wcscpy(label, ui_text(L"Antisserrilhamento", L"Anti-aliasing"));
+        wcscpy(value, g_opt.aa ? L"FXAA" : ui_text(L"Desligado", L"Off"));
+        break;
+    case IT_MSAA:
+        wcscpy(label, ui_text(L"Multiamostragem (MSAA)", L"Multisampling (MSAA)"));
+        if (g_opt.msaa > 0)
+            swprintf(value, 128, L"%dx", g_opt.msaa);
+        else if (g_opt.msaa < 0 && g_hle.game_msaa > 1)
+            swprintf(value, 128, ui_text(L"O do jogo (%ux)", L"Game default (%ux)"), g_hle.game_msaa);
+        else if (g_opt.msaa < 0)
+            wcscpy(value, ui_text(L"O do jogo (nenhum)", L"Game default (none)"));
+        else
+            wcscpy(value, ui_text(L"Desligada", L"Off"));
+        break;
+    case IT_ANISO:
+        wcscpy(label, ui_text(L"Filtro anisotrópico", L"Anisotropic filtering"));
+        if (g_opt.aniso) swprintf(value, 128, L"%dx", g_opt.aniso);
+        else wcscpy(value, ui_text(L"O do jogo", L"Game default"));
+        break;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+    case IT_MBLUR:
+        wcscpy(label, ui_text(L"Desfoque de movimento", L"Motion blur"));
+        wcscpy(value, g_opt.motion_blur ? ui_text(L"Ligado", L"On") : ui_text(L"Desligado", L"Off"));
+        break;
+#endif /* HLE_GAME */
+    case IT_API:
+        wcscpy(label, ui_text(L"API gráfica", L"Graphics API"));
+        wcscpy(value, g_opt.api ? L"Vulkan" : L"DirectX 11");
+        *greyed = !hle_gpu_vulkan_available() || !hle_gpu_d3d11_available();
+        break;
+    case IT_GPU:
+        wcscpy(label, ui_text(L"Placa de vídeo", L"Graphics card"));
+#ifdef _WIN32
+        wcscpy(value, ui_text(L"Automática (padrão do Windows)", L"Automatic (Windows default)"));
+#else
+        wcscpy(value, ui_text(L"Automática (padrão do sistema)", L"Automatic (system default)"));
+#endif
+        for (i = 0; i < s_ngpu && g_opt.api == s_boot.api; i++)
+            if (s_gpu_index[i] == g_opt.adapter)
+                wcscpy(value, s_gpu_name[i]);
+        break;
+    case IT_UI_LANG:
+        wcscpy(label, ui_text(L"Idioma do menu", L"Menu language"));
+        wcscpy(value, g_opt.ui_language ? L"English" : L"Português");
+        break;
+    case IT_LANG:
+#if HLE_GAME == HLE_GAME_BLACK
+        *greyed = 1;
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+        wcscpy(label, ui_text(L"Idioma do jogo", L"Game language"));
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+        wcscpy(value, language_name(g_opt.language));
+#else /* street2 mka */
+        wcscpy(value, g_opt.language == 5 ? L"Español" : L"English");
+#endif /* HLE_GAME */
+        break;
+    case IT_VIBRATION:
+        wcscpy(label, ui_text(L"Vibração do controle", L"Controller vibration"));
+        wcscpy(value, g_opt.vibration ? ui_text(L"Ligada", L"On") : ui_text(L"Desligada", L"Off"));
+        break;
+    case IT_VOLUME:
+        wcscpy(label, L"Volume");
+        swprintf(value, 128, L"%d%%", g_opt.volume);
+        break;
+#if HLE_GAME == HLE_GAME_BLACK
+    case IT_MOUSE_SENS:
+        wcscpy(label, ui_text(L"Sensibilidade do mouse", L"Mouse sensitivity"));
+        swprintf(value, 128, L"%d%%", g_opt.mouse_sens);
+        break;
+    case IT_MOUSE_INV:
+        wcscpy(label, ui_text(L"Inverter eixo vertical do mouse", L"Invert mouse vertical axis"));
+        wcscpy(value, g_opt.mouse_invert ? ui_text(L"Ligado", L"On") : ui_text(L"Desligado", L"Off"));
+        break;
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+    case IT_RESUME: wcscpy(label, ui_text(L"Voltar", L"Back")); break;
+    case IT_RESTART: wcscpy(label, ui_text(L"Reiniciar o jogo para aplicar *", L"Restart game to apply *")); *greyed = !restart_pending(); break;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    case IT_QUIT: wcscpy(label, ui_text(L"Sair do jogo", L"Quit game")); break;
+#else /* street2 mka */
+    case IT_QUIT: wcscpy(label, s_standalone ? ui_text(L"Fechar configurações", L"Close settings") : ui_text(L"Sair do jogo", L"Quit game")); break;
+#endif /* HLE_GAME */
+    }
+}
+
+static const wchar_t *item_help(int it)
+{
+    switch (it) {
+    case IT_DISPLAY: return ui_text(L"Janela, tela cheia sem bordas (troca rápida com Alt+Tab) ou tela cheia exclusiva.", L"Windowed, borderless fullscreen (quick Alt+Tab) or exclusive fullscreen.");
+    case IT_MONITOR: return ui_text(L"Em qual monitor o jogo aparece.", L"Monitor used to display the game.");
+    case IT_REFRESH: return ui_text(L"Frequência do monitor na tela cheia exclusiva.", L"Monitor refresh rate in exclusive fullscreen.");
+    case IT_VSYNC: return ui_text(L"Espera o monitor para mostrar cada quadro: sem cortes na imagem, um pouco mais de atraso.", L"Synchronizes frames with the monitor to prevent tearing, with slightly more latency.");
+#if HLE_GAME == HLE_GAME_BLACK
+    case IT_SHOW_FPS: return ui_text(L"Mostra os quadros por segundo no canto da tela.", L"Shows the frames per second in the corner of the screen.");
+    case IT_FPS: return ui_text(L"Limite opcional de apresentação. VSync é controlado separadamente.", L"Optional presentation limit. VSync is controlled separately.");
+#else /* street1 street2 mka */
+    case IT_FPS: return ui_text(L"O jogo foi feito para 60 quadros por segundo; sem limite ele roda acelerado.", L"The game was designed for 60 fps; unlimited frame rates speed it up.");
+#endif /* HLE_GAME */
+    case IT_SCALE: return ui_text(L"Resolução em que o jogo é desenhado: maior = imagem mais nítida, mais trabalho para a placa. Também ajusta a proporção.", L"Higher rendering resolutions give a sharper image and increase GPU load. Also adjusts aspect ratio.");
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    case IT_ASPECT: return ui_text(L"4:3 é o original. As outras alargam o campo de visão para telas largas.", L"4:3 is the original. Other ratios widen the field of view for widescreen displays.");
+#else /* street2 mka */
+    case IT_ASPECT: return ui_text(L"4:3 é o original. As outras alargam o campo de visão para telas largas. 21:9 hor+ estende o cenário até as bordas (as outras usam a imagem 16:9 do jogo, com barras quando a tela é mais larga).", L"4:3 is the original. Other ratios widen the field of view for widescreen displays. 21:9 hor+ extends the scenery to the edges (the others show the game's 16:9 picture, with bars on wider screens).");
+#endif /* HLE_GAME */
+    case IT_AA: return ui_text(L"FXAA suaviza as bordas serrilhadas com custo quase nulo.", L"FXAA smooths jagged edges with minimal performance cost.");
+    case IT_MSAA: return ui_text(L"Suaviza as bordas da cena 3D com várias amostras por pixel. \"O do jogo\" usa o que o Xbox usava. Reinicia o jogo.", L"Smooths the edges of the 3D scene with several samples per pixel. \"Game default\" uses what the Xbox used. Restarts the game.");
+#if HLE_GAME == HLE_GAME_STREET1
+    case IT_ANISO: return ui_text(L"Deixa nítidas as texturas vistas em ângulo, como o chão da quadra.", L"Sharpens textures viewed at an angle, such as the pitch.");
+#elif HLE_GAME == HLE_GAME_BLACK
+    case IT_ANISO: return ui_text(L"Deixa nítidas as texturas vistas em ângulo, como o chão.", L"Sharpens textures viewed at an angle, such as the ground.");
+#else /* street2 mka */
+    case IT_ANISO: return ui_text(L"Deixa nítidas as texturas vistas em ângulo, como o chão da quadra.", L"Sharpens textures viewed at an angle, such as the pitch.");
+    case IT_MBLUR: return ui_text(L"O borrão que o jogo aplica à imagem nos lances rápidos. Desligado = imagem sempre nítida.", L"The blur the game applies to the picture during fast moments. Off = always a sharp picture.");
+#endif /* HLE_GAME */
+    case IT_API: return !hle_gpu_d3d11_available() ? ui_text(L"Neste sistema o jogo desenha com Vulkan (DXVK).", L"This system renders the game with Vulkan (DXVK).")
+                      : hle_gpu_vulkan_available()
+                        ? ui_text(L"DirectX 11 ou Vulkan (pela DXVK). A imagem é a mesma; use a que rodar melhor na sua placa.", L"DirectX 11 or Vulkan (DXVK). Choose whichever performs better on your GPU.")
+                        : ui_text(L"Vulkan precisa do driver Vulkan da placa e da pasta vulkan ao lado do jogo.", L"Vulkan requires a Vulkan driver and the vulkan folder next to the game.");
+    case IT_GPU: return ui_text(L"Placa de vídeo usada para desenhar o jogo.", L"Graphics card used to render the game.");
+    case IT_UI_LANG: return ui_text(L"Idioma deste menu de configurações. A mudança é imediata.", L"Language of this settings menu. Changes apply immediately.");
+    case IT_LANG: return ui_text(L"Idioma dos textos e narração do jogo.", L"Game language supported by the installed game resources.");
+    case IT_VOLUME: return ui_text(L"Volume geral do jogo.", L"Overall game volume.");
+    case IT_VIBRATION: return ui_text(L"Liga ou desliga a vibração do controle.", L"Turns the controller's vibration on or off.");
+#if HLE_GAME == HLE_GAME_STREET1
+    case IT_RESUME: return ui_text(L"Salva e volta para onde você estava.", L"Saves settings and returns to the game.");
+#elif HLE_GAME == HLE_GAME_BLACK
+    case IT_MOUSE_SENS: return ui_text(L"Velocidade da câmera com o mouse.", L"How fast the mouse turns the camera.");
+    case IT_MOUSE_INV: return ui_text(L"Mover o mouse para frente olha para baixo.", L"Moving the mouse forward looks down.");
+    case IT_RESUME: return ui_text(L"Salva e volta para onde você estava.", L"Saves settings and returns to the game.");
+#else /* street2 mka */
+    case IT_RESUME: return s_standalone ? ui_text(L"Salva e fecha as configurações.", L"Saves and closes settings.") : ui_text(L"Salva e volta para onde você estava.", L"Saves settings and returns to the game.");
+#endif /* HLE_GAME */
+    case IT_RESTART: return ui_text(L"Fecha e abre o jogo de novo com as opções marcadas com *.", L"Restarts the game to apply settings marked with *.");
+    case IT_QUIT: return ui_text(L"Salva as configurações e fecha o jogo.", L"Saves settings and quits the game.");
+    }
+    return L"";
+}
+
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+/* The game's Options look: an orange FreeStyle title on a white brush
+ * frame, a dark see-through panel, white Euromode capitals; the chosen line
+ * on a yellow paint band with "::", its value in a dark box between orange
+ * arrows (as in Options > Gameplay); (A)/(B) hints under a white line. */
+#else /* street2 mka */
+/* The game's Options look: a graffiti title (white Leigh, black rim) over a
+ * paper poster with dark EAS SansCondensed lines; the chosen line on a
+ * black paint stroke in white, its value in a tan band between big white
+ * arrows (as in Options > Gameplay); the (B)/(A) hints on a torn white
+ * strip at the bottom. */
+#endif /* HLE_GAME */
+#define BG_ALPHA    0xC8000000u
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#define PANEL_RGB   RGB(18, 30, 52)
+#define PANEL_PIXEL 0x121E34u
+#define PANEL_ALPHA 0xEC000000u
+#define S1_ORANGE   RGB(243, 146, 30)
+#define S1_YELLOW   RGB(226, 232, 48)
+#define S1_WHITE    RGB(238, 238, 232)
+#else /* street2 mka */
+#define S2_PAPER    RGB(226, 221, 203)
+#define S2_STREAK   RGB(214, 208, 188)
+#define S2_INK      RGB(46, 44, 42)
+#define S2_TAN      RGB(214, 198, 156)
+#define S2_TAN_SEL  RGB(194, 168, 112)
+#define S2_RED      RGB(176, 32, 30)
+
+static int s_scroll;                    /* pixels of the row list scrolled past */
+#endif /* HLE_GAME */
+
+static void render_menu(void)
+{
+    const int lh = s_lh, w = s_pw, h = s_ph;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    const int cw = w * 78 / 100 < lh * 40 ? w * 78 / 100 : lh * 40;
+#else /* street2 mka */
+    const int cw = w * 86 / 100 < lh * 40 ? w * 86 / 100 : lh * 40;
+#endif /* HLE_GAME */
+    const int x0 = (w - cw) / 2, x1 = x0 + cw;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    const int xm = x0 + cw * 44 / 100;                       /* labels end here */
+    const int va0 = xm + lh * 3 / 2, va1 = x1 - lh * 2;      /* the value box */
+    const int top = lh * 4, foot = h - lh * 2;
+    int y, it, i, n = s_pw * s_ph, bx, pb;
+    wchar_t sub[160];
+    POINT p[4];
+#else /* street2 mka */
+    const int xm = x0 + cw * 42 / 100;                       /* labels end here */
+    const int va0 = xm + lh * 2, va1 = x1 - lh;              /* the value band */
+    const int top = lh * 7 / 2, foot = h - lh * 2, list_top = top + lh / 2;
+    int y, it, i, n = s_pw * s_ph, bx, pb, list_h, view_h;
+    int row_y[IT_COUNT], head_y[IT_COUNT];
+#endif /* HLE_GAME */
+    SelectObject(s_dc, s_bmp);
+    SetBkMode(s_dc, TRANSPARENT);
+    fill(0, 0, w, h, BG_RGB);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    /* The rows first (to know where the panel ends), drawn over it after. */
+    y = top + lh / 3;
+#else /* street2 mka */
+    /* Where each row sits in the list (row_y, from the list's top; -1 hidden)
+     * and the list's height. When it is taller than the room above the help
+     * line, the list scrolls to keep the selected row (and its section title)
+     * in view. */
+    y = 0;
+#endif /* HLE_GAME */
+    for (it = 0; it < IT_COUNT; it++) {
+#if HLE_GAME == HLE_GAME_STREET1
+        if (it == IT_DISPLAY || it == IT_UI_LANG)
+            y += lh * 3 / 4;
+        if (it == IT_RESUME)
+            y += lh / 3;
+        if (it == IT_RESTART && !restart_pending())
+            continue;
+        y += lh;
+    }
+    pb = y + lh / 3;
+    p[0].x = x0 - lh * 2; p[0].y = top;
+    p[1].x = x1 + lh; p[1].y = top;
+    p[2].x = x1 + lh; p[2].y = pb;
+    p[3].x = x0 - lh; p[3].y = pb;
+    poly(p, 4, PANEL_RGB);
+    /* The white brush frame: down from the top left, under the title, then
+     * along the panel's right side. */
+    brush(x0 - lh * 5, -lh, x0 - lh * 3 / 2, top - lh / 2, lh / 2, S1_WHITE, 7u);
+    brush(x0 - lh * 3 / 2, top - lh / 2, x1 + lh * 3 / 2, top - lh / 2, lh / 2, S1_WHITE, 11u);
+    brush(x1 + lh * 3 / 2, top - lh / 2, x1 + lh * 2, top + lh / 2, lh / 2, S1_WHITE, 13u);
+    brush(x1 + lh * 2, top + lh / 2, x1 + lh * 2, pb - lh, lh / 2, S1_WHITE, 17u);
+    brush(x1 + lh * 2, pb - lh, x1 + lh * 3, pb + lh, lh / 2, S1_WHITE, 19u);
+    /* Title, lower case as in the game ("options", "gameplay"). */
+    text_sh(ui_text(L"configurações", L"settings"), x0, 0, x1, top - lh * 3 / 4, S1_ORANGE, s_font_title, DT_LEFT);
+    swprintf(sub, 160, ui_text(L"PC  •  jogo pausado", L"PC  •  game paused"));
+    upper(sub);
+    text_sh(sub, x0, top - lh * 2, x1, top - lh, RGB(175, 192, 215), s_font_small, DT_RIGHT);
+    y = top + lh / 3;
+    for (it = 0; it < IT_COUNT; it++) {
+        wchar_t label[128], value[160], v[200];
+        int greyed, sel = it == s_sel, ym, a = lh / 2;
+        COLORREF lc;
+#elif HLE_GAME == HLE_GAME_BLACK
+        if (it == IT_DISPLAY || it == IT_UI_LANG)
+            y += lh * 3 / 4;
+        if (it == IT_RESUME)
+            y += lh / 3;
+        if (it == IT_RESTART && !restart_pending())
+            continue;
+        y += lh;
+    }
+    pb = y + lh / 3;
+    p[0].x = x0 - lh * 2; p[0].y = top;
+    p[1].x = x1 + lh; p[1].y = top;
+    p[2].x = x1 + lh; p[2].y = pb;
+    p[3].x = x0 - lh; p[3].y = pb;
+    poly(p, 4, PANEL_RGB);
+    /* The white brush frame: down from the top left, under the title, then
+     * along the panel's right side. */
+    brush(x0 - lh * 5, -lh, x0 - lh * 3 / 2, top - lh / 2, lh / 2, S1_WHITE, 7u);
+    brush(x0 - lh * 3 / 2, top - lh / 2, x1 + lh * 3 / 2, top - lh / 2, lh / 2, S1_WHITE, 11u);
+    brush(x1 + lh * 3 / 2, top - lh / 2, x1 + lh * 2, top + lh / 2, lh / 2, S1_WHITE, 13u);
+    brush(x1 + lh * 2, top + lh / 2, x1 + lh * 2, pb - lh, lh / 2, S1_WHITE, 17u);
+    brush(x1 + lh * 2, pb - lh, x1 + lh * 3, pb + lh, lh / 2, S1_WHITE, 19u);
+    /* Title, lower case as in the game ("options", "gameplay"). */
+    text_sh(ui_text(L"BLACK — configurações", L"BLACK — PC Settings"), x0, 0, x1, top - lh * 3 / 4, S1_ORANGE, s_font_title, DT_LEFT);
+    swprintf(sub, 160, ui_text(L"PC  •  jogo pausado", L"PC  •  game paused"));
+    upper(sub);
+    text_sh(sub, x0, top - lh * 2, x1, top - lh, RGB(175, 192, 215), s_font_small, DT_RIGHT);
+    y = top + lh / 3;
+    for (it = 0; it < IT_COUNT; it++) {
+        wchar_t label[128], value[160], v[200];
+        int greyed, sel = it == s_sel, ym, a = lh / 2;
+        COLORREF lc;
+#else /* street2 mka */
+        head_y[it] = -1;
+#endif /* HLE_GAME */
+        if (it == IT_DISPLAY || it == IT_UI_LANG) {
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+            text_sh(it == IT_DISPLAY ? ui_text(L"VÍDEO", L"VIDEO") : ui_text(L"SISTEMA", L"SYSTEM"), x0 - lh, y, xm, y + lh * 3 / 4, S1_ORANGE, s_font_small, DT_LEFT);
+#else /* street2 mka */
+            head_y[it] = y;
+#endif /* HLE_GAME */
+            y += lh * 3 / 4;
+        }
+        if (it == IT_RESUME)
+            y += lh / 3;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+        row_y[it] = -1;
+#endif /* HLE_GAME */
+        if (it == IT_RESTART && !restart_pending())
+            continue;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#elif HLE_GAME == HLE_GAME_MKA
+        row_y[it] = y;
+        y += lh;
+    }
+    list_h = y;
+    view_h = foot - lh * 7 / 4 - list_top;
+    if (view_h < lh * 3)
+        view_h = lh * 3;
+    if (list_h <= view_h) {
+        s_scroll = 0;
+        view_h = list_h;
+    } else if (row_y[s_sel] >= 0) {
+        int y0 = head_y[s_sel] >= 0 ? head_y[s_sel] : row_y[s_sel];
+        if (s_sel == 0)
+            y0 = 0;
+        if (y0 < s_scroll)
+            s_scroll = y0;
+        if (row_y[s_sel] + lh > s_scroll + view_h)
+            s_scroll = row_y[s_sel] + lh - view_h;
+        if (s_sel == IT_COUNT - 1)
+            s_scroll = list_h - view_h;
+    }
+    if (s_scroll > list_h - view_h)
+        s_scroll = list_h - view_h;
+    if (s_scroll < 0)
+        s_scroll = 0;
+    pb = list_top + view_h + lh * 3 / 2;
+    torn(x0 - lh * 2, top, x1 + lh * 2, pb, lh / 6 + 1, S2_PAPER, 5u);
+    for (i = top + lh; i < pb - lh / 2; i += lh * 3 / 2)     /* the paper's creases */
+        fill(x0 - lh * 3 / 2, i, x1 + lh * 3 / 2, i + 1, S2_STREAK);
+    text_outline(ui_text(L"Configurações", L"Settings"), x0 - lh, 0, x1, top + lh / 4, RGB(250, 250, 250), s_font_title, DT_LEFT, lh / 9 + 1);
+    text(s_standalone ? L"PC  •  Mortal Kombat: Armageddon" : ui_text(L"PC  •  jogo pausado", L"PC  •  game paused"), x0, top - lh * 3 / 2, x1, top - lh / 4,
+         RGB(235, 232, 220), s_font_small, DT_RIGHT);
+    for (it = 0; it < IT_COUNT; it++) {
+        wchar_t label[128], value[160], v[200];
+        int greyed, sel = it == s_sel, ym, a = lh * 2 / 5;
+        SetRectEmpty(&s_row[it]);
+        SetRectEmpty(&s_row_left[it]);
+        if (head_y[it] >= s_scroll && head_y[it] + lh * 3 / 4 <= s_scroll + view_h) {
+            y = list_top + head_y[it] - s_scroll;
+            text(it == IT_DISPLAY ? ui_text(L"Vídeo", L"Video") : ui_text(L"Sistema", L"System"), x0, y, xm, y + lh * 3 / 4, S2_RED, s_font_small, DT_LEFT);
+        }
+        if (row_y[it] < s_scroll || row_y[it] + lh > s_scroll + view_h)
+            continue;                                        /* hidden, or scrolled out */
+        y = list_top + row_y[it] - s_scroll;
+#else /* street2 */
+        row_y[it] = y;
+        y += lh;
+    }
+    list_h = y;
+    view_h = foot - lh * 7 / 4 - list_top;
+    if (view_h < lh * 3)
+        view_h = lh * 3;
+    if (list_h <= view_h) {
+        s_scroll = 0;
+        view_h = list_h;
+    } else if (row_y[s_sel] >= 0) {
+        int y0 = head_y[s_sel] >= 0 ? head_y[s_sel] : row_y[s_sel];
+        if (s_sel == 0)
+            y0 = 0;
+        if (y0 < s_scroll)
+            s_scroll = y0;
+        if (row_y[s_sel] + lh > s_scroll + view_h)
+            s_scroll = row_y[s_sel] + lh - view_h;
+        if (s_sel == IT_COUNT - 1)
+            s_scroll = list_h - view_h;
+    }
+    if (s_scroll > list_h - view_h)
+        s_scroll = list_h - view_h;
+    if (s_scroll < 0)
+        s_scroll = 0;
+    pb = list_top + view_h + lh * 3 / 2;
+    torn(x0 - lh * 2, top, x1 + lh * 2, pb, lh / 6 + 1, S2_PAPER, 5u);
+    for (i = top + lh; i < pb - lh / 2; i += lh * 3 / 2)     /* the paper's creases */
+        fill(x0 - lh * 3 / 2, i, x1 + lh * 3 / 2, i + 1, S2_STREAK);
+    text_outline(ui_text(L"Configurações", L"Settings"), x0 - lh, 0, x1, top + lh / 4, RGB(250, 250, 250), s_font_title, DT_LEFT, lh / 9 + 1);
+    text(s_standalone ? L"PC  •  FIFA Street 2" : ui_text(L"PC  •  jogo pausado", L"PC  •  game paused"), x0, top - lh * 3 / 2, x1, top - lh / 4,
+         RGB(235, 232, 220), s_font_small, DT_RIGHT);
+    for (it = 0; it < IT_COUNT; it++) {
+        wchar_t label[128], value[160], v[200];
+        int greyed, sel = it == s_sel, ym, a = lh * 2 / 5;
+        SetRectEmpty(&s_row[it]);
+        SetRectEmpty(&s_row_left[it]);
+        if (head_y[it] >= s_scroll && head_y[it] + lh * 3 / 4 <= s_scroll + view_h) {
+            y = list_top + head_y[it] - s_scroll;
+            text(it == IT_DISPLAY ? ui_text(L"Vídeo", L"Video") : ui_text(L"Sistema", L"System"), x0, y, xm, y + lh * 3 / 4, S2_RED, s_font_small, DT_LEFT);
+        }
+        if (row_y[it] < s_scroll || row_y[it] + lh > s_scroll + view_h)
+            continue;                                        /* hidden, or scrolled out */
+        y = list_top + row_y[it] - s_scroll;
+#endif /* HLE_GAME */
+        item_text(it, label, value, &greyed);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+        upper(label);
+        upper(value);
+#else /* street2 mka */
+#endif /* HLE_GAME */
+        ym = y + lh / 2;
+        SetRect(&s_row[it], x0 - lh, y, x1 + lh, y + lh);
+        SetRectEmpty(&s_row_left[it]);
+        if (sel) {
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+            /* The yellow paint band, ragged at its left end, then "::". */
+            int bl = xm - text_width(label, s_font_bold) - lh * 2;
+            if (bl > x0 - lh) bl = x0 - lh;
+            hramp(bl, bl + lh * 3, y + lh / 8, y + lh - lh / 8, PANEL_RGB, S1_YELLOW);
+            fill(bl + lh * 3, y + lh / 8, xm + lh, y + lh - lh / 8, S1_YELLOW);
+            for (i = 0; i < 4; i++)
+                fill(xm + lh / 3 + (i & 1) * (lh / 6), ym - lh / 8 + (i >> 1) * (lh / 6), xm + lh / 3 + (i & 1) * (lh / 6) + lh / 10 + 1,
+                     ym - lh / 8 + (i >> 1) * (lh / 6) + lh / 10 + 1, RGB(30, 30, 30));
+#else /* street2 mka */
+            /* The black paint stroke, worn away at its right end. */
+            fill(x0 - lh, y + lh / 10, xm - lh * 2, y + lh - lh / 10, RGB(20, 20, 20));
+            hramp(xm - lh * 2, xm + lh / 2, y + lh / 10, y + lh - lh / 10, RGB(20, 20, 20), S2_PAPER);
+#endif /* HLE_GAME */
+            if (!value[0])                                   /* a line that acts: the (A) disc */
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+                button_hint(xm - text_width(label, s_font_bold) - lh * 6 / 5, y, lh, L'A', RGB(60, 170, 60), L"");
+#else /* street2 mka */
+                button_hint(xm - text_width(label, s_font_bold) - lh * 6 / 5, y, lh, L'A', RGB(70, 170, 50), L"");
+#endif /* HLE_GAME */
+        }
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+        lc = sel ? RGB(20, 20, 20) : greyed ? RGB(120, 130, 145) : RGB(240, 240, 240);
+        if (sel)
+            text(label, x0 - lh, y, xm, y + lh, lc, s_font_bold, DT_RIGHT);
+        else
+            text_sh(label, x0 - lh, y, xm, y + lh, lc, s_font, DT_RIGHT);
+#else /* street2 mka */
+        text(label, x0 - lh, y, xm, y + lh, sel ? RGB(250, 250, 250) : greyed ? RGB(150, 146, 136) : S2_INK, sel ? s_font_bold : s_font, DT_RIGHT);
+#endif /* HLE_GAME */
+        if (value[0]) {
+            int arrows = sel && (it != IT_API || (hle_gpu_vulkan_available() && hle_gpu_d3d11_available()));
+            swprintf(v, 200, L"%ls%ls", value, item_restart(it) ? L" *" : L"");
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+            if (sel) {
+                fill(va0, y + lh / 8, va1, y + lh - lh / 8, RGB(40, 40, 42));
+                if (arrows) {
+                    arrow(va0 - a, ym, a, -1, S1_ORANGE);
+                    arrow(va1 + a, ym, a, 1, S1_ORANGE);
+                }
+                text(v, va0 + lh / 2, y, va1 - lh / 2, y + lh, greyed ? RGB(150, 120, 90) : S1_ORANGE, s_font_bold, DT_CENTER);
+            } else {
+                text_sh(v, va0 + lh / 2, y, va1 - lh / 2, y + lh, greyed ? RGB(120, 130, 145) : RGB(240, 240, 240), s_font, DT_CENTER);
+#else /* street2 mka */
+            fill(va0, y + lh / 8, va1, y + lh - lh / 8, sel ? S2_TAN_SEL : S2_TAN);
+            if (arrows) {
+                arrow(va0 - lh / 4, ym, a, -1);
+                arrow(va1 + lh / 4, ym, a, 1);
+#endif /* HLE_GAME */
+            }
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+            SetRect(&s_row_left[it], va0 - lh * 3 / 2, y, va0 + lh, y + lh);
+#else /* street2 mka */
+            text(v, va0 + lh / 2, y, va1 - lh / 2, y + lh, greyed ? RGB(150, 146, 136) : S2_INK, sel ? s_font_bold : s_font, DT_CENTER);
+            SetRect(&s_row_left[it], va0 - lh * 2, y, va0 + lh, y + lh);
+#endif /* HLE_GAME */
+        }
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+        y += lh;
+#else /* street2 mka */
+#endif /* HLE_GAME */
+    }
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    /* Help for the selected line, then the white base line and the hints. */
+    text_sh(item_help(s_sel), x0 - lh, pb + lh / 6, x1 + lh, pb + lh + lh / 6, RGB(205, 215, 230), s_font_small, DT_LEFT);
+    if (restart_pending())
+        text_sh(ui_text(L"* vale depois de reiniciar", L"* applies after restarting"), x0 - lh, foot - lh, x1 + lh, foot, RGB(255, 190, 110), s_font_small, DT_RIGHT);
+    fill(0, foot - 1, x0 + cw / 2, foot + 1, S1_WHITE);
+    p[0].x = x0 + cw / 2; p[0].y = foot - 1;
+    p[1].x = x0 + cw / 2 + 2; p[1].y = foot - 1;
+    p[2].x = x0 + cw / 2 + lh * 2 + 2; p[2].y = h;
+    p[3].x = x0 + cw / 2 + lh * 2; p[3].y = h;
+    poly(p, 4, S1_WHITE);
+    bx = x0;
+    SetRect(&s_hint_a, bx, foot + lh / 4, 0, h - lh / 4);
+    bx = button_hint(bx, foot + lh / 4, lh, L'A', RGB(60, 170, 60), ui_text(L"Selecionar", L"Select"));
+    s_hint_a.right = bx - lh;
+    SetRect(&s_hint_b, bx, foot + lh / 4, 0, h - lh / 4);
+    bx = button_hint(bx, foot + lh / 4, lh, L'B', RGB(200, 40, 40), ui_text(L"Voltar", L"Back"));
+    s_hint_b.right = bx - lh;
+    bx = x0 + cw / 2 + lh * 3;
+    arrow(bx, foot + lh * 3 / 4, lh / 4, -1, S1_ORANGE);
+    arrow(bx + lh * 3 / 4, foot + lh * 3 / 4, lh / 4, 1, S1_ORANGE);
+    swprintf(sub, 160, ui_text(L"alterar      Alt+Enter  tela cheia      F1  fechar", L"change      Alt+Enter  fullscreen      F1  close"));
+    upper(sub);
+    text_sh(sub, bx + lh, foot + lh / 4, w, h - lh / 4, RGB(200, 208, 220), s_font_small, DT_LEFT);
+    GdiFlush();
+    for (i = 0; i < n; i++) {
+        uint32_t c = s_bits[i] & 0xFFFFFFu;
+        s_bits[i] = c | (c == BG_PIXEL ? BG_ALPHA : c == PANEL_PIXEL ? PANEL_ALPHA : 0xFF000000u);
+#else /* street2 mka */
+    /* More rows above / below: small ink triangles at the list's right end. */
+    if (s_scroll > 0) {
+        POINT p[3] = { { x1 + lh, list_top }, { x1 + lh / 2, list_top + lh / 2 }, { x1 + lh * 3 / 2, list_top + lh / 2 } };
+        poly(p, 3, S2_INK);
+#endif /* HLE_GAME */
+    }
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+    if (s_scroll + view_h < list_h) {
+        int yb = list_top + view_h;
+        POINT p[3] = { { x1 + lh, yb }, { x1 + lh / 2, yb - lh / 2 }, { x1 + lh * 3 / 2, yb - lh / 2 } };
+        poly(p, 3, S2_INK);
+    }
+    /* Help for the selected line on the poster, then the torn strip with
+     * the button hints. */
+    text(item_help(s_sel), x0 - lh, pb - lh * 5 / 4, x1 + lh, pb - lh / 4, RGB(90, 86, 80), s_font_small, DT_LEFT);
+    if (restart_pending())
+        text(ui_text(L"* vale depois de reiniciar", L"* applies after restarting"), x0 - lh, pb - lh * 5 / 4, x1 + lh, pb - lh / 4, S2_RED, s_font_small, DT_RIGHT);
+    torn(x0 - lh * 4, foot - lh / 6, x1 + lh * 4, h - lh / 4, lh / 5 + 1, RGB(238, 236, 228), 9u);
+    bx = x0 - lh;
+    SetRect(&s_hint_b, bx, foot, 0, h - lh / 2);
+    bx = button_hint(bx, foot + lh / 6, lh, L'B', RGB(200, 36, 36), ui_text(L"Voltar", L"Back"));
+    s_hint_b.right = bx - lh;
+    SetRect(&s_hint_a, bx, foot, 0, h - lh / 2);
+    bx = button_hint(bx, foot + lh / 6, lh, L'A', RGB(70, 170, 50), ui_text(L"Aceitar", L"Accept"));
+    s_hint_a.right = bx - lh;
+    text(ui_text(L"Setas  alterar     Alt+Enter  tela cheia     F1  fechar", L"Arrows  change     Alt+Enter  fullscreen     F1  close"),
+         bx, foot + lh / 6, x1 + lh * 2, foot + lh + lh / 6, RGB(90, 86, 80), s_font_small, DT_RIGHT);
+    GdiFlush();
+    for (i = 0; i < n; i++)
+        s_bits[i] = (s_bits[i] & 0xFFFFFFu) | ((s_bits[i] & 0xFFFFFFu) == BG_PIXEL ? BG_ALPHA : 0xFF000000u);
+#endif /* HLE_GAME */
+    ID3D11DeviceContext_UpdateSubresource(g_hle.ctx, (ID3D11Resource *)s_tex, 0, NULL, s_bits, (UINT)s_pw * 4u, 0);
+#if HLE_GAME == HLE_GAME_STREET1
+}
+
+void game_screen_loaded(const char *name)
+{
+    /* Button icons, backgrounds and screen tables load beside the screens. */
+    if (!strncmp(name, "xbox_", 5) || !strncmp(name, "f_bg_", 5) || !strcmp(name, "CommonComponents") ||
+        (strlen(name) > 3 && !strcmp(name + strlen(name) - 3, "tab")))
+        return;
+    snprintf(s_screen, sizeof s_screen, "%s", name);
+    fprintf(stderr, "[GAME] screen %s (swap %llu)\n", name, (unsigned long long)g_hle.swaps);
+#elif HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+}
+
+/* game_hooks.c, from the game thread (no renderer headers there). */
+int hle_options_motion_blur(void)
+{
+    return g_opt.motion_blur;
+}
+
+void game_screen_loaded(const char *name)
+{
+    /* Button icons, backgrounds and screen tables load beside the screens. */
+    if (!strncmp(name, "xbox_", 5) || !strncmp(name, "f_bg_", 5) || !strcmp(name, "CommonComponents") ||
+        (strlen(name) > 3 && !strcmp(name + strlen(name) - 3, "tab")))
+        return;
+    snprintf(s_screen, sizeof s_screen, "%s", name);
+    fprintf(stderr, "[GAME] screen %s (swap %llu)\n", name, (unsigned long long)g_hle.swaps);
+#endif /* HLE_GAME */
+}
+
+void hle_options_request(const char *why)
+{
+    /* The front end also runs its screens' code while it loads; nothing a
+     * player chose can happen in the first seconds after boot. */
+    if (g_hle.swaps < 600) {
+        fprintf(stderr, "[OPTIONS] %s at swap %llu: during boot, ignored\n", why, (unsigned long long)g_hle.swaps);
+        return;
+    }
+    if (!s_open && !InterlockedExchange(&s_request, 1))
+        fprintf(stderr, "[OPTIONS] opened by %s (swap %llu)\n", why, (unsigned long long)g_hle.swaps);
+}
+
+void hle_options_draw_overlay(ID3D11RenderTargetView *rtv, UINT w, UINT h)
+{
+    int lh;
+    D3D11_VIEWPORT vp;
+    if (!s_open || !rtv || w < 64 || h < 64 || !overlay_resources())
+        return;
+#if HLE_GAME == HLE_GAME_BLACK
+    lh = (int)h / 30;                          /* 21 rows + title + hints fit */
+#else /* street1 street2 mka */
+    lh = (int)h / 26;
+#endif /* HLE_GAME */
+    if (lh < 12) lh = 12;
+    if ((int)w != s_pw || (int)h != s_ph || lh != s_lh || !s_srv)
+        surface_resize((int)w, (int)h, lh);
+    if (!s_srv || !s_bits)
+        return;
+    if (s_dirty) {
+        render_menu();
+        s_dirty = 0;
+    }
+    vp.TopLeftX = 0.0f;
+    vp.TopLeftY = 0.0f;
+    vp.Width = (float)w;
+    vp.Height = (float)h;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    ID3D11DeviceContext_OMSetRenderTargets(g_hle.ctx, 1, &rtv, NULL);
+    ID3D11DeviceContext_RSSetViewports(g_hle.ctx, 1, &vp);
+    ID3D11DeviceContext_RSSetState(g_hle.ctx, NULL);
+    ID3D11DeviceContext_OMSetBlendState(g_hle.ctx, s_blend, NULL, 0xFFFFFFFFu);
+    ID3D11DeviceContext_OMSetDepthStencilState(g_hle.ctx, NULL, 0);
+    ID3D11DeviceContext_IASetInputLayout(g_hle.ctx, NULL);
+    ID3D11DeviceContext_IASetPrimitiveTopology(g_hle.ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    ID3D11DeviceContext_VSSetShader(g_hle.ctx, s_vs, NULL, 0);
+    ID3D11DeviceContext_GSSetShader(g_hle.ctx, NULL, NULL, 0);
+    ID3D11DeviceContext_PSSetShader(g_hle.ctx, s_ps, NULL, 0);
+    ID3D11DeviceContext_PSSetShaderResources(g_hle.ctx, 0, 1, &s_srv);
+    ID3D11DeviceContext_PSSetSamplers(g_hle.ctx, 0, 1, &s_samp);
+    ID3D11DeviceContext_Draw(g_hle.ctx, 3, 0);
+    {
+        ID3D11ShaderResourceView *none = NULL;
+        ID3D11DeviceContext_PSSetShaderResources(g_hle.ctx, 0, 1, &none);
+    }
+    ID3D11DeviceContext_OMSetBlendState(g_hle.ctx, NULL, NULL, 0xFFFFFFFFu);
+    ID3D11DeviceContext_OMSetRenderTargets(g_hle.ctx, 0, NULL, NULL);
+}
+
+/* ------------------------------------------------- the button on menus */
+
+static HBITMAP s_btn_bmp;
+static uint32_t *s_btn_bits;
+static ID3D11Texture2D *s_btn_tex;
+static ID3D11ShaderResourceView *s_btn_srv;
+static ID3D11BlendState *s_blend_pre;
+static int s_btn_w, s_btn_h, s_btn_language = -1;
+
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+/* The capsule and caption, drawn twice: white-on-black for coverage, then
+ * in colour on black, which is the colour premultiplied by that coverage.
+ * The caption is the game's Euromode capitals with their drop shadow, like
+ * its own "(B) BACK" hint. */
+#else /* street2 mka */
+/* The capsule and caption, drawn twice: white-on-black for coverage, then
+ * in colour on black, which is the colour premultiplied by that coverage.
+ * The caption is the game's EAS SansCondensed in white with a black rim,
+ * so it reads on the posters and on the brick walls alike. */
+#endif /* HLE_GAME */
+static void button_paint(int w, int h, int mask)
+{
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    HFONT big = make_font(h * 56 / 100, FW_BOLD, 0), fsmall = make_font(h * 36 / 100, FW_BOLD, 0);
+    HBRUSH white = CreateSolidBrush(RGB(255, 255, 255));
+    HPEN pen = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
+#else /* street2 mka */
+    static const int dx[8] = { -1, 0, 1, -1, 1, -1, 0, 1 }, dy[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+    HFONT big = make_font(h * 62 / 100, FW_BOLD, 0), fsmall = make_font(h * 38 / 100, FW_BOLD, 0);
+    HBRUSH white = CreateSolidBrush(RGB(255, 255, 255)), rim = CreateSolidBrush(mask ? RGB(255, 255, 255) : RGB(12, 12, 12));
+    HPEN pen = CreatePen(PS_SOLID, 1, RGB(255, 255, 255)), rim_pen = CreatePen(PS_SOLID, 1, mask ? RGB(255, 255, 255) : RGB(12, 12, 12));
+    const wchar_t *caption = ui_text(L"Configurações do PC", L"PC Settings");
+#endif /* HLE_GAME */
+    RECT r;
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    int cap = h * 17 / 10, o = h / 16 + 1;
+#else /* street2 mka */
+    int cap = h * 17 / 10, o = h / 14 + 1, i;
+#endif /* HLE_GAME */
+    SetRect(&r, 0, 0, w, h);
+    FillRect(s_dc, &r, (HBRUSH)GetStockObject(BLACK_BRUSH));
+#if HLE_GAME == HLE_GAME_STREET1
+#elif HLE_GAME == HLE_GAME_BLACK
+    s_gt_bits = s_btn_bits;                  /* game_text: into this bitmap, not the menu's */
+    s_gt_w = w;
+    s_gt_h = h;
+#else /* street2 mka */
+    SelectObject(s_dc, rim);
+    SelectObject(s_dc, rim_pen);
+    RoundRect(s_dc, 1, h / 5 - o, cap + o, h - h / 5 + o, h / 2, h / 2);
+#endif /* HLE_GAME */
+    SelectObject(s_dc, white);
+    SelectObject(s_dc, pen);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    RoundRect(s_dc, 1, h / 5, cap, h - h / 5, h / 2, h / 2);
+#else /* street2 mka */
+    RoundRect(s_dc, 1 + o, h / 5, cap, h - h / 5, h / 2, h / 2);
+#endif /* HLE_GAME */
+    SetBkMode(s_dc, TRANSPARENT);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+    text(L"BACK", 1, h / 5, cap, h - h / 5, mask ? RGB(255, 255, 255) : RGB(20, 20, 20), fsmall, DT_CENTER);
+    text(ui_text(L"CONFIGURAÇÕES DO PC", L"PC SETTINGS"), cap + h / 3 + o, o, w, h + o, mask ? RGB(255, 255, 255) : RGB(6, 10, 18), big, DT_LEFT);
+    text(ui_text(L"CONFIGURAÇÕES DO PC", L"PC SETTINGS"), cap + h / 3, 0, w, h, RGB(240, 240, 240), big, DT_LEFT);
+#else /* street2 mka */
+    text(L"BACK", 1 + o, h / 5, cap, h - h / 5, mask ? RGB(255, 255, 255) : RGB(20, 20, 20), fsmall, DT_CENTER);
+    for (i = 0; i < 8; i++)
+        text(caption, cap + h / 3 + dx[i] * o, dy[i] * o, w, h + dy[i] * o, mask ? RGB(255, 255, 255) : RGB(12, 12, 12), big, DT_LEFT);
+    text(caption, cap + h / 3, 0, w, h, RGB(250, 250, 250), big, DT_LEFT);
+#endif /* HLE_GAME */
+    DeleteObject(white);
+#if HLE_GAME == HLE_GAME_STREET1 || HLE_GAME == HLE_GAME_BLACK
+#else /* street2 mka */
+    DeleteObject(rim);
+    DeleteObject(rim_pen);
+#endif /* HLE_GAME */
+    DeleteObject(pen);
+    DeleteObject(big);
+    DeleteObject(fsmall);
+    GdiFlush();
+#if HLE_GAME == HLE_GAME_BLACK
+    s_gt_bits = NULL;
+#else /* street1 street2 mka */
+#endif /* HLE_GAME */
+}
+
+static int button_resources(int h)
+{
+    BITMAPINFO bi;
+    D3D11_TEXTURE2D_DESC td;
+    uint32_t *mask;
+    int w = h * 12, i;
+    if (s_btn_srv && s_btn_h == h && s_btn_language == g_opt.ui_language)
+        return 1;
+    if (s_btn_srv) { ID3D11ShaderResourceView_Release(s_btn_srv); s_btn_srv = NULL; }
+    if (s_btn_tex) { ID3D11Texture2D_Release(s_btn_tex); s_btn_tex = NULL; }
+    if (s_btn_bmp) { DeleteObject(s_btn_bmp); s_btn_bmp = NULL; }
+    if (!s_blend_pre) {
+        D3D11_BLEND_DESC bd;
+        memset(&bd, 0, sizeof bd);
+        bd.RenderTarget[0].BlendEnable = TRUE;
+        bd.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+        bd.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        bd.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+        bd.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+        bd.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+        bd.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+        bd.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+        if (FAILED(ID3D11Device_CreateBlendState(g_hle.dev, &bd, &s_blend_pre)))
+            return 0;
+    }
+    if (!s_dc)
+        s_dc = CreateCompatibleDC(NULL);
+    memset(&bi, 0, sizeof bi);
+    bi.bmiHeader.biSize = sizeof bi.bmiHeader;
+    bi.bmiHeader.biWidth = w;
+    bi.bmiHeader.biHeight = -h;
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+    s_btn_bmp = CreateDIBSection(s_dc, &bi, DIB_RGB_COLORS, (void **)&s_btn_bits, NULL, 0);
+    if (!s_btn_bmp)
+        return 0;
+    SelectObject(s_dc, s_btn_bmp);
+    mask = (uint32_t *)malloc((size_t)w * (size_t)h * 4u);
+    if (!mask)
+        return 0;
+    button_paint(w, h, 1);
+    memcpy(mask, s_btn_bits, (size_t)w * (size_t)h * 4u);
+    button_paint(w, h, 0);
+    for (i = 0; i < w * h; i++) {
+        uint32_t m = (mask[i] >> 8) & 0xFFu;                  /* coverage (green) */
+        s_btn_bits[i] = (s_btn_bits[i] & 0xFFFFFFu) | (m << 24);
+    }
+    free(mask);
+    memset(&td, 0, sizeof td);
+    td.Width = (UINT)w;
+    td.Height = (UINT)h;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_DEFAULT;
+    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    {
+        D3D11_SUBRESOURCE_DATA sd;
+        sd.pSysMem = s_btn_bits;
+        sd.SysMemPitch = (UINT)w * 4u;
+        sd.SysMemSlicePitch = 0;
+        if (FAILED(ID3D11Device_CreateTexture2D(g_hle.dev, &td, &sd, &s_btn_tex)))
+            return 0;
+    }
+    if (FAILED(ID3D11Device_CreateShaderResourceView(g_hle.dev, (ID3D11Resource *)s_btn_tex, NULL, &s_btn_srv)))
+        return 0;
+    if (s_bmp)
+        SelectObject(s_dc, s_bmp);                            /* the screen's DIB back */
+    s_btn_w = w;
+    s_btn_h = h;
+    s_btn_language = g_opt.ui_language;
+    return 1;
+}
+
+void hle_options_draw_button(ID3D11RenderTargetView *rtv)
+{
+    extern D3D11_VIEWPORT g_present_picture;
+    D3D11_VIEWPORT pic = g_present_picture, vp;
+    float w43, x43;
+    int h;
+    if (s_open || !rtv || !screen_has_button() || pic.Height < 120.0f || !overlay_resources())
+        return;
+    h = (int)(pic.Height * 0.06f + 0.5f);
+    if (h < 12)
+        h = 12;
+    if (!button_resources(h))
+        return;
+    /* In the 4:3 picture's coordinates, on the line of the game's own
+     * button hints (y 0.93), right of where they sit. */
+    w43 = pic.Height * 4.0f / 3.0f;
+    if (w43 > pic.Width)
+        w43 = pic.Width;
+    x43 = pic.TopLeftX + (pic.Width - w43) * 0.5f;
+    vp.TopLeftX = (float)(int)(x43 + w43 * 0.30f);
+    vp.TopLeftY = (float)(int)(pic.TopLeftY + pic.Height * 0.933f - (float)h * 0.5f);
+    vp.Width = (float)s_btn_w;
+    vp.Height = (float)s_btn_h;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    ID3D11DeviceContext_OMSetRenderTargets(g_hle.ctx, 1, &rtv, NULL);
+    ID3D11DeviceContext_RSSetViewports(g_hle.ctx, 1, &vp);
+    ID3D11DeviceContext_RSSetState(g_hle.ctx, NULL);
+    ID3D11DeviceContext_OMSetBlendState(g_hle.ctx, s_blend_pre, NULL, 0xFFFFFFFFu);
+    ID3D11DeviceContext_OMSetDepthStencilState(g_hle.ctx, NULL, 0);
+    ID3D11DeviceContext_IASetInputLayout(g_hle.ctx, NULL);
+    ID3D11DeviceContext_IASetPrimitiveTopology(g_hle.ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    ID3D11DeviceContext_VSSetShader(g_hle.ctx, s_vs, NULL, 0);
+    ID3D11DeviceContext_GSSetShader(g_hle.ctx, NULL, NULL, 0);
+    ID3D11DeviceContext_PSSetShader(g_hle.ctx, s_ps, NULL, 0);
+    ID3D11DeviceContext_PSSetShaderResources(g_hle.ctx, 0, 1, &s_btn_srv);
+    ID3D11DeviceContext_PSSetSamplers(g_hle.ctx, 0, 1, &s_samp);
+    ID3D11DeviceContext_Draw(g_hle.ctx, 3, 0);
+    {
+        ID3D11ShaderResourceView *none = NULL;
+        ID3D11DeviceContext_PSSetShaderResources(g_hle.ctx, 0, 1, &none);
+    }
+    ID3D11DeviceContext_OMSetBlendState(g_hle.ctx, NULL, NULL, 0xFFFFFFFFu);
+    ID3D11DeviceContext_OMSetRenderTargets(g_hle.ctx, 0, NULL, NULL);
+}
+
+#if HLE_GAME == HLE_GAME_STREET1
+#elif HLE_GAME == HLE_GAME_BLACK
+/* ------------------------------------------------------- the FPS counter */
+
+static HBITMAP s_fps_bmp;
+static uint32_t *s_fps_bits;
+static ID3D11Texture2D *s_fps_tex;
+static ID3D11ShaderResourceView *s_fps_srv;
+static int s_fps_w, s_fps_h, s_fps_shown = -1;
+
+/* "60 FPS" in the game's capitals with its drop shadow, premultiplied like
+ * the menu button: a white coverage pass, then the colour pass. */
+static void fps_paint(int w, int h, int fps, int mask)
+{
+    HFONT f = make_font(h * 60 / 100, FW_BOLD, 0);
+    RECT r;
+    wchar_t s[32];
+    int o = h / 14 + 1;
+    swprintf(s, 32, L"%d FPS", fps);
+    SetRect(&r, 0, 0, w, h);
+    FillRect(s_dc, &r, (HBRUSH)GetStockObject(BLACK_BRUSH));
+    SetBkMode(s_dc, TRANSPARENT);
+    s_gt_bits = s_fps_bits;
+    s_gt_w = w;
+    s_gt_h = h;
+    text(s, o + 2, o, w, h + o, mask ? RGB(255, 255, 255) : RGB(6, 10, 18), f, DT_LEFT);
+    text(s, 2, 0, w, h, mask ? RGB(255, 255, 255) : RGB(226, 232, 48), f, DT_LEFT);
+    s_gt_bits = NULL;
+    DeleteObject(f);
+    GdiFlush();
+}
+
+static int fps_resources(int h, int fps)
+{
+    BITMAPINFO bi;
+    D3D11_TEXTURE2D_DESC td;
+    D3D11_SUBRESOURCE_DATA sd;
+    uint32_t *mask;
+    int w = h * 5, i;
+    if (s_fps_srv && s_fps_h == h && s_fps_shown == fps)
+        return 1;
+    if (s_fps_srv) { ID3D11ShaderResourceView_Release(s_fps_srv); s_fps_srv = NULL; }
+    if (s_fps_tex) { ID3D11Texture2D_Release(s_fps_tex); s_fps_tex = NULL; }
+    if (s_fps_bmp && s_fps_h != h) { DeleteObject(s_fps_bmp); s_fps_bmp = NULL; s_fps_bits = NULL; }
+    if (!s_blend_pre && !button_resources(h))     /* also creates the premultiplied blend */
+        return 0;
+    if (!s_dc)
+        s_dc = CreateCompatibleDC(NULL);
+    if (!s_fps_bmp) {
+        memset(&bi, 0, sizeof bi);
+        bi.bmiHeader.biSize = sizeof bi.bmiHeader;
+        bi.bmiHeader.biWidth = w;
+        bi.bmiHeader.biHeight = -h;
+        bi.bmiHeader.biPlanes = 1;
+        bi.bmiHeader.biBitCount = 32;
+        bi.bmiHeader.biCompression = BI_RGB;
+        s_fps_bmp = CreateDIBSection(s_dc, &bi, DIB_RGB_COLORS, (void **)&s_fps_bits, NULL, 0);
+        if (!s_fps_bmp)
+            return 0;
+        s_fps_h = h;
+    }
+    SelectObject(s_dc, s_fps_bmp);
+    mask = (uint32_t *)malloc((size_t)w * (size_t)h * 4u);
+    if (!mask)
+        return 0;
+    fps_paint(w, h, fps, 1);
+    memcpy(mask, s_fps_bits, (size_t)w * (size_t)h * 4u);
+    fps_paint(w, h, fps, 0);
+    for (i = 0; i < w * h; i++) {
+        uint32_t m = (mask[i] >> 8) & 0xFFu;
+        s_fps_bits[i] = (s_fps_bits[i] & 0xFFFFFFu) | (m << 24);
+    }
+    free(mask);
+    if (s_bmp)
+        SelectObject(s_dc, s_bmp);
+    memset(&td, 0, sizeof td);
+    td.Width = (UINT)w;
+    td.Height = (UINT)h;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_DEFAULT;
+    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    sd.pSysMem = s_fps_bits;
+    sd.SysMemPitch = (UINT)w * 4u;
+    sd.SysMemSlicePitch = 0;
+    if (FAILED(ID3D11Device_CreateTexture2D(g_hle.dev, &td, &sd, &s_fps_tex)))
+        return 0;
+    if (FAILED(ID3D11Device_CreateShaderResourceView(g_hle.dev, (ID3D11Resource *)s_fps_tex, NULL, &s_fps_srv)))
+        return 0;
+    s_fps_w = w;
+    s_fps_shown = fps;
+    return 1;
+}
+
+/* Presented frames per second, counted here (once per present) over half
+ * a second, drawn in the picture's top left corner. */
+void hle_options_draw_fps(ID3D11RenderTargetView *rtv)
+{
+    extern D3D11_VIEWPORT g_present_picture;
+    static LARGE_INTEGER freq, start;
+    static int frames, fps;
+    D3D11_VIEWPORT pic = g_present_picture, vp;
+    LARGE_INTEGER now;
+    int h;
+    if (!freq.QuadPart)
+        QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&now);
+    if (!start.QuadPart)
+        start = now;
+    frames++;
+    if (now.QuadPart - start.QuadPart >= freq.QuadPart / 2) {
+        fps = (int)((double)frames * (double)freq.QuadPart / (double)(now.QuadPart - start.QuadPart) + 0.5);
+        frames = 0;
+        start = now;
+    }
+    if (!g_opt.show_fps || s_open || !rtv || pic.Height < 120.0f || !overlay_resources())
+        return;
+    h = (int)(pic.Height * 0.045f + 0.5f);
+    if (h < 12)
+        h = 12;
+    if (!fps_resources(h, fps))
+        return;
+    vp.TopLeftX = (float)(int)(pic.TopLeftX + pic.Height * 0.02f);
+    vp.TopLeftY = (float)(int)(pic.TopLeftY + pic.Height * 0.02f);
+    vp.Width = (float)s_fps_w;
+    vp.Height = (float)s_fps_h;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    ID3D11DeviceContext_OMSetRenderTargets(g_hle.ctx, 1, &rtv, NULL);
+    ID3D11DeviceContext_RSSetViewports(g_hle.ctx, 1, &vp);
+    ID3D11DeviceContext_RSSetState(g_hle.ctx, NULL);
+    ID3D11DeviceContext_OMSetBlendState(g_hle.ctx, s_blend_pre, NULL, 0xFFFFFFFFu);
+    ID3D11DeviceContext_OMSetDepthStencilState(g_hle.ctx, NULL, 0);
+    ID3D11DeviceContext_IASetInputLayout(g_hle.ctx, NULL);
+    ID3D11DeviceContext_IASetPrimitiveTopology(g_hle.ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    ID3D11DeviceContext_VSSetShader(g_hle.ctx, s_vs, NULL, 0);
+    ID3D11DeviceContext_GSSetShader(g_hle.ctx, NULL, NULL, 0);
+    ID3D11DeviceContext_PSSetShader(g_hle.ctx, s_ps, NULL, 0);
+    ID3D11DeviceContext_PSSetShaderResources(g_hle.ctx, 0, 1, &s_fps_srv);
+    ID3D11DeviceContext_PSSetSamplers(g_hle.ctx, 0, 1, &s_samp);
+    ID3D11DeviceContext_Draw(g_hle.ctx, 3, 0);
+    {
+        ID3D11ShaderResourceView *none = NULL;
+        ID3D11DeviceContext_PSSetShaderResources(g_hle.ctx, 0, 1, &none);
+    }
+    ID3D11DeviceContext_OMSetBlendState(g_hle.ctx, NULL, NULL, 0xFFFFFFFFu);
+    ID3D11DeviceContext_OMSetRenderTargets(g_hle.ctx, 0, NULL, NULL);
+}
+
+void hle_options_standalone(void) { menu_loop(); }
+
+#else /* street2 mka */
+/* Audio can start after the first UI frame has already published volume. */
+void hle_options_audio_ready(void) { xa2_set_volume((float)g_opt.volume / 100.0f); }
+
+#endif /* HLE_GAME */

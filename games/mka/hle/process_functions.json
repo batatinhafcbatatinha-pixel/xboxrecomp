@@ -1,0 +1,50 @@
+{
+ "001C5010": {
+  "name": "Process_Exit",
+  "how": "native fiber, project/src/game_process.c"
+ },
+ "001C50A0": {
+  "name": "ProcessSimple_Run",
+  "how": "native fiber"
+ },
+ "001C51C0": {
+  "name": "ProcessCopy_Run",
+  "how": "native fiber"
+ },
+ "001C5340": {
+  "name": "ProcessCopy_Sleep",
+  "how": "native fiber"
+ },
+ "001C5180": {
+  "name": "ProcessSimple_Jump",
+  "how": "native fiber"
+ },
+ "001C5430": {
+  "name": "ProcessCopy_Jump",
+  "how": "native fiber"
+ },
+ "001C5470": {
+  "name": "ProcessStack_Run",
+  "how": "native fiber"
+ },
+ "001C55A0": {
+  "name": "ProcessStack_Sleep",
+  "how": "native fiber"
+ },
+ "001C5610": {
+  "name": "ProcessStack_ToMainStack",
+  "how": "native"
+ },
+ "001C5630": {
+  "name": "ProcessStack_FromMainStack",
+  "how": "native"
+ },
+ "001C5650": {
+  "name": "ProcessStack_Jump",
+  "how": "native fiber"
+ },
+ "0019C980": {
+  "name": "Game_LongjmpToMainLoop",
+  "how": "native fiber: project/src/game_process.c (longjmp on the thread fiber)"
+ }
+}

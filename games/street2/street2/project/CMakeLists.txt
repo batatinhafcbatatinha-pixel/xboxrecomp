@@ -1,0 +1,268 @@
+cmake_minimum_required(VERSION 3.20)
+
+# ============================================================================
+# YOUR_GAME_NAME - Static Recompilation
+#
+# Copy this template to your game project root and customize:
+#   1. Change the project name below
+#   2. Set XBOXRECOMP_DIR to where you cloned xboxrecomp
+#   3. Adjust source file lists as you add game-specific code
+#   4. Add any game-specific compile definitions or link libraries
+# ============================================================================
+
+project(fifastreet_recomp C)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# Common definitions
+add_compile_definitions(
+    WIN32_LEAN_AND_MEAN
+    NOMINMAX
+)
+
+# ── xboxrecomp toolkit ──────────────────────────────────────────
+#
+# Option A: xboxrecomp as a subdirectory (simplest)
+#   Place xboxrecomp/ next to your game project and use a relative path.
+#
+# Option B: find_package (if you install xboxrecomp system-wide)
+#   find_package(xboxrecomp REQUIRED)
+#
+# The runtime is this repository (xboxrecomp): games/<game>/... sits inside it.
+set(XBOXRECOMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../.." CACHE PATH
+    "Path to the xboxrecomp toolkit root directory")
+set(HLE_D3D8_DIR "${XBOXRECOMP_DIR}/hle/d3d8")  # shared D3D8 HLE
+
+# Add xboxrecomp as a subdirectory -- this builds all 6 runtime libraries
+# and provides the 'xboxrecomp' umbrella target to link against.
+add_subdirectory(${XBOXRECOMP_DIR} ${CMAKE_BINARY_DIR}/xboxrecomp)
+include("${CMAKE_CURRENT_SOURCE_DIR}/native_memory.cmake")
+
+# ── Recompiled game executable ──────────────────────────────────
+
+# Collect generated recompiled code.
+# The recomp pipeline outputs files into src/recomp/gen/.
+# With --split 1000, you get gen_0000.c, gen_0001.c, etc.
+# CONFIGURE_DEPENDS so re-running the recompiler picks up added/removed files
+# without a manual re-configure. A plain GLOB is evaluated once at configure
+# time, so a newly generated file (an extra chunk, recomp_stubs_unresolved.c)
+# is silently left out of the build and shows up as unresolved externals.
+file(GLOB RECOMP_GEN_SOURCES CONFIGURE_DEPENDS "src/recomp/gen/*.c")
+
+# Game logic: guest-side HLE, no host graphics API.
+include("${CMAKE_CURRENT_SOURCE_DIR}/recover_frontend.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/native_engine_hooks.cmake")
+
+set(GAME_SOURCES
+    src/main.c
+    ${HLE_D3D8_DIR}/port_native_policy.c
+    src/recomp_manual.c
+    ${STREET2_RECOVERED_SOURCE}
+    ${HLE_D3D8_DIR}/resource_trace.c
+    ${HLE_D3D8_DIR}/hle_profile.c
+    ${HLE_D3D8_DIR}/hle_d3d8.c
+    ${HLE_D3D8_DIR}/hle_vsh.c
+    ${HLE_D3D8_DIR}/hle_dsound.c
+    ${HLE_D3D8_DIR}/hle_dsound_native.c
+    ${HLE_D3D8_DIR}/hle_input.c
+    src/hle_smp_serial.c
+    ${HLE_D3D8_DIR}/hle_stall.c
+    ${HLE_D3D8_DIR}/hle_sync.c
+    ${HLE_D3D8_DIR}/hle_native_api.c
+    ${HLE_D3D8_DIR}/hle_native_resources.c
+    ${HLE_D3D8_DIR}/hle_native_states.c
+    ${HLE_D3D8_DIR}/hle_native_create.c
+    src/game_hooks.c
+    src/native_engine_batch.c
+    src/native_command_worker.c
+    ${HLE_D3D8_DIR}/native_audio_output.c
+    ${HLE_D3D8_DIR}/native_audio_mix.c
+    src/native_video_trace.c
+    ${HLE_D3D8_DIR}/native_kernel_clock.c
+    src/native_dead_push.c
+    ${HLE_D3D8_DIR}/hle_nv2a_watch.c
+    ${HLE_D3D8_DIR}/hle_device.c
+)
+# The renderer and the options screen: D3D11/DXGI (the system's or DXVK on
+# Windows, DXVK native on Linux).
+set(RENDERER_SOURCES
+    ${HLE_D3D8_DIR}/hle_d3d11.c
+    ${HLE_D3D8_DIR}/hle_draw.c
+    ${HLE_D3D8_DIR}/hle_native_misc.c
+    ${HLE_D3D8_DIR}/hle_native_capture.c
+    ${HLE_D3D8_DIR}/hle_native_quality.c
+    ${HLE_D3D8_DIR}/hle_native_present.c
+    ${HLE_D3D8_DIR}/hle_native_logic.c
+    ${HLE_D3D8_DIR}/hle_options.c
+    ${HLE_D3D8_DIR}/hle_gpu_api.c
+    ${HLE_D3D8_DIR}/hle_native_geometry.c
+)
+
+# The recomp pipeline also generates a dispatch header and function declarations.
+# These are included by the generated .c files:
+#   src/recomp/gen/recomp_funcs.h    - extern declarations for all recompiled functions
+#   src/recomp/recomp_dispatch.h     - binary search dispatch table
+#   src/recomp/recomp_types.h        - register model, ICALL macros, MEM helpers
+
+if(WIN32)
+    add_executable(${PROJECT_NAME}
+        ${GAME_SOURCES}
+        ${RENDERER_SOURCES}
+        ${RECOMP_GEN_SOURCES}
+    )
+else()
+    # Linux: the renderer is its own library -- its files see DXVK native's
+    # Win32 headers, which cannot meet the runtime's win32_compat in one file.
+    find_package(SDL2 REQUIRED)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
+    set(DXVK_NATIVE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/dxvk-native/usr" CACHE PATH
+        "DXVK native release (include/dxvk, lib/libdxvk_d3d11.so, lib/libdxvk_dxgi.so)")
+    set(VKD3D_DIR "/opt/vkd3d-inst" CACHE PATH "vkd3d (libvkd3d-shader: HLSL to DXBC for the shaders)")
+    if(APPLE)
+        # x86-64 macOS (Intel, or Rosetta 2 on Apple Silicon): the same renderer on DXMT (D3D11 on Metal).
+        set(DXMT_DIR "" CACHE PATH "DXMT prefix from tools/macos/build-deps.sh")
+        set(NATIVE_D3D_INCLUDE ${DXMT_DIR}/include/windows ${DXMT_DIR}/include/directx)
+        set(NATIVE_D3D_LIBS ${DXMT_DIR}/lib/d3d11.dylib ${DXMT_DIR}/lib/dxgi.dylib)
+        set(NATIVE_D3D_RUNTIME ${DXMT_DIR}/lib/d3d11.dylib ${DXMT_DIR}/lib/dxgi.dylib ${DXMT_DIR}/lib/winemetal.dylib
+            ${VKD3D_DIR}/lib/libvkd3d-shader.dylib)
+        set(NATIVE_VKD3D_LIB ${VKD3D_DIR}/lib/libvkd3d-shader.dylib)
+        set(NATIVE_BRIDGE ${HLE_D3D8_DIR}/native_metal_bridge.m)
+        set(NATIVE_RPATH "@executable_path/lib")
+        enable_language(OBJC)
+        set_source_files_properties(${HLE_D3D8_DIR}/native_metal_bridge.m PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    else()
+        set(NATIVE_D3D_INCLUDE ${DXVK_NATIVE_DIR}/include/dxvk)
+        set(NATIVE_D3D_LIBS ${DXVK_NATIVE_DIR}/lib/libdxvk_d3d11.so ${DXVK_NATIVE_DIR}/lib/libdxvk_dxgi.so)
+        set(NATIVE_D3D_RUNTIME ${DXVK_NATIVE_DIR}/lib/libdxvk_d3d11.so.0 ${DXVK_NATIVE_DIR}/lib/libdxvk_dxgi.so.0
+            ${VKD3D_DIR}/lib/libvkd3d-shader.so.1)
+        set(NATIVE_VKD3D_LIB ${VKD3D_DIR}/lib/libvkd3d-shader.so)
+        set(NATIVE_BRIDGE)
+        set(NATIVE_RPATH "$ORIGIN/lib")
+    endif()
+    add_library(fifa_renderer STATIC ${RENDERER_SOURCES} ${NATIVE_BRIDGE} ${HLE_D3D8_DIR}/hle_posix_win32.c ${HLE_D3D8_DIR}/hle_gdi_posix.c)
+    target_include_directories(fifa_renderer BEFORE PRIVATE
+        ${NATIVE_D3D_INCLUDE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/recomp
+        ${XBOXRECOMP_DIR}/src/d3d
+        ${HLE_D3D8_DIR}
+        ${SDL2_TTF_INCLUDE_DIRS}
+        ${VKD3D_DIR}/include/vkd3d)
+    target_compile_definitions(fifa_renderer PRIVATE DXVK_WSI_SDL2)
+    target_compile_options(fifa_renderer PRIVATE -fms-extensions -Wno-microsoft-anon-tag)
+    target_link_libraries(fifa_renderer PUBLIC
+        SDL2::SDL2 ${SDL2_TTF_LINK_LIBRARIES}
+        ${NATIVE_D3D_LIBS}
+        ${NATIVE_VKD3D_LIB})
+
+    add_executable(${PROJECT_NAME}
+        ${GAME_SOURCES}
+        ${RECOMP_GEN_SOURCES}
+    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE fifa_renderer m dl pthread)
+    if(APPLE)
+        # DXMT finds macdrv_functions with dlsym, so the bridge must be linked in and exported.
+        target_link_libraries(${PROJECT_NAME} PRIVATE "-framework Foundation" "-framework Metal" "-framework QuartzCore")
+        target_link_options(${PROJECT_NAME} PRIVATE -Wl,-u,_macdrv_functions -Wl,-export_dynamic)
+    endif()
+    # The generated code is machine output: its warnings are noise.
+    set_source_files_properties(${RECOMP_GEN_SOURCES} PROPERTIES COMPILE_OPTIONS "-w")
+    # DXVK native and vkd3d-shader travel next to the executable (lib/), with
+    # a sans-serif font for the options screen (fonts/) when the build
+    # machine has DejaVu: the folder runs as it is on another Linux machine.
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        BUILD_RPATH "${NATIVE_RPATH}"
+        INSTALL_RPATH "${NATIVE_RPATH}")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>/lib"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${NATIVE_D3D_RUNTIME}
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/lib/")
+    foreach(_font DejaVuSans.ttf DejaVuSans-Bold.ttf DejaVuSans-BoldOblique.ttf)
+        if(EXISTS "/usr/share/fonts/truetype/dejavu/${_font}")
+            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>/fonts"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "/usr/share/fonts/truetype/dejavu/${_font}"
+                        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/fonts/")
+        endif()
+    endforeach()
+endif()
+
+# Link against the xboxrecomp umbrella target (all 6 runtime libraries)
+target_link_libraries(${PROJECT_NAME} PRIVATE xboxrecomp)
+
+# Include paths for generated recomp headers
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/recomp
+    ${XBOXRECOMP_DIR}/include
+    ${XBOXRECOMP_DIR}/src/d3d
+    ${HLE_D3D8_DIR}
+)
+
+if(WIN32)
+# Windows SDK libraries needed at link time
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    d3d11
+    d3dcompiler
+    dxgi
+    dxguid
+    xinput
+    winmm
+    # Lets the fault handler resolve the host RIP back to the generated
+    # function's symbol, i.e. to the guest function that faulted.
+    dbghelp
+)
+endif()
+
+# MSVC-specific: large address aware, increase section limit for big generated files
+if(MSVC)
+    target_link_options(${PROJECT_NAME} PRIVATE
+        /LARGEADDRESSAWARE
+        # Bound on first use, not at load: with Vulkan chosen, hle_gpu_api.c
+        # loads DXVK's d3d11.dll/dxgi.dll first and every call goes there.
+        /DELAYLOAD:d3d11.dll
+        /DELAYLOAD:dxgi.dll
+    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE delayimp)
+    # The generated code files can be very large. Increase object file section limit.
+    target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+endif()
+
+# ── Game-specific additions ─────────────────────────────────────
+#
+# Add any game-specific libraries, loaders, or custom renderers below.
+# Examples:
+#
+# # Custom texture loader for your game's format
+# target_sources(${PROJECT_NAME} PRIVATE src/texture_loader.c)
+#
+# # If your game uses RenderWare, you may need a RW bridge layer
+# target_sources(${PROJECT_NAME} PRIVATE src/rw_bridge.c)
+#
+# # Additional compile definitions for debugging
+# target_compile_definitions(${PROJECT_NAME} PRIVATE
+#     ENABLE_ICALL_TRACE=1
+#     VERBOSE_KERNEL_LOG=1
+# )
+
+# D3D8 HLE survey: route every direct call through recomp_call_profile_hit
+# (${HLE_D3D8_DIR}/hle_profile.c). Slower; use a separate build directory.
+option(FIFA_CALL_PROFILE "Build with RECOMP_CALL_PROFILE (HLE survey)" OFF)
+if(FIFA_CALL_PROFILE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE RECOMP_CALL_PROFILE)
+endif()
+
+# Vulkan: DXVK (D3D11/DXGI on Vulkan) in vulkan/ next to the executable.
+set(DXVK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/dxvk-3.1.1" CACHE PATH
+    "DXVK release (x64/d3d11.dll, x64/dxgi.dll) for the Vulkan option")
+if(WIN32 AND EXISTS "${DXVK_DIR}/x64/d3d11.dll")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>/vulkan"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DXVK_DIR}/x64/d3d11.dll" "${DXVK_DIR}/x64/dxgi.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/vulkan/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DXVK_DIR}/LICENSE"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/vulkan/LICENSE.dxvk.txt")
+endif()

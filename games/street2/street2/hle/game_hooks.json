@@ -1,0 +1,13 @@
+{
+  "0x00197B50": "EngineTexturedBatch_End",
+  "0x00197BD0": "EngineTexturedBatch_Flush",
+  "0x00197F50": "EngineTexturedBatch_Begin",
+  "0x00198040": "EngineTexturedBatch_Append4",
+  "0x00198150": "EngineTexturedBatch_Append3",
+  "0x00227853": "EngineCommandWorker_CompleteCFG",
+  "0x0014F730": "VideoUpdate_ReadOnlyTrace",
+  "0x001793E0": "FrontEnd_LoadScreenBig",
+  "0x001A4BF0": "Skin_PaletteBlend",
+  "0x0025424B": "Matrix_Multiply",
+  "0x001A7DD0": "Skeleton_BoneMatrices"
+}

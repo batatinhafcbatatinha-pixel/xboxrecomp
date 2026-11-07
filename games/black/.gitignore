@@ -1,0 +1,88 @@
+# Public repository: only hand-written source, scripts, configuration and notes.
+# Never published: disc images, game files, executables, recompiled/generated code,
+# disassembly, Ghidra projects, dumps, captures, saves, logs and builds.
+/*
+!/.gitignore
+!/.gitattributes
+!/.gitmodules
+!/*.md
+!/*.cmd
+!/*.ps1
+!/*.sh
+!/scripts/
+!/config/
+!/project/
+!/inputs/
+!/xboxrecomp
+
+**/__pycache__/
+*.pyc
+*.log
+*.csv
+*.bin
+*.elf
+*.iso
+*.chd
+*.xbe
+*.xex
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+*.pgm
+*.png
+*.ps2
+config/output/
+project/out/
+project/out-*/
+project/generated/
+project/runner/
+project/runner-chunks/
+project/runner-labels-partial/
+project/gap-functions/
+project/gap-functions.*
+project/sdk-handlers.inc
+project/recovered/
+project/kernel-handlers/
+project/supplemental*/
+**/recomp/gen/
+
+# Shared installer source and manifest
+!/.gitmodules
+!/installer.json
+!/tools/
+!/tools/port-installer
+!/.github/
+!/.github/workflows/
+
+# Local game data and installer outputs
+game_files/
+.game-install.lock
+game-install-report.json
+
+# Licenses and publication audit
+!/LICENSE
+!/licenses/
+!/kit.json
+!/tools/audit_publication.py
+!/tools/fetch_pad_support.py
+# Derived from the game executable: generated on the user's machine by scripts/make_native_copies.py
+project/src/native_d3d/black_native_copies.c
+
+# Notes for AI agents stay local
+/CONTINUACAO.md
+
+# One-click setup (Setup.cmd): shared scripts, this game's steps, and its log
+!/setup.json
+!/requirements.txt
+!/tools/
+!/tools/setup.ps1
+!/tools/setup_tools.py
+setup-log.txt
+
+# Launcher (installer, Play, Dependencies, PC settings): its source and this game's configuration
+!/launcher.json
+!/tools/launcher/
+/tools/launcher/bin/
+/tools/launcher/obj/

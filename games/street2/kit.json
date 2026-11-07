@@ -1,0 +1,12 @@
+{
+  "repo": "fifa-street-2-pc",
+  "game": "FIFA Street 2",
+  "revision": "original Xbox, USA, TitleID 45410085",
+  "required_files": {
+    "default.xbe": "5fabb5b763be0cc8823e814ee343ac5be6950305330f46c5170e08eaadea910b"
+  },
+  "required_paths": [
+    "data"
+  ],
+  "audit_exempt": []
+}

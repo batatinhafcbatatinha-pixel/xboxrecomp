@@ -1,0 +1,74 @@
+{
+ "004CEC4F": {
+  "lib": "XAPILIB",
+  "conv": "stdcall",
+  "name": "XInitDevices",
+  "native": "project/src/hle_input.c",
+  "street1": "0026F733",
+  "street2": "002A1673",
+  "how": "map"
+ },
+ "004CFC41": {
+  "lib": "XAPILIB",
+  "conv": "stdcall",
+  "name": "XGetDevices",
+  "native": "project/src/hle_input.c",
+  "street1": "002704D9",
+  "street2": "002A2419",
+  "how": "map"
+ },
+ "004CFC63": {
+  "lib": "XAPILIB",
+  "conv": "stdcall",
+  "name": "XGetDeviceChanges",
+  "native": "project/src/hle_input.c",
+  "street1": "002704FB",
+  "street2": "002A243B",
+  "how": "map"
+ },
+ "004CF8A5": {
+  "lib": "XAPILIB",
+  "conv": "stdcall",
+  "name": "XInputOpen",
+  "native": "project/src/hle_input.c",
+  "street1": "002701D2",
+  "street2": "002A2112",
+  "how": "map"
+ },
+ "004CF8FB": {
+  "lib": "XAPILIB",
+  "conv": "stdcall",
+  "name": "XInputClose",
+  "native": "project/src/hle_input.c",
+  "street1": "00270228",
+  "street2": "002A2168",
+  "how": "map"
+ },
+ "004CF907": {
+  "lib": "XAPILIB",
+  "conv": "stdcall",
+  "name": "XInputGetCapabilities",
+  "native": "project/src/hle_input.c",
+  "street1": "00270234",
+  "street2": "002A2174",
+  "how": "map"
+ },
+ "004CFADF": {
+  "lib": "XAPILIB",
+  "conv": "stdcall",
+  "name": "XInputGetState",
+  "native": "project/src/hle_input.c",
+  "street1": "0027040C",
+  "street2": "002A234C",
+  "how": "map"
+ },
+ "004CFB52": {
+  "lib": "XAPILIB",
+  "conv": "stdcall",
+  "name": "XInputSetState",
+  "native": "project/src/hle_input.c",
+  "street1": "0027047F",
+  "street2": "002A23BF",
+  "how": "map"
+ }
+}

@@ -1,0 +1,58 @@
+# Private, never published: your game files, the SDK download, generated code and builds.
+.local/
+build/
+dist/
+out/
+game_files/
+**/game_files/
+**/generated/
+**/recomp/gen/
+**/output/
+**/third_party/ffmpeg/
+**/__pycache__/
+*.pyc
+*.iso
+*.xex
+*.xbe
+*.dll
+*.exe
+*.so*
+*.obj
+*.lib
+*.pdb
+*.a
+*.bmp
+*.png
+*.wav
+*.log
+
+# Local game data and installer outputs
+game_files/
+.game-install.lock
+game-install-report.json
+
+# Local game data and installer outputs
+game_files/
+.game-install.lock
+game-install-report.json
+# Shared installer source and manifest
+!/.gitmodules
+!/installer.json
+!/tools/
+!/tools/port-installer
+!/.github/
+!/.github/workflows/
+
+# One-click setup (Setup.cmd): shared scripts, this game's steps, and its log
+!/setup.json
+!/requirements.txt
+!/tools/
+!/tools/setup.ps1
+!/tools/setup_tools.py
+setup-log.txt
+
+# Launcher (installer, Play, Dependencies, PC settings): its source and this game's configuration
+!/launcher.json
+!/tools/launcher/
+/tools/launcher/bin/
+/tools/launcher/obj/

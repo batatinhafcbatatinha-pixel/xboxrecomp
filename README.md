@@ -1,12 +1,14 @@
 # xboxrecomp
 
 > [!NOTE]
-> **Fork** of [sp00nznet/xboxrecomp](https://github.com/sp00nznet/xboxrecomp) (v0.13.1) with the changes used by
-> the native PC ports [black-xbox-pc](https://github.com/batatinhafcbatatinha-pixel/black-xbox-pc) and
-> [fifa-street-pc](https://github.com/batatinhafcbatatinha-pixel/fifa-street-pc): native-port kernel support
-> (title KEVENTs, guest events, POSIX side), the NV2A compute path, the APU DSP and input. Those changes are kept
-> here only and are not upstream. The original project, its license and credits are below, unchanged. The DSP sources in
-> `src/apu/dsp/` come from xemu under GPL-2.0/LGPL-2.1 (see `src/apu/dsp/UPSTREAM.md`).
+> **Fork** of [sp00nznet/xboxrecomp](https://github.com/sp00nznet/xboxrecomp) (v0.13.1) with the native PC ports of
+> original-Xbox games: [`games/`](games/) holds each game's profile (FIFA Street, FIFA Street 2, Black,
+> Mortal Kombat: Armageddon) and [`hle/d3d8/`](hle/d3d8/) the Direct3D 8 / DirectSound / input HLE they share
+> (native Direct3D 11 renderer, PC settings menu, native audio). The runtime changes the ports need (title KEVENTs,
+> guest events, POSIX side, the NV2A compute path, the APU DSP and input) are kept here only and are not upstream.
+> No game content is stored: you build each port from your own disc. The original project, its license and credits
+> are below, unchanged. The DSP sources in `src/apu/dsp/` come from xemu under GPL-2.0/LGPL-2.1
+> (see `src/apu/dsp/UPSTREAM.md`).
 
 
 ```
