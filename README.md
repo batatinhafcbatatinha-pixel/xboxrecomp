@@ -1,15 +1,67 @@
-# xboxrecomp
+# xboxrecomp (fork with game ports)
 
-> [!NOTE]
-> **Fork** of [sp00nznet/xboxrecomp](https://github.com/sp00nznet/xboxrecomp) (v0.13.1) with the native PC ports of
-> original-Xbox games: [`games/`](games/) holds each game's profile (FIFA Street, FIFA Street 2, Black,
-> Mortal Kombat: Armageddon) and [`hle/d3d8/`](hle/d3d8/) the Direct3D 8 / DirectSound / input HLE they share
-> (native Direct3D 11 renderer, PC settings menu, native audio). The runtime changes the ports need (title KEVENTs,
-> guest events, POSIX side, the NV2A compute path, the APU DSP and input) are kept here only and are not upstream.
-> No game content is stored: you build each port from your own disc. The original project, its license and credits
-> are below, unchanged. The DSP sources in `src/apu/dsp/` come from xemu under GPL-2.0/LGPL-2.1
-> (see `src/apu/dsp/UPSTREAM.md`).
+Fork of [sp00nznet/xboxrecomp](https://github.com/sp00nznet/xboxrecomp) (v0.13.1) with native PC ports of original-Xbox
+games in [`games/`](games/) and a launcher that builds and starts them from **your own disc**. No game content (disc
+image, executable, data or generated code) is in this repository.
 
+## How to play a game
+
+Windows 10/11 x64. About 10 GB free and 20-60 minutes for the first build of a game.
+
+1. Get this repository, either way:
+   - `git clone --recurse-submodules https://github.com/batatinhafcbatatinha-pixel/xboxrecomp.git`, or
+   - **Code > Download ZIP** and unpack it, or
+   - only [`Launcher.exe`](https://github.com/batatinhafcbatatinha-pixel/port-installer/releases/latest/download/Launcher.exe):
+     run it, pick xboxrecomp and a folder, and it downloads this repository there.
+2. Run **`Launcher.cmd`** (it downloads `Launcher.exe` from the
+   [port-installer releases](https://github.com/batatinhafcbatatinha-pixel/port-installer/releases) the first time).
+3. Click **CHOOSE ISO...** and pick your disc image (XISO or full Redump `.iso`). The game is recognised from its `default.xbe`.
+4. Confirm **Install**. The launcher installs what is missing (Python, Visual Studio C++ Build Tools, LLVM/Clang, CMake,
+   Ninja), copies and checks the game files, translates the game code and compiles it. Finished steps are skipped next
+   time. Log: **Install** tab and `games/<game>/setup-log.txt`.
+5. **PLAY**. **PC settings** in the launcher, or the in-game F1 menu: display mode, monitor, refresh rate, V-Sync,
+   frame limit, resolution, controls, language, volume.
+
+| Game | Disc | State |
+| --- | --- | --- |
+| [FIFA Street](games/street1/) | Xbox, USA and Europe | playable |
+| [FIFA Street 2](games/street2/) | Xbox, USA | playable |
+| [Black](games/black/) | Xbox, USA | playable |
+| [Mortal Kombat: Armageddon](games/mka/) | Xbox, USA | early work, not in the launcher yet |
+
+Only these exact discs are supported (checked by SHA-256, see each `games/<game>/installer.json`).
+
+## Differences from upstream
+
+- `games/`: game profiles (recompiler config, native game code, build and play scripts)
+- `hle/d3d8/`: one shared Direct3D 8 / DirectSound / input HLE (native Direct3D 11 renderer, PC settings menu, native audio)
+- launcher + one-click install/build/play (`Launcher.cmd`, [port-installer](https://github.com/batatinhafcbatatinha-pixel/port-installer) submodule in `tools/port-installer`)
+- NV2A: D3D11 compute path, vertex shader translation, push-buffer executor
+- APU: DSP from xemu (GP/EP), XAudio2 and SDL2 output
+- kernel: title KEVENTs, guest events, threads, memory layout, overridable kernel data/stack bases, guest-write hook around NtReadFile
+- input: XInput and OHCI updates, non-XInput pads through run-time SDL3
+- platform: POSIX side of the Win32 compatibility layer, MMIO decoding
+- recompiler: guest CPU yield hooks at backward branches, lifter fixes
+
+## Building
+
+Windows: Visual Studio 2022 (or Build Tools) with the C++ workload and Windows SDK, LLVM/Clang 20+, CMake 3.25+, Ninja,
+Python 3.11+ (the launcher puts LLVM, CMake and Ninja in `.local/tools`).
+
+One game, without the launcher (same steps it runs; `-Source` is your disc image):
+
+```bat
+git clone --recurse-submodules https://github.com/batatinhafcbatatinha-pixel/xboxrecomp.git
+cd xboxrecomp
+powershell -ExecutionPolicy Bypass -File tools\port-installer\setup\setup.ps1 -GameDir games\street2 -ToolsDir .local\tools -Source "D:\ISO\your-disc.iso"
+```
+
+Or by hand inside `games/<game>/`: the `steps` of its `setup.json` (each game's `README.md` has the details), then its
+`Play-*.cmd`. The toolkit itself builds as upstream describes below.
+
+## Upstream documentation
+
+The DSP sources in `src/apu/dsp/` come from xemu under GPL-2.0/LGPL-2.1 (see `src/apu/dsp/UPSTREAM.md`).
 
 ```
  #   #  ####    ###   #   #         #####   ###    ###   #       ###

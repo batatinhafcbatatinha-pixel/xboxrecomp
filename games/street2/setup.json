@@ -33,7 +33,7 @@
   "submodules": {
     "../../tools/port-installer": {
       "url": "https://github.com/batatinhafcbatatinha-pixel/port-installer.git",
-      "commit": "225df3dc28e697a19d5edb3ac58e0d532496619b"
+      "commit": "7c3b4ad5d353cf4609d1c00ab96168a3d16e084f"
     }
   }
 }

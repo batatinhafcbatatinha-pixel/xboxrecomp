@@ -1,0 +1,33 @@
+{
+  "recomp": "xboxrecomp",
+  "repo": "batatinhafcbatatinha-pixel/xboxrecomp",
+  "branch": "ports",
+  "games_dir": "games",
+  "setup": "tools/port-installer/setup/setup.ps1",
+  "tools_dir": ".local/tools",
+  "deps": {
+    "buildtools_gb": 7,
+    "python_gb": 0.1,
+    "tools": [
+      {
+        "id": "llvm",
+        "name": "LLVM / Clang 22.1.2",
+        "check": ".local/tools/llvm-22.1.2/bin/clang++.exe",
+        "gb": 3.0
+      },
+      {
+        "id": "cmake",
+        "name": "CMake 3.31.12",
+        "check": ".local/tools/cmake-3.31.12/bin/cmake.exe",
+        "gb": 0.1
+      },
+      {
+        "id": "ninja",
+        "name": "Ninja 1.13.2",
+        "check": ".local/tools/ninja-1.13.2/ninja.exe",
+        "gb": 0.01
+      }
+    ]
+  },
+  "groups": []
+}

@@ -37,3 +37,6 @@ bin/
 *.obj
 *.exe
 tools/split/output/
+
+# Launcher downloads and portable build tools (Launcher.cmd / port-installer setup)
+/.local/

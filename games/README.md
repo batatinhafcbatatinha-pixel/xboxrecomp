@@ -15,8 +15,9 @@ names of its copy of the Xbox libraries) and its library tables (`hle_d3d8_table
 | [Black](black/) | Xbox, USA | playable |
 | [Mortal Kombat: Armageddon](mka/) | Xbox, USA | early work: reaches fights |
 
-Building: each folder keeps its own instructions (`README.md`, `Setup.cmd` where present). Game files are
-extracted with the shared installer in [`tools/port-installer`](../tools/) (`git submodule update --init`).
+To play one, use the launcher: see [How to play](../README.md#how-to-play-a-game). By hand: each folder keeps its own
+instructions (`README.md`, `setup.json`). Game files are extracted with the shared installer in
+[`tools/port-installer`](../tools/) (`git submodule update --init`).
 
 The games, their code, trademarks and assets belong to their publishers and rights holders. These ports are not
 affiliated with or endorsed by them or by Microsoft.
