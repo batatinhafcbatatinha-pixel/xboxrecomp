@@ -59,6 +59,7 @@ extern RECOMP_TLS uint32_t g_ebx, g_esi, g_edi, g_ebp;
 extern uint32_t g_xbox_code_lo, g_xbox_code_hi;
 extern RECOMP_TLS uint32_t g_seh_ebp;
 extern ptrdiff_t g_xbox_mem_offset;
+extern int xbox_missing_code(uint32_t va, const char *how);  /* runtime: record + stop */
 
 /* Dispatch table lookup (for function pointer args) */
 typedef void (*recomp_func_t)(void);
@@ -720,6 +721,7 @@ static void bridge_PsCreateSystemThreadEx(void)
                 }
             }
         } else {
+            xbox_missing_code(start_routine, "thread start");
             fprintf(stderr, "  [KERNEL] PsCreateSystemThreadEx: start routine 0x%08X not found in dispatch!\n",
                     start_routine);
         }
@@ -8380,6 +8382,7 @@ static void bridge_PsCreateSystemThread(void)
                 }
             }
         } else {
+            xbox_missing_code(start_routine, "thread start");
             fprintf(stderr, "  [KERNEL] PsCreateSystemThread: start routine 0x%08X not found in dispatch!\n",
                     start_routine);
         }

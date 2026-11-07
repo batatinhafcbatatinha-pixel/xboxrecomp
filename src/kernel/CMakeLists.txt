@@ -22,6 +22,7 @@ set(KERNEL_SOURCES
     xbox_memory_layout.c
     guest_vmem.c
     icall_feedback.c
+    missing_code.c
     recomp_trace.c
     nv2a_pb_scan.c
     nv2a_pb_exec.c

@@ -10,7 +10,9 @@ recomp_func_t recomp_lookup_manual(uint32_t va) {
     recomp_func_t fn = black_recovered_lookup(va);
     return fn ? fn : black_recovered_funcs_lookup(va);
 }
+extern int xbox_missing_code(uint32_t va, const char *how);  /* runtime: record + stop */
 void recomp_icall_fail_log(uint32_t va) {
+    xbox_missing_code(va, "indirect call");
     fprintf(stderr, "Black: untranslated indirect target 0x%08X\n", va);
     abort();
 }

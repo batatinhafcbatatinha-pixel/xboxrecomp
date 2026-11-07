@@ -124,8 +124,11 @@ recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
  * (the ICALL macro pops the dummy return address and continues).
  * Focus on the ones that cause crashes or incorrect behavior.
  */
+extern int xbox_missing_code(uint32_t va, const char *how);  /* runtime: record + stop */
 void recomp_icall_fail_log(uint32_t va)
 {
+    /* Code this build did not translate: recorded for the next build, and the run stops. */
+    xbox_missing_code(va, "indirect call");
     fprintf(stderr, "[ICALL] Failed to resolve VA 0x%08X (total calls: %llu)\n",
             va, (unsigned long long)g_icall_count);
 
