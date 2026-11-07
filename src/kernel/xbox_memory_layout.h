@@ -247,7 +247,10 @@ void xbox_WatchInit(void);
 /** Base VA for kernel data exports (XboxHardwareInfo, XboxKrnlVersion, etc.)
  *  These are kernel exports that are DATA, not functions. The game reads
  *  their thunk entries and dereferences them to access the data. */
+/* A title whose image reaches past 0x00740000 moves these with compile definitions. */
+#ifndef XBOX_KERNEL_DATA_BASE
 #define XBOX_KERNEL_DATA_BASE   0x00740000
+#endif
 #define XBOX_KERNEL_DATA_SIZE   4096   /* 4 KB - plenty for all data exports */
 
 /* Offsets within the kernel data area */
@@ -332,7 +335,9 @@ typedef union RecompXmm {
 } RecompXmm;
 #endif
 
+#ifndef XBOX_STACK_SIZE
 #define XBOX_STACK_SIZE     (8 * 1024 * 1024)
+#endif
 
 /** Base VA of the stack area (above last XBE section). */
 /* Where the fake TIB lives -- the linear address fs: is based at.
@@ -382,7 +387,9 @@ void xbox_GuestCpuStateSave(XboxGuestCpuState *state);
 void xbox_GuestCpuStateRestore(const XboxGuestCpuState *state);
 #define XBOX_FS_BASE        g_fs_base
 
+#ifndef XBOX_STACK_BASE
 #define XBOX_STACK_BASE     0x00780000
+#endif
 
 /** Initial ESP value (top of stack, 16-byte aligned). */
 #define XBOX_STACK_TOP      (XBOX_STACK_BASE + XBOX_STACK_SIZE - 16)
