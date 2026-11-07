@@ -4,3 +4,4 @@
 #define HLE_GAME_STREET2 2
 #define HLE_GAME_MKA 3
 #define HLE_GAME_BLACK 4
+#define HLE_GAME_GENERIC 99  /* a title without a profile: the shared code takes its default (#else) paths */

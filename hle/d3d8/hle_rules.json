@@ -1,0 +1,7478 @@
+{
+"FN_DEVICE": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "c701000000fd2e2e2e2efd83c8042e2e2e2efd33c0c705400160fd00000000c705409100fd000000"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "c701000000fd2e2e2e2efd83c8042e2e2e2efd33c0c705400160fd00000000c72e2e2e2efd000000"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_3"
+},
+"FN_DEVICE_10": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83ec5c2053568b31578d45e050894df8e82e2e2e2e8b5c7d088b45188b555c0c83e0018945ecb8fc"
+},
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_InitHardware",
+"offset": 354
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_12"
+},
+"FN_DEVICE_11": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83ec5c0c53568b31578d45f450894dfce82e2e2e2e8b5c7d082e2e2e2e2e2ec1e00403c6894508"
+},
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_InitHardware",
+"offset": 848
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_13"
+},
+"FN_DEVICE_2": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b118b2e2e2e2e00c1e82e2e2e2e00008981a80000008b2e2e2e2e0025ff0000008981c00000008b"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b2e2e2e2e2e2e00c1e82e2e2e2e00008981a80000008b2e2e2e2e0025ff0000008981c00000008b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_4"
+},
+"FN_DEVICE_3": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf1578b3ec72e2e2e2e0000000000c72e2e2e2e0000f800002e2e2e2e2ec786b4002e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_5"
+},
+"FN_DEVICE_4": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "535556578bf98b378d2e2e2e2e008b088bd181e2fffcffff8910890883cbff892e2e2e2e008b87b4"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_6"
+},
+"FN_DEVICE_5": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_CreateCtxDmaObject",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec515153565733c0508945f88945fc8d45fc508d45f850ff75108bd18b3ae82e2e2e2e8b5c5df8"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_7"
+},
+"FN_DEVICE_6": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec535633d2835c7d5c0c57578bd9761a8b455c0c83e82e2e2e2ee82e2e2e2ee82e2e2e2e2e2e2e0042"
+},
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_CreateCtxDmaObject",
+"offset": 207
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_8"
+},
+"FN_DEVICE_7": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf157ff745c241433c0892e2e2e2e00892e2e2e2e00892e2e2e2e00892e2e2e2e008d2e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf157ff745c2414332e2e2e2e2e2e00892e2e2e2e00892e2e2e2e00892e2e2e2e008d2e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_9"
+},
+"FN_DEVICE_8": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24048b10560fb7700656ff705c0c8bc2ff2e2e2e2e00c1e82e2e2e2ee82e2e2e2e2e2e2e2e0050"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_10"
+},
+"FN_DEVICE_9": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_IsBusy",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "a12e2e2e2e8b2e2e2e2e008b88403200003b8844320000742e2e2e2e0000c38b800007400033c985"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "a12e2e2e2e2e2e2e2e2e008b2e2e2e2e003b2e2e2e2e00742e2e2e2e0000c38b800007400033c985"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_11"
+},
+"FN_INPUT": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__XInitDevices",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558d6c5c249081ecb40000005657ff755c7c8d4dbcff75782e2e2e2e2eb82e2e2e2ebe2e2e2e2e3bc68b"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"FN_INPUT_2": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__XGetDevices",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "56ff152e2e2e2e8b545c24088b322e2e2e2e8ac8897208ff152e2e2e2e8bc62e2e2e2e558bec568b75"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"FN_INPUT_3": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__XGetDeviceChanges",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec568b750833c0394604755c0c8b4d5c0c89018b4d108901eb4e5357ff152e2e2e2e8b4e088b5c5d5c0c"
+},
+{
+"kind": "sym",
+"name": "XAPILIB__XGetDevices",
+"offset": 34
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"FN_INPUT_4": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__XInputOpen",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec518b4d088365fc002e2e2e2e2e85c0755c0b6a57e82e2e2e2e33c0eb33568b751485f675038b"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec518b4d088365fc00e82e2e2e2e85c0755c0b6a57e82e2e2e2e33c0eb33568b751485f675038b"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"FN_INPUT_5": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__XInputClose",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b4c5c24042e2e2e2e2e2e2e2e558bec83ec488365f800538b1d2e2e2e2e5657ffd38845ff8b45088b"
+},
+{
+"kind": "sym",
+"name": "XAPILIB__XInputOpen",
+"offset": 86
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"FN_INPUT_6": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__XInputGetCapabilities",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83ec488365f800538b1d2e2e2e2e5657ffd38845ff8b45088b3085f60f2e2e2e2e2ef64604"
+},
+{
+"kind": "sym",
+"name": "XAPILIB__XInputClose",
+"offset": 12
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_INPUT_3"
+},
+"FN_INPUT_7": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__XInputGetState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "535633dbff152e2e2e2e8b545c245c0c8b8aa3000000f6415c281074056a575c5eeb458b5c0a85c97406f64104"
+},
+{
+"kind": "sym",
+"name": "XAPILIB__XInputGetCapabilities",
+"offset": 472
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"FN_INPUT_8": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__XInputSetState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b4c5c24048d81a30000008b10f6425c285c2074056a5758eb198b545c2408c64240008b008b405c0c8a000402"
+},
+{
+"kind": "sym",
+"name": "XAPILIB__XInputGetState",
+"offset": 115
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"FN_NATIVE_API": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__CDevice_KickOff",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf18b4608a80474088b2e2e2e2e00eb028b16f6c45c20755c5da12e2e2e2e8b2e2e2e2e000faef88b"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf18b4608a80474088b2e2e2e2e00eb028b16f6c45c20755c5da12e2e2e2e2e2e2e2e2e000faef88b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_SYNC_2"
+},
+"FN_SYNC": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec1c56578b5c7c5c245c288bd78bc783e21fc1e82e2e2e2e5c0d8bf18b0e0f2e2e2e2e2eff5c24952e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_135"
+},
+"FN_SYNC_2": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__CDevice_KickOff",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf18b4608a80474088b2e2e2e2e00eb028b16f6c45c20755c5da12e2e2e2e8b2e2e2e2e000faef88b"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf18b4608a80474088b2e2e2e2e00eb028b16f6c45c20755c5da12e2e2e2e2e2e2e2e2e000faef88b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_NATIVE_API"
+},
+"FN_SYNC_3": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec5c0c5355568bf1578b3ee82e2e2e2e8b2e2e2e2e0085c9745c0a8bd05c2bd1892e2e2e2e008b9ec001"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_5"
+},
+"GA_D3D11_INTERNAL_D3D_DEVICE_PTR_VA": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "85c07406c7000000000033c02e2e2e2e00f3ab5f8bc6c7052e2e2e2e2e2e00002e2e2e2e8b445c245c2085c0740289385f33c02e2e2e2ecccccccccccccccccccccc"
+}
+],
+"libs": [
+"D3D8:5849",
+"D3D8LTCG:5849"
+]
+},
+"GA_D3D8": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00a32e2e2e2e2e2e2ecccccccccccccccccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccccccccccccccccc568b745c240883fe5c5c5c7d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccc53a12e2e2e2e83c01c3b052e2e2e2e7343a32e2e2e2ec740e42e2e2e2e8948e82e2e2e2e2e2e2ec1e1048d892e2e2e2e8b1a8958f089198b5a04"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_D3D8_HLE_PB_PUT"
+},
+"GA_D3D8_2": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_Clear",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec3853558b5c2d2e2e2e2e8b2e2e2e2e0056578b2e2e2e2e000fb6475c0d8a882e2e2e2e33f6f6c101"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec3853558b5c2d2e2e2e2e2e2e2e2e2e0056578b2e2e2e2e000fb6475c0d8a882e2e2e2e33f6f6c101"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_38"
+},
+"GA_D3D8_4": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00008b088bd1c1ea1283c00483fa01755c0d8b38c1e70481c72e2e2e2eeb4d81e1ffff00008d1c9500000000812e2e2e2e008bcb8bf08be92e2e2e2e5c2418c1e902"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c280f6f72300f6f7a38c740b42e2e2e2e8948b8c1e1048d892e2e2e2ec740bc805c0b40000f7f40c00f7f010f7f48c80f7f49080f7f50d00f7f51100f7f58d80f7f"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c1f6052e2e2e2e10538b5c5c5c2408751556578bf8c1e70481c72e2e2e2e8bcb8bf2f3a55f5c5e538bc8e82e2e2e2e2e2e2e2ecccccccccccccccccccccccccccccc8b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_VSH_CONSTANTS"
+},
+"GA_D3D8_5": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "4affffff0f77cccccccccccccccccccccccccccc8bc1f6052e2e2e2e10538b5c5c5c2408751556578bf8c1e70481c72e2e2e2e8bcb8bf2f3a55f5c5e538bc8e8f3feff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "08eb2e2e2e2e0000eb5c2aa12e2e2e2e83c82e2e2e2e0000a32e2e2e2eeb2e2e2e2e0000eb0ff6c22e2e2e2e0000742e2e2e2e00008bc15c0bc25c0bc78bd133d7d1e8"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c0755c0ac7052e2e2e2e2e8000008b445c24108b4c5c2414568b352e2e2e2e5783e010bf2e2e2e2e5c0bf0518bcf893d2e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_7"
+},
+"GA_D3D8_HLE_PB_PUT": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00a32e2e2e2e2e2e2ecccccccccccccccccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccccccccccccccccc568b745c240883fe5c5c5c7d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccc53a12e2e2e2e83c01c3b052e2e2e2e7343a32e2e2e2ec740e42e2e2e2e8948e82e2e2e2e2e2e2ec1e1048d892e2e2e2e8b1a8958f089198b5a04"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_D3D8"
+},
+"GA_DEVICE": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__Direct3D_CreateDevice",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "a12e2e2e2e85c0755c0ac7052e2e2e2e2e2e2e2ea12e2e2e2e2ec0755c0ac7052e2e2e2e2e8000008b44"
+},
+{
+"kind": "sym",
+"name": "D3D8__SetPushBufferSize",
+"offset": 32
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_DEVICE_10": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24048b10560fb7700656ff705c0c8bc2ff2e2e2e2e00c1e82e2e2e2ee82e2e2e2e2e2e2e2e0050"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_8"
+},
+"GA_DEVICE_11": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_IsBusy",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "a12e2e2e2e8b2e2e2e2e008b88403200003b8844320000742e2e2e2e0000c38b800007400033c985"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "a12e2e2e2e2e2e2e2e2e008b2e2e2e2e003b2e2e2e2e00742e2e2e2e0000c38b800007400033c985"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_9"
+},
+"GA_DEVICE_12": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83ec5c2053568b31578d45e050894df8e82e2e2e2e8b5c7d088b45188b555c0c83e0018945ecb8fc"
+},
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_InitHardware",
+"offset": 354
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_10"
+},
+"GA_DEVICE_13": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83ec5c0c53568b31578d45f450894dfce82e2e2e2e8b5c7d082e2e2e2e2e2ec1e00403c6894508"
+},
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_InitHardware",
+"offset": 848
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_11"
+},
+"GA_DEVICE_14": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00a32e2e2e2e2e2e2ecccccccccccccccccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccccccccccccccccc568b745c240883fe5c5c5c7d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccc53a12e2e2e2e83c01c3b052e2e2e2e7343a32e2e2e2ec740e42e2e2e2e8948e82e2e2e2e2e2e2ec1e1048d892e2e2e2e8b1a8958f089198b5a04"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_D3D8"
+},
+"GA_DEVICE_16": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 168
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c10f95c28d45fc50bb005000005342428996b0000000ff152e2e2e2e8b4dfc5c2bc38946108d8100007000c1e92e2e2e2e2e2e00812e2e2e2e0081c90000000389"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c10f95c28d45fc502e2e2e2e005342428996b0000000ff152e2e2e2e8b4dfc5c2bc389462e2e2e2e2e2e2ec1e92e2e2e2e2e2e00812e2e2e2e0081c90000000389"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_17"
+},
+"GA_DEVICE_17": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 168
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c10f95c28d45fc50bb005000005342428996b0000000ff152e2e2e2e8b4dfc5c2bc38946108d8100007000c1e92e2e2e2e2e2e00812e2e2e2e0081c90000000389"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c10f95c28d45fc502e2e2e2e005342428996b0000000ff152e2e2e2e8b4dfc5c2bc389462e2e2e2e2e2e2ec1e92e2e2e2e2e2e00812e2e2e2e0081c90000000389"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_16"
+},
+"GA_DEVICE_18": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec568b755c0c85f6795c7df7c60000000f755c0c81e6fffffffc81ce0000005c0c8bcec1e92e2e2e2ee8"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_165"
+},
+"GA_DEVICE_2": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "812e2e2e2e005368000080ac6a608bd9e82e2e2e2e85c0892e2e2e2e00752e2e2e2e07805c5b81c464"
+},
+{
+"kind": "sym",
+"name": "D3D8__CDevice_InitializeFrameBuffers",
+"offset": 1440
+},
+{
+"kind": "sym",
+"name": "D3D8__CDevice_FreeFrameBuffers",
+"offset": 1744
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_DEVICE_3": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "c701000000fd2e2e2e2efd83c8042e2e2e2efd33c0c705400160fd00000000c705409100fd000000"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "c701000000fd2e2e2e2efd83c8042e2e2e2efd33c0c705400160fd00000000c72e2e2e2efd000000"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE"
+},
+"GA_DEVICE_4": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b118b2e2e2e2e00c1e82e2e2e2e00008981a80000008b2e2e2e2e0025ff0000008981c00000008b"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b2e2e2e2e2e2e00c1e82e2e2e2e00008981a80000008b2e2e2e2e0025ff0000008981c00000008b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_2"
+},
+"GA_DEVICE_5": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf1578b3ec72e2e2e2e0000000000c72e2e2e2e0000f800002e2e2e2e2ec786b4002e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_3"
+},
+"GA_DEVICE_6": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "535556578bf98b378d2e2e2e2e008b088bd181e2fffcffff8910890883cbff892e2e2e2e008b87b4"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_4"
+},
+"GA_DEVICE_7": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_CreateCtxDmaObject",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec515153565733c0508945f88945fc8d45fc508d45f850ff75108bd18b3ae82e2e2e2e8b5c5df8"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_5"
+},
+"GA_DEVICE_8": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec535633d2835c7d5c0c57578bd9761a8b455c0c83e82e2e2e2ee82e2e2e2ee82e2e2e2e2e2e2e0042"
+},
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_CreateCtxDmaObject",
+"offset": 207
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_6"
+},
+"GA_DEVICE_9": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf157ff745c241433c0892e2e2e2e00892e2e2e2e00892e2e2e2e00892e2e2e2e008d2e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf157ff745c2414332e2e2e2e2e2e00892e2e2e2e00892e2e2e2e00892e2e2e2e008d2e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_7"
+},
+"GA_DEVICE_DEV_BASE": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00a32e2e2e2e2e2e2ecccccccccccccccccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccccccccccccccccc568b745c240883fe5c5c5c7d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccc53a12e2e2e2e83c01c3b052e2e2e2e7343a32e2e2e2ec740e42e2e2e2e8948e82e2e2e2e2e2e2ec1e1048d892e2e2e2e8b1a8958f089198b5a04"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_D3D8"
+},
+"GA_DEVICE_MINIPORT": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 7216
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_DoNotCullUncompressed",
+"offset": 7220
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZRead",
+"offset": 7224
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_MINIPORT"
+},
+"GA_DRAW_G_RENDER_STATE": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1433c056eb5c092e2e2e2e0000008bff8bb02e2e2e2e2e34b52e2e2e2e8971fc8bb02e2e2e2e8b34b52e2e2e2e89318bb02e2e2e2e8b34b52e2e2e2e8971048bb0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "b02e2e2e2e2e34b52e2e2e2e8971fc8bb02e2e2e2e8b34b52e2e2e2e89318bb02e2e2e2e8b34b52e2e2e2e8971048bb02e2e2e2e8b34b52e2e2e2e8971088bb0"
+}
+],
+"libs": [
+"D3D8:5849",
+"D3D8LTCG:5849"
+],
+"alias": "GA_NATIVE_GEOMETRY_GRS"
+},
+"GA_DRAW_G_STREAM": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_Stream",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "835c7e1c0274348b46148d14408b3c952e2e2e2e85ff8d14952e2e2e2e741c8b020faf445c245c200347048b5c7e188b720403c703c6891989410483c1088b745c24144683"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "835c7e1c0274348b46148d14402e2e2e2e2e2e2e85ff8d14952e2e2e2e741c8b020faf445c245c200347048b5c7e188b720403c703c6891989410483c1088b745c24144683"
+}
+],
+"libs": [
+"D3D8:5849",
+"D3D8LTCG:5849"
+]
+},
+"GA_DRAW_G_TEXTURE_STATE": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ec1e1055c0bf203c88b445c241089352e2e2e2e89048d2e2e2e2e2e2e2e2e75338b445c245c0c8b152e2e2e2e83f8191bc981e1f1bfffff81c10f4800005c0bd189"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "538bd88d4c5c243089445c241483cb10c1e00755894c5c24108d882e2e2e2e8b413056894c5c245c20894c5c245c2457eb068d9b000000008b4c5c245c248b79348b71388b693c33d2"
+}
+],
+"libs": [
+"D3D8:5849",
+"D3D8LTCG:5849"
+],
+"alias": "GA_NATIVE_QUALITY_QTSS"
+},
+"GA_DSOUND": {
+"rules": [
+{
+"kind": "sym",
+"name": "DSOUND__CDirectSoundVoiceSettings_SetMixBinVolumes",
+"offset": 0
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_DSOUND_NATIVE": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83ec4c8365dc00538b597083bbb8000000005657894dd40f842e2e2e2ef6435c0b010f84c200"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_DSOUND_NATIVE_2": {
+"rules": [
+{
+"kind": "sym",
+"name": "DSOUND__CMcpxBuffer_GetCurrentPosition",
+"offset": 0
+},
+{
+"kind": "sym",
+"name": "DSOUND__CMcpxBuffer_GetStatus",
+"offset": 66
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_INPUT": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__VAR__g_DeviceType_Gamepad",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "0000000000000000000000000000000000000000000000000000000000000000122e2e2e2e000000"
+},
+{
+"kind": "sym",
+"name": "XAPILIB__VAR__g_DeviceType_IRDongle",
+"offset": -100
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_INPUT_TYPE_GAMEPAD"
+},
+"GA_INPUT_2": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__VAR__g_DeviceType_MU",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "0000000000000000000000002e2e2e2e8208ffff2e2e2e2e2e2e2e2e2e2e2e2e2e2e00002e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "000000002e2e2e2e000000000000000000000000000000002e2e2e2e8208ffff2e2e2e2e2e2e2e2e2e2e2e2e2e2e00002e2e2e2e2e2e2e2e2e2e2e2e2e000000"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_INPUT_TYPE_MU"
+},
+"GA_INPUT_3": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__XInputGetCapabilities",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83ec488365f800538b1d2e2e2e2e5657ffd38845ff8b45088b3085f60f2e2e2e2e2ef64604"
+},
+{
+"kind": "sym",
+"name": "XAPILIB__XInputClose",
+"offset": 12
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_INPUT_6"
+},
+"GA_INPUT_TYPE_GAMEPAD": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__VAR__g_DeviceType_Gamepad",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "0000000000000000000000000000000000000000000000000000000000000000122e2e2e2e000000"
+},
+{
+"kind": "sym",
+"name": "XAPILIB__VAR__g_DeviceType_IRDongle",
+"offset": -100
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_INPUT"
+},
+"GA_INPUT_TYPE_MU": {
+"rules": [
+{
+"kind": "sym",
+"name": "XAPILIB__VAR__g_DeviceType_MU",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "0000000000000000000000002e2e2e2e8208ffff2e2e2e2e2e2e2e2e2e2e2e2e2e2e00002e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "000000002e2e2e2e000000000000000000000000000000002e2e2e2e8208ffff2e2e2e2e2e2e2e2e2e2e2e2e2e2e00002e2e2e2e2e2e2e2e2e2e2e2e2e000000"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_INPUT_2"
+},
+"GA_NATIVE_API": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetVertexShader",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "51538b5c5c5c245c0cf6c30155568b352e2e2e2e8b2e2e2e2e008b48048b681057894c5c241074228a4303a8"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_DeleteVertexShader",
+"offset": 272
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_10": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ec1e1055c0bf203c88b445c241089352e2e2e2e89048d2e2e2e2e2e2e2e2e75338b445c245c0c8b152e2e2e2e83f8191bc981e1f1bfffff81c10f4800005c0bd189"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "81e1ff00000083f804731a83f95c207315c1e00503c18b14852e2e2e2e8b445c2408891033c0c3b857000780c381fa0000008b5657756825ff00000083f8040f839d"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_STATES_7"
+},
+"GA_NATIVE_API_100": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZRead",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b5c0d2e2e2e2e85c98bc22e2e2e2e2e2e2e892e2e2e2e00a12e2e2e2e85c0745c0a812e2e2e2e00000000088b063b460472052e2e2e2e2ec7002e2e2e2e2e2e2e2e"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZCmpAlwaysRead",
+"offset": 4
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_101": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_DoNotCullUncompressed",
+"offset": 0
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZRead",
+"offset": 4
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": -4
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_82"
+},
+"GA_NATIVE_API_102": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_Dxt1NoiseEnable",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "e6052e2e2e2e2e2e2e83ce0889705c0c83c01089075f5c5e891d2e2e2e2e2e2e2e2ecccccccccccccccccc515633c0578b5c7c5c241085ff0f95c085ff895c7c5c2410db445c24"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_SampleAlpha",
+"offset": 4
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_103": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetRenderState_Dxt1NoiseEnable",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "538b5c5c5c240856578b3d2e2e2e2e8b2e2e2e2e000fb6485c0d8a912e2e2e2e80e23c33f680fa5c2075028b"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetRenderState_LineWidth",
+"offset": 112
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_104": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__CommonSetDebugRegisters",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e8b2e2e2e2e0083e2f7892e2e2e2e008b5c0d2e2e2e2e85c98bc2745c0983c80889865c28"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e2e2e2e2e2e0083e2f7892e2e2e2e008b5c0d2e2e2e2e2e2e8bc2745c0983c80889865c28"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_105": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_PSTextureModes",
+"offset": 0
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_ComplexRenderState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "751ab9390000008bf5bf2e2e2e2ef3a58b8dd8000000895c0d2e2e2e2e8b4c5c241085c9755c098bd08bcbe82e2e2e2ec7002e2e2e2e8d782e2e2e2e00008bf5f3a5c7"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_STATES_8"
+},
+"GA_NATIVE_API_106": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b4c5c24040fb6515c0d0fb6822e2e2e2eff5c24852e2e2e2e2e2e2e00008b495c0c568bf181e60000f00081"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_107": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0800cccccccc8b4c5c24040fb6515c0d0fb6822e2e2e2eff5c24852e2e2e2e2e2e2e00008b495c0c568bf181e60000f000812e2e2e2e00c1ee0481e10000000f5c0bf15c0bc6"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_108": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "000000005c0a0102035c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a0405065c0a5c0a5c0a075c0a5c0a5c0a5c0a085c0a5c092e2e2e2e2e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "048d2e2e2e2e2e2e2ecccccccc8b4c5c24040fb6515c0d0fb6822e2e2e2eff5c24852e2e2e2e2e2e2e00008b495c0c568bf181e60000f000812e2e2e2e00c1ee0481e100"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_109": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "b8080000008b495c0c568bf181e60000f000812e2e2e2e00c1ee0481e10000000f5c0bf15c0bc65c5eeb5c0ab8"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0080e23c80fa5c2074ec83c82e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00000000005c0a0102"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_11": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e0089545c242ceb038d490089545c24148d48ffff5c248d2e2e2e2ef6c310743a8bcb83e15c208bc1c1e0172e2e2e2e005c20043bcd0f2e2e2e2e2e8b5c7c5c24188b74"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e0089545c242ceb2e2e2e2e89545c24148d48ffff5c248d2e2e2e2ef6c310743a8bcb83e15c208bc1c1e0172e2e2e2e005c20043bcd0f2e2e2e2e2e8b5c7c5c24188b74"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_110": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "b808002e2e2e2e2e2e008b4c5c240885c974580fb6495c0d83c1d683f90777490fb6892e2e2e2eff5c248d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c20800902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00000000005c0a0102035c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a0405"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_111": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "80fa5c2074ec83c82e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00000000005c0a0102035c0a5c0a5c0a"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_112": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00000000005c0a0102035c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a0405065c0a5c0a5c0a075c0a5c0a5c0a5c0a085c0a5c092e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_113": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "922e2e2e2e80e23c80fa5c2074ec83c82e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00000000"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_114": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "b803000000eb2e2e2e2e0000eb2e2e2e2e0000eb2e2e2e2e0000eb2e2e2e2e0000eba183c85c20c208"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ec83c82e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00000000005c0a0102035c0a5c0a5c0a5c0a5c0a5c0a5c0a"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_115": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "b801000000eb2e2e2e2e0000eb2e2e2e2e0000eb2e2e2e2e0000eba183c82e2e2e2e8a922e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c208008a922e2e2e2e80e23c80fa5c2074ec83c82e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_116": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "b801000000eb2e2e2e2e0000eb2e2e2e2e0000eba183c82e2e2e2e8a922e2e2e2e80e23c80fa5c2074"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00000000005c0a0102035c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a0405065c0a5c0a5c0a075c0a5c0a5c0a5c0a085c0a5c09"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_117": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "b85c09000000eb2e2e2e2e0000eba183c82e2e2e2e8a922e2e2e2e80e23c80fa5c2074ec83c82e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00000000005c0a0102035c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a0405065c0a5c0a5c0a"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_118": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00000000005c0a0102035c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a0405065c0a5c0a5c0a075c0a5c0a5c0a"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_119": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "2e2e2e2e2e2e2e2e002e2e2e2e000101cccccccccccccccccccccccc8b445c24040fb6485c0d83e95c2aff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "74580fb6495c0d83c1d683f90777490fb6892e2e2e2eff5c248d2e2e2e2e2e2e2e0000eb2e2e2e2e0000eb2e2e2e2e0000eb2e2e2e2e0000eb2e2e2e2e0000eb8fb8"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_12": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "f6c310743a8bcb83e15c208bc1c1e0172e2e2e2e005c20043bcd0f2e2e2e2e2e8b5c7c5c24188b745c245c208907"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "4000008b845c24d00000005f5c5e5c5d5c5b81c4b800002e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_120": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "002e2e2e2e000101cccccccccccccccccccccccc8b445c24040fb6485c0d83e92e2e2e2e2e2e2e2e8b54"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "008b4c5c240885c974580fb6495c0d83c1d683f90777490fb6892e2e2e2eff5c248d2e2e2e2e2e2e2e0000eb2e2e2e2e0000eb2e2e2e2e0000eb2e2e2e2e0000ebbdb8"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_121": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83c82e2e2e2e8a922e2e2e2e80e23c80fa5c2074ec83c82e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e69"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "035c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a5c0a0405065c0a5c0a5c0a075c0a5c0a5c0a5c0a085c0a5c092e2e2e2e2e2e2e2e002e2e2e2e000101cccccccccccccccccccccccc8b445c24040fb6485c0d83e95c2aff"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_122": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24040fb6485c0d83e92e2e2e2e2e2e2e2e8b545c242e2e2e2eff7f2e2e2e2e8b445c2408c700ffff7f"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_123": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccc8b445c24040fb6485c0d83e92e2e2e2e2e2e2e2e8b545c242e2e2e2eff7f2e2e2e2e8b445c2408c700ffff7f2e2e2e2e8b4c5c242e2e2e2ef8ff43"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_124": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b545c242e2e2e2eff7f2e2e2e2e8b445c2408c700ffff7f2e2e2e2e8b4c5c242e2e2e2ef8ff2e2e2e2e8b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "008b545c2408c702caf2492e2e2e2e8bff2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2ecccccccccccccccc568b745c24088b4610"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2ecccccccccccccccc568b745c24088b461085c00f852e2e2e2e8b4e5c0c8bc18bd1c1"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_125": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c2408c700ffff7f2e2e2e2e8b4c5c242e2e2e2ef8ff2e2e2e2e8b545c2408c702caf2492e2e2e2e8b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c70100f8ff2e2e2e2e8b545c2408c702caf2492e2e2e2e8bff2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2ecccccccccccccccc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "f2492e2e2e2e8bff2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2ecccccccccccccccc568b745c24088b461085c00f852e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_126": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b4c5c242e2e2e2ef8ff2e2e2e2e8b545c2408c702caf2492e2e2e2e8bff2e2e2e2e2e2e2e2e2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "08c702caf2492e2e2e2e8bff2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2ecccccccccccccccc568b745c24088b461085c00f85"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2ecccccccccccccccc568b745c24088b461085c00f852e2e2e2e8b4e5c0c8bc18bd1c1e91cc1e8"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_127": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b545c2408c702caf2492e2e2e2e8bff2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e32"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff2e2e2e2e8b545c2408c702caf2492e2e2e2e8bff2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2ecccccccccccccccc568b745c24"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "08008bff2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2ecccccccccccccccc568b745c24088b461085c00f852e2e2e2e8b4e5c0c8b"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_128": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__CommonSetMultiSampleModeAndScale",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec105355568bf18b2e2e2e2e003b2e2e2e2e005789545c24180f2e2e2e2e2e8b2e2e2e2e008b866c"
+},
+{
+"kind": "sym",
+"name": "D3D8__CommonSetDebugRegisters",
+"offset": 208
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_129": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleMode",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89545c24180f2e2e2e2e2e8b2e2e2e2e008b2e2e2e2e008b5c2d2e2e2e2e894c5c24148b2e2e2e2e0089445c24108b411085c075128b495c0cc1e92e2e2e2e2e2e2e0000d3"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc8b445c24048b5c0d2e2e2e2ea32e2e2e2e8b2e2e2e2e003b2e2e2e2e00750733d2e82e2e2e2e2e2e2ecccccccccccccccccc8b445c24"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_6"
+},
+"GA_NATIVE_API_13": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8bfe8bd3b92e2e2e2ee82e2e2e2e2e2e2e2e2e2e2e2e2e2e8bfd8bd333c9e82e2e2e2e2e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "845c24d00000005f5c5e5c5d5c5b81c4b800002e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_130": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleRenderTargetMode",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0100000083e10fd3e0eb568b4310d9052e2e2e2e85c08b5c2d2e2e2e2ec72e2e2e2e00805c3f75128b4b5c0cc1e92e2e2e2e2e2e2e0000d3e2eb5c098bd0812e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccccccccccccccccc8b445c24048b5c0d2e2e2e2ea32e2e2e2e8b2e2e2e2e003b2e2e2e2e00740733d2e82e2e2e2e2e2e2ecccccccccccccccccc8b445c24"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_STATES_18"
+},
+"GA_NATIVE_API_131": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "00000000000080bf000000008fc2155c3f0000805c3f4c37a95c3f48e12e2e2e2e2e2e2e2e2e2e2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "51892e2e2e2e00d8052e2e2e2ed91c5c242e2e2e2e2e8b04852e2e2e2e892e2e2e2e008b5c0d2e2e2e2e8b3d2e2e2e2e894c5c2414d9445c241451d84c5c2414812e2e2e2e"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "00000000000080bf000000008fc2155c3f0000805c3f4c37a95c3f48e1ca5c3f2e2e2e2e2e2e2e2e2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_132": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "0000000000000000ffffff7fffffff7f000000000000805c3f0000085c3f5c20bcbecc5c20bcbecc5c20bcbe4c"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89700483c0088b4c5c245c2089078b445c245c245051e82e2e2e2eba2e2e2e2e8bcf892e2e2e2e00e82e2e2e2e8b152e2e2e2e52e82e2e2e2e5f5c5e5c5d5c5b83c42e2e2e2ecc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89700483c0088b4c5c245c2089078b445c245c245051e82e2e2e2eba2e2e2e2e8bcf892e2e2e2e00e82e2e2e2e8b152e2e2e2e2e2e2e2e2e2e5f5c5e5c5d5c5b83c42e2e2e2ecc"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_133": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "5355568bf18b2e2e2e2e008b1e83e0018d4c405c5d8b148e8d5c0c8e33ed85d20f842e2e2e2e57eb5c098d"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_134": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "408b942e2e2e2e008d0486413bd1755c0c8b2e2e2e2e0089152e2e2e2ea12e2e2e2e508bcee82e2e2e2e6a006a0081c68400000056c72e2e2e2e0000000000ff15"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0100008d0486413bd1755c0c8b2e2e2e2e0089152e2e2e2ea12e2e2e2e508bcee82e2e2e2e6a006a0081c68400000056c72e2e2e2e0000000000ff152e2e2e2e5f"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "780100003bfa752e2e2e2e0000008b2e2e2e2e00508bcea32e2e2e2ee82e2e2e2e8b2e2e2e2e0083e70183bc2e2e2e2e0001755c208d047fc1e0088d8c2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_135": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec1c56578b5c7c5c245c288bd78bc783e21fc1e82e2e2e2e5c0d8bf18b0e0f2e2e2e2e2eff5c24952e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_SYNC"
+},
+"GA_NATIVE_API_136": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 145
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00016000852e2e2e2e0075f26a00518d2e2e2e2e0050ff152e2e2e2e8b2e2e2e2e0085c074228b2e2e2e2e008b2e2e2e2e00894c5c24108d4c5c24105189545c241889"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "a80189465c0c895c5e08741653538d2e2e2e2e0050895f08ff152e2e2e2e83665c0cfef6465c0c0274158b0f2e2e2e2e2e891f8b465c0c83e0fd83c80489465c0c5c5b5f5c5ec208"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_137": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__SetFence",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e8b063b46045772052e2e2e2e2e8b5c7e2cc7002e2e2e2e8bd783e21f8d5c0cc5000000"
+},
+{
+"kind": "sym",
+"name": "D3D8__CDevice_KickOff",
+"offset": 288
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_139": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "812e2e2e2e00538a9c2e2e2e2e005533edf6c30357bf2e2e2e2e0f2e2e2e2e2e832e2e2e2e000375"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_14": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8bfd8bd333c9e82e2e2e2e2e2e2e2e002e2e2e2e2e2e2e2e2e2e2e2eeb072e2e2e2e2e2e2e89445c24"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00005f5c5e5c5d5c5b81c4b800002e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_140": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "5356578bf88b2e2e2e2e0050892e2e2e2e00e82e2e2e2e8b2e2e2e2e0085c0892e2e2e2e00740650"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "5356578bf88b2e2e2e2e0050892e2e2e2e002e2e2e2e2e8b2e2e2e2e0085c0892e2e2e2e00740650"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "5356578bf88b2e2e2e2e0050892e2e2e2e002e2e2e2e2e2e2e2e2e2e0085c0892e2e2e2e00740650"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_141": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "56578b3d2e2e2e2e33f68d9b000000008b862e2e2e2e2ef85c5c8b8e2e2e2e2e5c7d5c0c8b152e2e2e2ef6"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "56578b3d2e2e2e2e2e2e8d9b000000008b862e2e2e2e83f85c5c8b8e2e2e2e2e5c7d5c0c8b152e2e2e2ef6"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "56578b3d2e2e2e2e2ef68d9b000000008b862e2e2e2e83f85c5c8b8e2e2e2e2e5c7d5c0c8b152e2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_142": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b00002e2e2e2e008c00002e2e2e2e00930000000000000041002e2e2e2e00003c00000000000000"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "3bc1745c0a506a5c0c6a01e82e2e2e2e8d5c7d1033f68d49008b862e2e2e2e2ef85c5c8b0f5c7d5c0c8b152e2e2e2ef642081075103b5c0c852e2e2e2e74075150e82e2e2e2e83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "3bc1745c0a506a5c0c6a01e82e2e2e2e8d5c7d1033f68d49008b862e2e2e2e83f85c5c8b0f5c7d5c0c8b152e2e2e2e2e2e081075103b5c0c852e2e2e2e74075150e82e2e2e2e83"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_144"
+},
+"GA_NATIVE_API_143": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "53558b6c5c245c0c8b4500568b352e2e2e2e575089745c24182e2e2e2e2e8b5c5e088b45088b5c0d2e2e2e2e83"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "53558b6c5c245c0c8b4500568b352e2e2e2e2e2e89745c24182e2e2e2e2e8b5c5e088b45088b5c0d2e2e2e2e83"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "53558b6c5c242e2e2e2e568b352e2e2e2e2e5089745c24182e2e2e2e2e8b5c5e088b452e2e2e2e2e2e2e83"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_144": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b00002e2e2e2e008c00002e2e2e2e00930000000000000041002e2e2e2e00003c00000000000000"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "3bc1745c0a506a5c0c6a01e82e2e2e2e8d5c7d1033f68d49008b862e2e2e2e2ef85c5c8b0f5c7d5c0c8b152e2e2e2ef642081075103b5c0c852e2e2e2e74075150e82e2e2e2e83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "3bc1745c0a506a5c0c6a01e82e2e2e2e8d5c7d1033f68d49008b862e2e2e2e83f85c5c8b0f5c7d5c0c8b152e2e2e2e2e2e081075103b5c0c852e2e2e2e74075150e82e2e2e2e83"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_142"
+},
+"GA_NATIVE_API_145": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "021b00008c00002e2e2e2e00930000000000000041002e2e2e2e00003c000000000000003b000000"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "3d2e2e2e2e33f68d9b000000008b862e2e2e2e2ef85c5c8b8e2e2e2e2e5c7d5c0c8b152e2e2e2ef6420810755c093b5c0c852e2e2e2e74075150e82e2e2e2e83c60881fea0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "3d2e2e2e2e2e2e8d9b000000008b862e2e2e2e83f85c5c8b8e2e2e2e2e5c7d5c0c8b152e2e2e2e2e2e0810755c093b5c0c852e2e2e2e74075150e82e2e2e2e83c60881fea0"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_146": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "518b2e2e2e2e008b8c2e2e2e2e008b4108538b59044a555789445c245c0c8dbc2e2e2e2e008b078b6804"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_147": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__BlockOnTime",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e8b46308b088b462c8bd05c2bd1578b5c7c5c245c0c8bc85c2bcf3bca0f2e2e2e2e2e3bf87507"
+},
+{
+"kind": "sym",
+"name": "D3D8__SetFence",
+"offset": 192
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_148": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b4c5c24048b01a9000078002e2e2e2e2e2e2e3d2e2e2e2e75178b411485c07410f700000078007408"
+},
+{
+"kind": "sym",
+"name": "D3D8__DestroyResource",
+"offset": 160
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b4c5c24048b01a92e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e75178b411485c07410f7002e2e2e2e7408"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_149": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__BlockOnResource",
+"offset": 0
+},
+{
+"kind": "sym",
+"name": "D3D8__KickOffAndWaitForIdle",
+"offset": 32
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_BeginStateBig",
+"offset": 112
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_15": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "2e2e2e2e2e2e2eeb072e2e2e2e2e2e2e89445c24148bfe8bd3b92e2e2e2ee82e2e2e2e8bf0b9000002"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_150": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DVertexBuffer_Lock2",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "538a5c5c5c245c0cf6c31056755c248b352e2e2e2e8b063b46047205e82e2e2e2ec7002e2e2e2e2e2e2e2e00"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_CreateVertexBuffer2",
+"offset": 80
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_151": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b152e2e2e2e85d2745c298b4c5c24048b412e2e2e2e007800740e8b422c6a0250e82e2e2e2e2e2e2e85"
+},
+{
+"kind": "sym",
+"name": "D3D8__BlockOnResource",
+"offset": 128
+},
+{
+"kind": "sym",
+"name": "D3D8__KickOffAndWaitForIdle",
+"offset": 160
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_152": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DResource_Release",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b745c24088b068bc881e1ffff000083f9012e2e2e2e2e2e2e3d2e2e2e2e755c0d8b461485c0740650"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DResource_AddRef",
+"offset": 64
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_3"
+},
+"GA_NATIVE_API_154": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b152e2e2e2ef64201028b0175380fb6495c0a83e92e2e2e2e745c0b4949755c28b92e2e2e2eeb5c0cb99421"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_155": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__KickOffAndWaitForIdle",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "a12e2e2e2e8b482c6a0251e82e2e2e2ec3cccccccccccccccccccccccccccccca12e2e2e2e85c074"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_BeginStateBig",
+"offset": 80
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_156": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_BlockUntilVerticalBlank",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "a12e2e2e2e6a006a006a01c72e2e2e2e00000000006a062e2e2e2e0050ff152e2e2e2ec3cccccccc"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetSwapCallback",
+"offset": 32
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_157": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 159
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2c8bc65c2bc78b5c0a8bfe5c2bf93bc772f65c5b5c5d5f2e2e2e2e8b3d2e2e2e2e812e2e2e2e006a006a006a016a0656ffd785c075f15c5b5c5d5f2e2e2e2ecccccccccccc5156"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ffff8a4d0fff152e2e2e2e535353538d2e2e2e2e0050ff152e2e2e2eeb5c09895f08ff152e2e2e2e56e82e2e2e2e5f5c5e5c5b2e2e2e2e558bec51518b4d088b455c0c53"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_158": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 3
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5056e82e2e2e2e8b4c5c24145051e82e2e2e2e50555753ff152e2e2e2e8bf885ff75db8b4c5c2414a32e2e2e2ea32e2e2e2ee82e2e2e2e56ff152e2e2e2e6a015056"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5056e82e2e2e2e8b4c5c241450512e2e2e2e2e50555753ff152e2e2e2e8bf885ff75db8b4c5c2414a32e2e2e2ea32e2e2e2e2e2e2e2e2e56ff152e2e2e2e6a015056"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_MISC_10"
+},
+"GA_NATIVE_API_16": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "2e2e2e2e2e2e2e89445c24148bfe8bd3b92e2e2e2ee82e2e2e2e8bf0b92e2e2e2e2e2e2e2e2e8bc25c0d"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_160": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc8b5c0d2e2e2e2e85c9a12e2e2e2e568b745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5753ff152e2e2e2e8bf885ff75db8b4c5c2414a32e2e2e2ea32e2e2e2ee82e2e2e2e56ff152e2e2e2e6a015056ff152e2e2e2e56ff152e2e2e2e5f5c5e5c5b33c05c5d83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc8b5c0d2e2e2e2e85c9a12e2e2e2e2e2e745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_42"
+},
+"GA_NATIVE_API_161": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 180
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "75db8b4c5c2414a32e2e2e2ea32e2e2e2ee82e2e2e2e56ff152e2e2e2e6a015056ff152e2e2e2e56ff152e2e2e2e5f5c5e5c5b33c05c5d83c408c3ccccd9445c240456d805"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "106aff6a00ff745c2418ff152e2e2e2e8bf085f6742c56ff152e2e2e2e8b152e2e2e2e0102832e2e2e2e74168bc88bd157c1e92e2e2e2efef3ab8bca83e103f3aa"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_MISC_13"
+},
+"GA_NATIVE_API_162": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 178
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00a32e2e2e2ee82e2e2e2e56ff152e2e2e2e6a015056ff152e2e2e2e56ff152e2e2e2e5f5c5e5c5b33c05c5d83c408c3ccccd9445c240456d8052e2e2e2e8b352e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e85c0752e2e2e2e00c0e92e2e2e2e6a015650ff152e2e2e2e8b555c0c85d27505ba2e2e2e2ea12e2e2e2e2e578b3833c02e2e2e2e008d5f088bcef3aba1"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_MISC_14"
+},
+"GA_NATIVE_API_163": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 171
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cc83ec08558b5c2d2e2e2e2eff152e2e2e2e85c0740f50ff152e2e2e2e6a00ff152e2e2e2e8b2e2e2e2e0085c0755c0ab8054000805c5d83c408c3538d2e2e2e2e0089"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2eff745c2404ff152e2e2e2e8b5c0d2e2e2e2e5c2901ff252e2e2e2e8b5c0d2e2e2e2e85c9568b745c245c0c745c2d562e2e2e2e2e8bd085d27427832e2e2e2e741c5357"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_MISC_6"
+},
+"GA_NATIVE_API_164": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 4
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_MISC_7"
+},
+"GA_NATIVE_API_165": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec568b755c0c85f6795c7df7c60000000f755c0c81e6fffffffc81ce0000005c0c8bcec1e92e2e2e2ee8"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_18"
+},
+"GA_NATIVE_API_167": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0007805c5ec38b5c0d2e2e2e2ec1e92e2e2e2e89565c2889068b5c0d2e2e2e2e2ee92e2e2e2efcfdffff8b4630895604c72e2e2e2e00002e2e2e2e0000a12e2e2e2e4833"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "04c72e2e2e2e00002e2e2e2e0000a12e2e2e2e4833d2f7352e2e2e2e2ec9d1e82e2e2e2e2e2e2e2e0000d3e068000080648d14c5000000008d48ff52894e38e8"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cee82e2e2e2e8b065f5c5e2e2e2e2ecccccccccccccccccca12e2e2e2e2ed1e82e2e2e2e2e2ec3cc8b5c0d2e2e2e2e8b018b4904568b745c24088d14b0812e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_15"
+},
+"GA_NATIVE_API_168": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec5c24568bf18b2e2e2e2e00f6400412578bfa0f842e2e2e2e8d4c5c241c518d545c241052e82e2e2e2e"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetTextureStageStateNotInline",
+"offset": 352
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_STATES"
+},
+"GA_NATIVE_API_169": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_End",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e8b063b46047205e82e2e2e2ec7002e2e2e2e2e2e2e2e00000083c00889068b4608"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_Begin",
+"offset": 64
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_17": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8bfe8bd3b92e2e2e2ee82e2e2e2e8bf0b92e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e89445c2414814c5c24"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c5d5c5b81c4b800002e2e2e2e902e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_170": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetVertexData2f",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e8b063b46047205e82e2e2e2e8b4c5c24088d14cd2e2e2e2e8b4c5c245c0c89108b545c2410"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e2e2e3b46047205e82e2e2e2e8b4c5c24088d14cd2e2e2e2e8b4c5c245c0c89108b545c2410"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_171": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetVertexData4f",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e8b063b46047205e82e2e2e2e8b4c5c240883f9ff75072e2e2e2e00eb5c09812e2e2e2e"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetVertexData2f",
+"offset": 64
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_172": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetVertexDataColor",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e8b063b4604577205e82e2e2e2e8b4c5c245c0c8d148d2e2e2e2e8b4c5c241089100fb654"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e2e2e3b4604577205e82e2e2e2e8b4c5c245c0c8d148d2e2e2e2e8b4c5c241089100fb654"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_18": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "2e2e2e2e2e2e2e89445c2414812e2e2e2e8000008bfe8bd3b92e2e2e2ee82e2e2e2e8bf081ce005c205c20"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "2e2e2e2e2e2e2e89445c2414812e2e2e2e2e2e008bfe8bd3b92e2e2e2ee82e2e2e2e8bf081ce005c205c20"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_19": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "812e2e2e2e8000008bfe8bd3b92e2e2e2ee82e2e2e2e8bf081ce2e2e2e2e2e2e2e2e2e8bfe8bd3b9"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "812e2e2e2e2e2e008bfe8bd3b92e2e2e2ee82e2e2e2e8bf081ce2e2e2e2e2e2e2e2e2e8bfe8bd3b9"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_2": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetPixelShader",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "51538b1d2e2e2e2e8b2e2e2e2e0089445c24048b445c245c0c85c0892e2e2e2e0075608b5c0d2e2e2e2e81c9"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "51538b1d2e2e2e2e2e2e2e2e2e0089445c24048b445c245c0c85c0892e2e2e2e0075608b5c0d2e2e2e2e81c9"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_25": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83c0f48bfe8bd3b92e2e2e2e89445c2410e82e2e2e2e8b5c7c5c24108b2e2e2e2e2e2e8bf0e82e2e2e2eb9"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_26": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8bfe8bd3b92e2e2e2ee82e2e2e2e8bf081ce2e2e2e2e2e2e2e002e2e2e2e2e2e2e2e2e2e2eb90000"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_27": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "b92e2e2e2e8bd38bfee82e2e2e2ef6c3108bf0742e2e2e2e00008bd3b92e2e2e2ee82e2e2e2e5c0bf0"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_29": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "b92e2e2e2e8bfe8bd3e82e2e2e2e8bfd8bd3b92e2e2e2e89445c2410e82e2e2e2e8b6c5c24108bfe8bd3"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_3": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetRenderTarget",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec5c0c53558b6c5c24185633f63bee578b3d2e2e2e2e755c0c8b2e2e2e2e0089445c245c208be82e2e2e2e00"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_Reset",
+"offset": 176
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_30": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "bf010000008bd3b92e2e2e2ee82e2e2e2e8b8c5c24cc0000008b2e2e2e2e2e2e2e81ca2e2e2e2e8951"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_31": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8bfe8bd3b92e2e2e2ee82e2e2e2e8bfd8bd3b92e2e2e2e8bf0e82e2e2e2e8b4c5c242c81c900008200"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8bfe8b2e2e2e2e2e2ee82e2e2e2e8bfd8b2e2e2e2e2e2e8bf0e82e2e2e2e8b4c5c242c81c92e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_32": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8bd3b92e2e2e2ee82e2e2e2e2e2e2e2e2e8bfe8bd3b92e2e2e2e89445c2410e82e2e2e2e8b745c2410eb"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_33": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8bd3b92e2e2e2ee82e2e2e2e8bfe8bd3b92e2e2e2e89445c2430e82e2e2e2e8b745c24308b5c7c5c2410b910"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_34": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "538b1d2e2e2e2ef6c701568b352e2e2e2e740656e82e2e2e2ef6c708745c0953562e2e2e2e2e8bd8f6"
+},
+{
+"kind": "sym",
+"name": "D3D8__LazySetPointParams",
+"offset": 5568
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "538b1d2e2e2e2ef6c701568b352e2e2e2e2e2e56e82e2e2e2ef6c708745c0953562e2e2e2e2e8bd8f6"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_35": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1c535556812e2e2e2e0057c7445c24142e2e2e2e894c5c2418be2e2e2e2ec7442e2e2e2e00008d9b00000000f6445c2430010f2e2e2e2e2e8b46048b5c2e8b566c8b5c5e5c20"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": 4
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": -508
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_36": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0840750433c9eb028bcb8b2e2e2e2e00f6420412755c7c8b152e2e2e2e85d274728b2e2e2e2e0083e2ef3bd3746585c98bfb745c208b5c0d2e2e2e2e85c9740f8b8dcc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8004400053e82e2e2e2e8b2e2e2e2e0083c34485c0755c09a12e2e2e2e85c0743ca12e2e2e2e33d285c00f94c28d445c245c208d8c5c24e0000000525051e82e2e2e2e8d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "4c5c24188b2e2e2e2e0083c14483c34485c0894c5c2418755c09a12e2e2e2e85c0744f8b152e2e2e2e33c985d20f94c18d545c24608d842e2e2e2e00515250e82e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_37": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FogEnable",
+"offset": 52
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredRenderState",
+"offset": 52
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_PSTextureModes",
+"offset": -124
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_38": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FogEnable",
+"offset": 56
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredRenderState",
+"offset": 56
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_PSTextureModes",
+"offset": -120
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_39": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 1
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccccccccccccccc83ec08558b5c2d2e2e2e2eff152e2e2e2e85c0740f50ff152e2e2e2e6a00ff152e2e2e2e8b2e2e2e2e0085c0755c0ab8054000805c5d83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5f5c5e5c5bc3cccccccccccccccccccccccccccc55568bf1ff152e2e2e2e33ed85c075128b2e2e2e2e00556a016a5c0950ff152e2e2e2e8b2e2e2e2e003bc574218b48"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_MISC_5"
+},
+"GA_NATIVE_API_4": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_Swap",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e8b2e2e2e2e0085c0755c0a8b2e2e2e2e0085c074052e2e2e2e2e538b5c5c5c245c0c85db57"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e2e2e2e2e2e0085c0755c0a8b2e2e2e2e0085c07405e82e2e2e2e538b5c5c5c245c0c85db57"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_PROFILE_VA_SWAP"
+},
+"GA_NATIVE_API_40": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 2
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "740839352e2e2e2e2e228b2e2e2e2e006a00566a5c0b50ff152e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc8b5c0d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c985f60f95c13bd1745c288b2e2e2e2e006a00566a0e52ff152e2e2e2e33c085f60f95c0c7052e2e2e2e2e2e0000a32e2e2e2e2e2e2e2ecccccccccccccccccccc"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_41": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 47
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8bec83ec3453565733db435333f6682e2e2e2e8975fcff152e2e2e2e2e2e2e2e2e6a5c0c5933c08d5c7dccf3ab8d45cc5033ff57c72e2e2e2e0000ff352e2e2e2eff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00832e2e2e2e00008d2e2e2e2e005350c7002e2e2e2eff152e2e2e2e8bcee82e2e2e2e85c074d38d2e2e2e2e008945fcc72e2e2e2e00002e2e2e2e0033c08b4d"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_26"
+},
+"GA_NATIVE_API_42": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 100
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "f8895c5dfce82e2e2e2e391d2e2e2e2e7411682e2e2e2eff152e2e2e2e891d2e2e2e2e568d771c66833e13755c0a56ff152e2e2e2e66f7168d775c0c391e745c0a5356ff"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_43": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 187
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d45ec50ff75fcc6455c0b01ff152e2e2e2eff75fc8bf0ff152e2e2e2e85f65c7c0533c040eb0856e82e2e2e2e33c05c5e2e2e2e2e8b445c2404c1e82e2e2e2e5c2404ff0f"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c08945105c7c395657ff755c0ce82e2e2e2eff755c0c894510ff152e2e2e2eeb212e2e2e2e752c8b4e5c288bc125ff5c3f0000f7d81bc0f7d8c1e92e2e2e2ec37302010739"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_44": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 190
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "108d45ec5153508d45e05081ce2e2e2e2e568d45fc50ff152e2e2e2e8bf03bf35c7d2f56e82e2e2e2e81fe350000c075046a50eb1381feba0000c07510395c5d0874"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "45e45068000010408d455c0c50895c5de4c745ec40000000ff152e2e2e2e8bf83bfb881e5c7c636a226a388d45ac508d45f850ff755c0cff152e2e2e2e8bf83bfb5c7c3d39"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_45": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 219
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "028bf750568d8dd8fdffff518d4d6051505050ff7570ff152e2e2e2e85c05c7c393975647537568d85d8fdffff508d45d8502e2e2e2e2e5c2bfe75bfff755c7c8d454c"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c0e82e2e2e2e33c0ebe5558bec83ec5c2453568b7514578b3d2e2e2e2e8d45f0506a1c5633db8d45f850535353ff7508895c5df0895c5df4ffd73bc35c7c3d835c7dfc1c75"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_46": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 226
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "800000006a048945dc6a5c288d45bc508d45f050ff7508ff152e2e2e2eff75088bf0ff152e2e2e2e85f65c7c0533c040eb0856e82e2e2e2e33c05f5c5e2e2e2e2e558b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e85c05c7d5c0a50e82e2e2e2e33c0eb578b45f8568b352e2e2e2e8945f08b45fc6a148945f46a088d45f0508d45e050ff7508ffd685c05c7c5c268b45f88945e8"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_47": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 236
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2553ff75082e2e2e2e2e50568d45f850535353ff755c0cff152e2e2e2eff75088bf82e2e2e2e2eff755c0cff152e2e2e2eeb5c0a81ff350000c0750233ff8bc75f5c5e5c5b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c2853ff75102e2e2e2e2e50568d45e82e2e2e2eff7514ff152e2e2e2eff751089455c0c2e2e2e2e2eeb4b682e2e2e2eff75188d855c7cfdffff6a3d682e2e2e2e68ff"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_48": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "568b745c24088b461085c0754d8b4e5c0c0fb6465c0dc1e92e2e2e2e2e2e2e0000d3e283f85c0c745c2d83f85c0d"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_49": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24048b08f7c100007800751b81e12e2e2e2e81f92e2e2e2e755c0d8b481485c9742e2e2e2e0008"
+},
+{
+"kind": "sym",
+"name": "D3D8__DestroyResource",
+"offset": 224
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24048b08f7c12e2e2e2e751b81e12e2e2e2e81f92e2e2e2e755c0d8b481485c9742e2e2e2e0008"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_5": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec5c0c5355568bf1578b3ee82e2e2e2e8b2e2e2e2e0085c9745c0a8bd05c2bd1892e2e2e2e008b9ec001"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_SYNC_3"
+},
+"GA_NATIVE_API_50": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "568b745c24088b068bc881e10000780081f92e2e2e2e2e2e2e2e2e2e2e3d2e2e2e2e75218b461485c0"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b745c24088b068bc881e12e2e2e2e81f92e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e75218b461485c0"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_51": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__DestroyResource",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "56578b5c7c5c245c0c8b078bf081e62e2e2e2e81fe2e2e2e2e750485c0790657e82e2e2e2e57e82e2e2e2e"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "56578b5c7c5c245c0c8b078bf081e62e2e2e2e81fe2e2e2e2e750485c07906572e2e2e2e2e57e82e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_52": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24045356578d781c2e2e2e2e0000002e2e2e2e0000008b2e2e2e2e0000902e2e2e2e000083c2"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_53": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8db8ac00000089745c2414552e2e2e2e00000083e3038b349d2e2e2e2e8bdec1e30483cb02891f8bded3e38957fc8b68108d14b28b745c24185c0beb8b5c5c5c2414c1eb02"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_54": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24048b4c5c24088b152e2e2e2e53552e2e2e2e00c1e104568d8c2e2e2e2e00578b5c7c5c2414894c5c24"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24048b4c5c24088b152e2e2e2e2e2e2e2e2e2e00c1e104568d8c2e2e2e2e00578b5c7c5c2414894c5c24"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24048b4c5c24088b152e2e2e2e2e552e2e2e2e00c1e104568d8c2e2e2e2e00578b5c7c5c2414894c5c24"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_55": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetTexture",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec0853558b5c2d2e2e2e2e568b745c24188b842e2e2e2e0085c0896c5c245c0c89445c2410745c208b4d2c8b10"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec0853558b5c2d2e2e2e2e2e2e745c24188b842e2e2e2e0085c0896c5c245c0c89445c2410745c208b4d2c8b10"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_56": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetPalette",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "53568b352e2e2e2e578b5c7c5c24108b842e2e2e2e0085c074278b4e2c8948088b842e2e2e2e008b1081"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "53568b352e2e2e2e2e2e5c7c5c24108b842e2e2e2e0085c074278b4e2c8948088b842e2e2e2e008b1081"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_57": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetStreamSource",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b5c0d2e2e2e2e56578b5c7c5c241085ff742e2e2e2e2e2e2e8b445c245c0c8d3440c1e6028b862e2e2e2e85c0"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b5c0d2e2e2e2e2e2e8b5c7c5c241085ff742e2e2e2e2e2e2e8b445c245c0c8d3440c1e6028b862e2e2e2e85c0"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_58": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_Stream",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0000f8ff8bcaf7c1ffff780089107506502e2e2e2e2e8b8e2e2e2e2e8b445c24143bc18b5c0d2e2e2e2e89862e2e2e2e89be2e2e2e2e750e83c9405f895c0d2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "045c2a8b745c2410c1e0048b5c5c301c03c68b70148d34768b34b52e2e2e2ec1e60803f3893183c1044283fa1072d233db3bfb7563bf2e2e2e2e8d9b000000000fb604"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_59"
+},
+"GA_NATIVE_API_59": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_Stream",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0000f8ff8bcaf7c1ffff780089107506502e2e2e2e2e8b8e2e2e2e2e8b445c24143bc18b5c0d2e2e2e2e89862e2e2e2e89be2e2e2e2e750e83c9405f895c0d2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "045c2a8b745c2410c1e0048b5c5c301c03c68b70148d34768b34b52e2e2e2ec1e60803f3893183c1044283fa1072d233db3bfb7563bf2e2e2e2e8d9b000000000fb604"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_58"
+},
+"GA_NATIVE_API_6": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8bc75683e00fff5c24852e2e2e2e8bc283e0038b34852e2e2e2e85f6750583ceffeb368d7008eb31be"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_60": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetIndices",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e578b5c7c5c245c0c85ff742e2e2e2e2e2e2e8b4704a32e2e2e2eeb5c0ac7052e2e2e2e0000"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetPalette",
+"offset": 144
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_61": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "352e2e2e2e578b5c7c5c245c0c85ff742e2e2e2e2e2e2e8b4704a32e2e2e2eeb5c0ac7052e2e2e2e000000008b2e2e2e2e0085c0743e8b1081c20000f8ff8bcaf7c1ffff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c245c0c85ff742e2e2e2e2e2e2e8b4704a32e2e2e2eeb5c0ac7052e2e2e2e000000008b2e2e2e2e0085c0743e8b1081c20000f8ff8bcaf7c1ffff78008910751850e8"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": -12
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_62"
+},
+"GA_NATIVE_API_62": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "352e2e2e2e578b5c7c5c245c0c85ff742e2e2e2e2e2e2e8b4704a32e2e2e2eeb5c0ac7052e2e2e2e000000008b2e2e2e2e0085c0743e8b1081c20000f8ff8bcaf7c1ffff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c245c0c85ff742e2e2e2e2e2e2e8b4704a32e2e2e2eeb5c0ac7052e2e2e2e000000008b2e2e2e2e0085c0743e8b1081c20000f8ff8bcaf7c1ffff78008910751850e8"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": -12
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_61"
+},
+"GA_NATIVE_API_64": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__UpdateProjectionViewportTransform",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83e4f083ec5c5c8b152e2e2e2e8b2e2e2e2e2e2e2e2e2e2e2e2ec0575c7d06d8052e2e2e2ed88a"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_GetViewportOffsetAndScale",
+"offset": 304
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_65": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "545c2414db2e2e2e2e005c7d06d8052e2e2e2ed82e2e2e2e00a12e2e2e2e83f802d85c0d2e2e2e2ed9545c245c0cd9e0d95c5c5c2418d92e2e2e2e00d82e2e2e2e00d82e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c20894f5c2483c75c288a2e2e2e2e2e2e2e2e000084c8755339052e2e2e2e7535d92e2e2e2e008b2e2e2e2e00d82e2e2e2e00892e2e2e2e00d82e2e2e2e00d99e101c"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89475c0c894710d95f088a2e2e2e2e0083c714a8017553833d2e2e2e2e02755c26d92e2e2e2e008b2e2e2e2e00d82e2e2e2e00892e2e2e2e00d82e2e2e2e00d99e08"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_STATES_2"
+},
+"GA_NATIVE_API_66": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetViewport",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec5c0c558b6c5c241485ed568b352e2e2e2e0f2e2e2e2e2e8b2e2e2e2e003b2e2e2e2e00755c0c8b8e18"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_GetDepthStencilSurface2",
+"offset": 32
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_67": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetScissors",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec1453558b5c2d2e2e2e2e8b2e2e2e2e008b2e2e2e2e0056578b5c7d0089445c24103b5c7d04894c5c241472"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec1453558b5c2d2e2e2e2e2e2e2e2e2e008b2e2e2e2e0056578b5c7d0089445c24103b5c7d04894c5c241472"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_68": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetPixelShaderConstant",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83ec088b152e2e2e2e8b2e2e2e2e008b48088b455c0c89455c0c8b451085c08955fc894df80f84"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetPixelShader",
+"offset": 512
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_69": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "a45c24000000008bff8b452e2e2e2e0f5c5d052e2e2e2e0f5f052e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6c039f30f5c2dd85c0b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "a45c24000000008bff8b452e2e2e2e0f5c5d052e2e2e2e2e2e2e2e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6c039f30f5c2dd85c0b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_75"
+},
+"GA_NATIVE_API_7": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "4affffff0f77cccccccccccccccccccccccccccc8bc1f6052e2e2e2e10538b5c5c5c2408751556578bf8c1e70481c72e2e2e2e8bcb8bf2f3a55f5c5e538bc8e8f3feff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "08eb2e2e2e2e0000eb5c2aa12e2e2e2e83c82e2e2e2e0000a32e2e2e2eeb2e2e2e2e0000eb0ff6c22e2e2e2e0000742e2e2e2e00008bc15c0bc25c0bc78bd133d7d1e8"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c0755c0ac7052e2e2e2e2e8000008b445c24108b4c5c2414568b352e2e2e2e5783e010bf2e2e2e2e5c0bf0518bcf893d2e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_D3D8_5"
+},
+"GA_NATIVE_API_70": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "08894510eb5c092e2e2e2e0000008bff8b452e2e2e2e0f5c5d052e2e2e2e0f5f052e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "08894510eb5c092e2e2e2e0000008bff8b452e2e2e2e0f5c5d052e2e2e2e2e2e2e2e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_74"
+},
+"GA_NATIVE_API_71": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff8b452e2e2e2e0f5c5d052e2e2e2e0f5f052e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6c039f30f5c2dd85c0bc30fc6c039f30f"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff8b452e2e2e2e0f5c5d052e2e2e2e2e2e2e2e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6c039f30f5c2dd85c0bc30fc6c039f30f"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_76"
+},
+"GA_NATIVE_API_72": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "b42e2e2e2e008b023b42047208e82e2e2e2e8b55fc8b5c0cbd2e2e2e2e8b5c5df8338be4000000f6c10f751289352e2e2e2ec7002e2e2e2e89700483c008f6c1f075"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "f0751289352e2e2e2ec7002e2e2e2e89700483c0088b5c0cbd2e2e2e2e338be82e2e2e2ec10f751289352e2e2e2e2e002e2e2e2e89700483c008f6c1f075128935"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "f0751289352e2e2e2ec7002e2e2e2e89700483c0088b5c0cbd2e2e2e2e338bec000000f6c10f751289352e2e2e2ec7002e2e2e2e89700483c008f6c1f075128935"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_77"
+},
+"GA_NATIVE_API_73": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "000000ff81fa0000008975158b4c5c240825ffffff008b04852e2e2e2e890133c0c381fa0000008a75358bc8c1e82e2e2e2e000081e1ff00000083f804731a83f9"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1433c056eb5c092e2e2e2e0000008bff8bb02e2e2e2e2e34b52e2e2e2e8971fc8bb02e2e2e2e8b34b52e2e2e2e89318bb02e2e2e2e8b34b52e2e2e2e8971048bb0"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_PS_RENDER_STATE"
+},
+"GA_NATIVE_API_74": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "08894510eb5c092e2e2e2e0000008bff8b452e2e2e2e0f5c5d052e2e2e2e0f5f052e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "08894510eb5c092e2e2e2e0000008bff8b452e2e2e2e0f5c5d052e2e2e2e2e2e2e2e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_70"
+},
+"GA_NATIVE_API_75": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "a45c24000000008bff8b452e2e2e2e0f5c5d052e2e2e2e0f5f052e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6c039f30f5c2dd85c0b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "a45c24000000008bff8b452e2e2e2e0f5c5d052e2e2e2e2e2e2e2e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6c039f30f5c2dd85c0b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_69"
+},
+"GA_NATIVE_API_76": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff8b452e2e2e2e0f5c5d052e2e2e2e0f5f052e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6c039f30f5c2dd85c0bc30fc6c039f30f"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff8b452e2e2e2e0f5c5d052e2e2e2e2e2e2e2e2e2e2e0f59052e2e2e2ef30f5c2dc0c1e0100fc6c039f30f5c2dd8c1e3085c0bc30fc6c039f30f5c2dd85c0bc30fc6c039f30f"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_71"
+},
+"GA_NATIVE_API_77": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "b42e2e2e2e008b023b42047208e82e2e2e2e8b55fc8b5c0cbd2e2e2e2e8b5c5df8338be4000000f6c10f751289352e2e2e2ec7002e2e2e2e89700483c008f6c1f075"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "f0751289352e2e2e2ec7002e2e2e2e89700483c0088b5c0cbd2e2e2e2e338be82e2e2e2ec10f751289352e2e2e2e2e002e2e2e2e89700483c008f6c1f075128935"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "f0751289352e2e2e2ec7002e2e2e2e89700483c0088b5c0cbd2e2e2e2e338bec000000f6c10f751289352e2e2e2ec7002e2e2e2e89700483c008f6c1f075128935"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_72"
+},
+"GA_NATIVE_API_78": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "fc8b5c0cbd2e2e2e2e8b5c5df8338be4000000f6c10f751289352e2e2e2ec7002e2e2e2e89700483c008f6c1f0751289352e2e2e2ec7002e2e2e2e89700483c008f6"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": 40
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FogEnable",
+"offset": -328
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_79": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0483c0088b5c0cbd2e2e2e2e338be82e2e2e2ec10f751289352e2e2e2e2e002e2e2e2e89700483c008f6c1f0751289352e2e2e2ec7002e2e2e2e89700483c008f6"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": 72
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FogEnable",
+"offset": -296
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_8": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b4c5c24048b2e2e2e2e0081ecb800000085c074108b845c24c000000081c4b800002e2e2e2e8b410889"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_80": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0483c0088b5c0cbd2e2e2e2e338bec000000f6c10f751289352e2e2e2ec7002e2e2e2e89700483c008f6c1f0751289352e2e2e2ec7002e2e2e2e89700483c00885"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": 172
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FogEnable",
+"offset": -196
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_81": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "e700ff00ffc7002e2e2e2e5c0bd789500483c00889065f895c0d2e2e2e2e2e2e2e2ecccccc568b352e2e2e2e8b063b460472052e2e2e2e2e8b4c5c240885c9c7000803"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FillMode",
+"offset": -4
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_PSTextureModes",
+"offset": 8
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_85"
+},
+"GA_NATIVE_API_82": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_DoNotCullUncompressed",
+"offset": 0
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZRead",
+"offset": 4
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": -4
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_101"
+},
+"GA_NATIVE_API_83": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "008b4c5c2408c7002e2e2e2e89480489480883c05c0c8906895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc568b352e2e2e2e8b063b460472052e2e2e2e"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_LogicOp",
+"offset": 4
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleAntiAlias",
+"offset": -4
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_84": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c2408c7002e2e2e2e8d9100feffff89500483c0088906895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccc568b352e2e2e2e8b063b46045772052e2e2e2e2e8b"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleRenderTargetMode",
+"offset": 4
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleMode",
+"offset": 8
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_85": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "e700ff00ffc7002e2e2e2e5c0bd789500483c00889065f895c0d2e2e2e2e2e2e2e2ecccccc568b352e2e2e2e8b063b460472052e2e2e2e2e8b4c5c240885c9c7000803"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FillMode",
+"offset": -4
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_PSTextureModes",
+"offset": 8
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_81"
+},
+"GA_NATIVE_API_86": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_CullMode",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b4c5c240885c9c7002e2e2e2e751289480483c0088906895c0d2e2e2e2e2e2e2e2ec72e2e2e2e0000578b3d2e2e2e2e2ed23bcf0f95c2c740082e2e2e2e83c0105f"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c740082e2e2e2e83c0105f812e2e2e2e008950fc8906895c0d2e2e2e2e2e2e2e2ecccccccccccccccc568b352e2e2e2e8b063b460472052e2e2e2e2e8b4c5c2408c7"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_87": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FrontFace",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c0088906895c0d2e2e2e2e2e2e2e2ec72e2e2e2e0000578b3d2e2e2e2e2ed23bcf0f95c2c740082e2e2e2e83c0105f812e2e2e2e008950fc8906895c0d2e2e2e2e5c5e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "4c5c2408c7002e2e2e2e89480483c0088906a12e2e2e2e895c0d2e2e2e2e2e89445c2404e92e2e2e2ecccccccccccc568b352e2e2e2e8b063b460472052e2e2e2e2e8b"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_88": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_LogicOp",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b4c5c240885c97518c7002e2e2e2e89480483c0088906895c0d2e2e2e2e2e2e2e2ec7002e2e2e2ec72e2e2e2e000089480883c05c0c8906895c0d2e2e2e2e2e2e2e2ecc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00c7002e2e2e2ec72e2e2e2e000089480883c05c0c8906895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc568b352e2e2e2e8b063b460472052e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_LOGIC"
+},
+"GA_NATIVE_API_89": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FillMode",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0875028bd1c7002e2e2e2e89480489500883c05c0c8906895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccccc8b445c2404568b352e2e2e2ea32e2e2e2e8b063b46"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b445c2404568b352e2e2e2ea32e2e2e2e8b063b4604578b3d2e2e2e2e72052e2e2e2e2e8b5c0d2e2e2e2e85c98b5c0d2e2e2e2e75028bcfc7002e2e2e2e8978048948"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_9": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "18d9585c0cd9445c2408d8745c245c20d9e0d9581cd85c0d2e2e2e2ea12e2e2e2ec7062e2e2e2e51d8052e2e2e2e894e04894608d91c5c24e82e2e2e2e2e2e2e2e007605b8ff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "b800002e2e2e2e8b410889445c245c2425bffffeff8941088b5c0d2e2e2e2e33c085c989445c245c0c745c0cc7442e2e2e2e00008b445c245c0c538bd88d4c5c243089445c241483cb10"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_PSTextureModes",
+"offset": -72
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_90": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_StencilEnable",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0033c985d2742e2e2e2e00008b152e2e2e2e85d274198b152e2e2e2e85d2745c0c813d2e2e2e2e2e2e2e00750383c90185ffc7002e2e2e2e894804745c238b8e081a"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0033c985d2742e2e2e2e00008b152e2e2e2e85d274198b152e2e2e2e85d2745c0c813d2e2e2e2e2e2e2e00750383c901c7002e2e2e2e894804c740082e2e2e2e89"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_91": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_StencilFail",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00008b152e2e2e2e85d274198b152e2e2e2e85d2745c0c813d2e2e2e2e2e2e2e00750383c90185ffc7002e2e2e2e894804745c238b2e2e2e2e0085c97419c740082c"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0400cccccccccccccccc568b352e2e2e2e578b5c7c5c245c0c893d2e2e2e2e8b063b460472052e2e2e2e2e8b152e2e2e2e33c985d2742e2e2e2e00008b152e2e2e2e85"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_92": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_OcclusionCullEnable",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e8b152e2e2e2e33c985d2742e2e2e2e00008b152e2e2e2e85d274198b152e2e2e2e85d2745c0c813d2e2e2e2e2e2e2e00750383c90185ffc700841d04"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff89062e2e2e2ecccccccccc8b445c2404568b352e2e2e2ea32e2e2e2e8b063b460472052e2e2e2e2e8b152e2e2e2e33c985d2742e2e2e2e00008b152e2e2e2e85"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_93": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_StencilCullEnable",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccc8b445c2404568b352e2e2e2ea32e2e2e2e8b063b460472052e2e2e2e2e8b152e2e2e2e33c985d2742e2e2e2e00008b152e2e2e2e85"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_OcclusionCullEnable",
+"offset": 4
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_94": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleMask",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c2404568b352e2e2e2e578bcea32e2e2e2ee82e2e2e2e8b3d2e2e2e2e8b5c0d2e2e2e2e8b4608c1e7105c0bf984e4795c0ca12e2e2e2e85c0740383cf018b063b460472"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc8b445c24048b5c0d2e2e2e2ea32e2e2e2ec1e010568b352e2e2e2e5c0bc1578bf88b460884e4795c0ca12e2e2e2e85c0740383cf018b06"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_95": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_SampleAlpha",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "032e2e2e2e89430483c3088b4608891e8b3d2e2e2e2e8b5c0d2e2e2e2ec1e7105c0bf984e4795c0ca12e2e2e2e85c0740383cf013b5c5e048bc372052e2e2e2e2ec7005c7c"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccccccccccccccccccccccccccc8b445c24048b5c0d2e2e2e2ea32e2e2e2ec1e010568b352e2e2e2e5c0bc1578bf88b460884e4795c0ca12e2e2e2e85c07403"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_96": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_YuvEnable",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d475c0cd95f085f5c5e83c45c24c3cccccccccccccccccccccca12e2e2e2e85c02e2e2e2e2e2e742e2e2e2e1010833d2e2e2e2e02750681ce2e2e2e2e8b2e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c0c83c0105f89062e2e2e2ecc8b445c2404568b352e2e2e2ea32e2e2e2e8b063b460472052e2e2e2e2e8bd08bcee82e2e2e2e89062e2e2e2ecccccccccc8b445c2404"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_97": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c0a400083c02e2e2e2e000090890883c0044a75f88906895c0d2e2e2e2e2e2e2e2e8b445c2408a32e2e2e2e2e2e2e2ecccccccccccccccccccccccccccccc538b5c5c5c24"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0883c0044a75f88906895c0d2e2e2e2e2e2e2e2e8b445c2408a32e2e2e2e2e2e2e2ecccccccccccccccccccccccccccccc538b5c5c5c2408568b352e2e2e2e895c5c5c245c0cd9"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b2e2e2e2e0085c0745c0c2e2e2e2e2e2e00a32e2e2e2e8b5c0d2e2e2e2e51e82e2e2e2e8b033b43047205e82e2e2e2e8bd08bcbe82e2e2e2ec7002e2e2e2ec74004"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_98": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e89480483c0088906815c0d2e2e2e2e2e2e2e00895c0d2e2e2e2e2e2e2e2ecccccccccccccc568b352e2e2e2e8b2e2e2e2e0085c075338b063b46047205e8"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff8b2e2e2e2e0083c34485c0755c09a12e2e2e2e85c0743ca12e2e2e2e33d285c00f94c28d445c245c208d8c5c24e0000000525051e82e2e2e2e8d5c7b04c7032e2e2e2eb9"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c14483c34485c0894c5c2418755c09a12e2e2e2e85c0744f8b152e2e2e2e33c985d20f94c18d545c24608d842e2e2e2e00515250e82e2e2e2e8b445c241881c70001f0ff"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_99": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZCmpAlwaysRead",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c285c2400008b2e2e2e2e0081e2ffffefe7892e2e2e2e008b5c0d2e2e2e2e85c98bc22e2e2e2e2e2e2e892e2e2e2e00a12e2e2e2e85c0745c0a812e2e2e2e0000000008"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_StencilCullEnable",
+"offset": 4
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_API_D3D_DEVICE_PTR": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc558bec83e4f083ec5c5c8b152e2e2e2e8b2e2e2e2e2e2e2e2e2e2e2e2ec0575c7d06d8052e2e2e2ed82e2e2e2e008b2e2e2e2e0085"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccc568b352e2e2e2e8b063b46045772052e2e2e2e2e8b4c5c245c0c0fb6545c240e8bf981e7ff000000c1e7105c0bd78b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CAPTURE_CDEV"
+},
+"GA_NATIVE_API_DIRTY": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b4c5c245c0cc7002e2e2e2e89480483c00885c98906745c0a815c0d2e2e2e2e009000008b352e2e2e2e8b3d2e2e2e2e895c0d2e2e2e2e8b063b460472052e2e2e2e2e8b5c0d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89780489480883c05c0c8906893d2e2e2e2e5f2e2e2e2e8b152e2e2e2e812e2e2e2e00568b352e2e2e2e89152e2e2e2e8b063b460472052e2e2e2e2e8b4c5c2408c7"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c204008b152e2e2e2e812e2e2e2e00568b352e2e2e2e89152e2e2e2e8b063b460472052e2e2e2e2e8b4c5c2408c7002e2e2e2e89480483c0088906895c0d2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_16"
+},
+"GA_NATIVE_API_FORMAT_INFO": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "5c095c0911911191a1a100002e2e2e2e08081292a28a00001292005c09115c0a92122e2e2e2e002e2e2e2e11"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b5c5c5c240856578b3d2e2e2e2e8b2e2e2e2e000fb6485c0d8a912e2e2e2e80e23c33f680fa5c2075028bf38b47088bc883e1013bf174368b4f0483f0018947088b073b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1083f80f7f5c0b8d0495000000002e2e2e2e0fb6465c0d0fb6802e2e2e2e83e03c0fafc2c1e82e2e2e2e2e8d04122e2e2e2e0fb6461340c1e0062e2e2e2ecccccccc"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_4"
+},
+"GA_NATIVE_API_FVF_SHADER": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_Stream",
+"offset": 472
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_35"
+},
+"GA_NATIVE_API_MINIPORT": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 7216
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_DoNotCullUncompressed",
+"offset": 7220
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZRead",
+"offset": 7224
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_MINIPORT"
+},
+"GA_NATIVE_API_PRESENT_INTERVAL": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89445c24382e2e2e2e2e8b55008b4d3089445c24448b4504895c0d2e2e2e2e89545c243c8b551489445c24388b445c241c892e2e2e2e008b56084081e2ffbfffff892e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff8b063b46047205e82e2e2e2e832e2e2e2e00037379813d2e2e2e2e00000080745c0cc7002e2e2e2e89680483c0088b2e2e2e2e008b4a048b152e2e2e2e3bd575"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c0cc7002e2e2e2e89680483c0088b2e2e2e2e008b4a048b152e2e2e2e3bd5752e2e2e2e0000f6c201740383c901f6c202740383c902f6c204740383c90385d279"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CAPTURE_5"
+},
+"GA_NATIVE_API_PS_RENDER_STATE": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "000000ff81fa0000008975158b4c5c240825ffffff008b04852e2e2e2e890133c0c381fa0000008a75358bc8c1e82e2e2e2e000081e1ff00000083f804731a83f9"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1433c056eb5c092e2e2e2e0000008bff8bb02e2e2e2e2e34b52e2e2e2e8971fc8bb02e2e2e2e8b34b52e2e2e2e89318bb02e2e2e2e8b34b52e2e2e2e8971048bb0"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_73"
+},
+"GA_NATIVE_API_VSH_CONSTANTS": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00008b088bd1c1ea1283c00483fa01755c0d8b38c1e70481c72e2e2e2eeb4d81e1ffff00008d1c9500000000812e2e2e2e008bcb8bf08be92e2e2e2e5c2418c1e902"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c280f6f72300f6f7a38c740b42e2e2e2e8948b8c1e1048d892e2e2e2ec740bc805c0b40000f7f40c00f7f010f7f48c80f7f49080f7f50d00f7f51100f7f58d80f7f"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c1f6052e2e2e2e10538b5c5c5c2408751556578bf8c1e70481c72e2e2e2e8bcb8bf2f3a55f5c5e538bc8e82e2e2e2e2e2e2e2ecccccccccccccccccccccccccccccc8b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_D3D8_4"
+},
+"GA_NATIVE_CAPTURE": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec568b755c0c85f6795c7df7c60000000f755c0c81e6fffffffc81ce0000005c0c8bcec1e92e2e2e2ee8"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_18"
+},
+"GA_NATIVE_CAPTURE_11": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "84fc0000008b3d2e2e2e2e8b2e2e2e2e008b5c0d2e2e2e2e682e2e2e2e812e2e2e2e0081e700feffff5750682e2e2e2e33ed55555551ff152e2e2e2e8b2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "7515682e2e2e2ee82e2e2e2e83c4045f5c5e5c5d5c5b83c430c3a12e2e2e2e8b152e2e2e2e03c7a32e2e2e2ea12e2e2e2e13d54889152e2e2e2ea32e2e2e2e890339ae"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c4045f5c5e5c5d5c5b83c430c3a12e2e2e2e8b152e2e2e2e03c7a32e2e2e2ea12e2e2e2e13d54889152e2e2e2ea32e2e2e2e8903392e2e2e2e000f2e2e2e2e2ec786d4"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_12": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00e82e2e2e2e83c4045f5c5e5c5d5c5b83c430c3a12e2e2e2e8b152e2e2e2e03c7a32e2e2e2ea12e2e2e2e13d54889152e2e2e2ea32e2e2e2e8903392e2e2e2e000f85"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "008b152e2e2e2e03c7a32e2e2e2ea12e2e2e2e13d54889152e2e2e2ea32e2e2e2e8903392e2e2e2e000f2e2e2e2e2ec72e2e2e2e000000005c2633ffbbefffffff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1c8b4c5c24188b152e2e2e2e565650515289352e2e2e2e89352e2e2e2ee82e2e2e2ea12e2e2e2e50e82e2e2e2e8b5c0d2e2e2e2e8b152e2e2e2ea12e2e2e2e565651"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_13": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c5b83c430c3a12e2e2e2e8b152e2e2e2e03c7a32e2e2e2ea12e2e2e2e13d54889152e2e2e2ea32e2e2e2e8903392e2e2e2e000f2e2e2e2e2ec72e2e2e2e000000"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "6a01e82e2e2e2e8bc7472e2e2e2e00721f8b2e2e2e2e00a12e2e2e2e5c23cb48892e2e2e2e00892e2e2e2e00a32e2e2e2e812e2e2e2e000000005c2674c45f5c5e5c5d5c5b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "080000a12e2e2e2e5c23cb48892e2e2e2e00892e2e2e2e00a32e2e2e2e812e2e2e2e000000005c2674c45f5c5e5c5d5c5b83c430c3a8100f2e2e2e2e2e8b5c0d2e2e2e2e5c0b5c0d"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_14": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c72e2e2e2e008040c72e2e2e2e0000410f842e2e2e2e8b3d2e2e2e2e8b2e2e2e2e008b5c0d2e2e2e2e682e2e2e2e812e2e2e2e0081e700feffff5750682e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "95c08d4c5c24405166c7442e2e2e2e895c7c5c246c89745c247089352e2e2e2e8d2e2e2e2e00006689445c246a895c7c5c2474895c7c5c2478895c7c5c245c7ce82e2e2e2e8b545c2418528984"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_16": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "005c0b5c0d2e2e2e2e744f8d545c241052e82e2e2e2e8b545c2410a12e2e2e2e8b5c7c5c24148b5c2d2e2e2e2e8b1d2e2e2e2e8bca5c2bc88bc71bc53bc30f2e2e2e2e2e7f5c0c3b5c0d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "3bc30f2e2e2e2e2e7f2e2e2e2e2e2e2e0f2e2e2e2e2e89152e2e2e2e893d2e2e2e2eeb5c0a682e2e2e2ee82e2e2e2ea02e2e2e2e84c0792ca12e2e2e2e2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0300005250e82e2e2e2e53a32e2e2e2e89152e2e2e2e893d2e2e2e2e893d2e2e2e2ee82e2e2e2e8bd8a12e2e2e2e8b73108bd083e00483e20385f68bf8895c5c5c24"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_17": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e8bca5c2bc88bc71bc53bc30f2e2e2e2e2e7f2e2e2e2e2e2e2e0f2e2e2e2e2e89152e2e2e2e893d2e2e2e2eeb5c0a682e2e2e2ee82e2e2e2ea02e2e2e2e84"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "52505756e82e2e2e2e572e2e2e2e2e2e50e82e2e2e2e53a32e2e2e2e89152e2e2e2e893d2e2e2e2e893d2e2e2e2ee82e2e2e2e8bd8a12e2e2e2e8b73108bd083"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e8bca5c2bc88bc71bc53bc30f2e2e2e2e2e7f5c0c3b5c0d2e2e2e2e0f2e2e2e2e2e89152e2e2e2e893d2e2e2e2eeb5c0a682e2e2e2ee82e2e2e2ea02e2e2e2e84"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_19": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b088b50088b70048b405c0c895c0d2e2e2e2e8d4c5c245c205189152e2e2e2ea32e2e2e2e891d2e2e2e2ee82e2e2e2e8b545c245c248b445c245c2052505756e82e2e2e2e5768e8"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b088b50088b70048b405c0c895c0d2e2e2e2e8d4c5c245c205189152e2e2e2ea32e2e2e2e891d2e2e2e2ee82e2e2e2e2e2e2e5c248b445c245c2052505756e82e2e2e2e5768e8"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_20": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b70048b405c0c895c0d2e2e2e2e8d4c5c245c205189152e2e2e2ea32e2e2e2e891d2e2e2e2ee82e2e2e2e8b545c245c248b445c245c2052505756e82e2e2e2e572e2e2e2e2e2e50"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b70048b405c0c895c0d2e2e2e2e8d4c5c245c205189152e2e2e2ea32e2e2e2e891d2e2e2e2ee82e2e2e2e2e2e2e5c248b445c245c2052505756e82e2e2e2e572e2e2e2e2e2e50"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_3": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00002e2e2e2ecccccca12e2e2e2ef62e2e2e2e0010745c7da12e2e2e2ea8707474833d2e2e2e2eff756b8b5c0d2e2e2e2ec1e82e2e2e2e4883f806895c0d2e2e2e2e77"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c5b83c470c38b2e2e2e2e008b088b50088b70048b405c0c895c0d2e2e2e2e8d4c5c245c205189152e2e2e2ea32e2e2e2e891d2e2e2e2ee82e2e2e2e8b545c245c248b445c245c2052"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e893d2e2e2e2e893d2e2e2e2ee82e2e2e2e8bd8a12e2e2e2e8b73108bd083e00483e20385f68bf8895c5c5c2418895c7c5c2414751133c98a4b2e2e2e2e000083"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_4": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ef62e2e2e2e0010745c7da12e2e2e2ea8707474833d2e2e2e2eff756b8b5c0d2e2e2e2ec1e82e2e2e2e4883f806895c0d2e2e2e2e7753ff5c24852e2e2e2ec705"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "000074c3ff052e2e2e2e5f5c5e5c5d5c5b83c430c3cccccccccca12e2e2e2e83ec7053558b5c2d2e2e2e2e83cbff3bc356577414f62e2e2e2e0010745c0ba32e2e2e2e891d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cbff3bc356577414f62e2e2e2e0010745c0ba32e2e2e2e891d2e2e2e2e8b2e2e2e2e002e2e2e2e0000ff3d0000005c280f2e2e2e2e2e0f2e2e2e2e2e33ff3bc70f84"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_5": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89445c24382e2e2e2e2e8b55008b4d3089445c24448b4504895c0d2e2e2e2e89545c243c8b551489445c24388b445c241c892e2e2e2e008b56084081e2ffbfffff892e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff8b063b46047205e82e2e2e2e832e2e2e2e00037379813d2e2e2e2e00000080745c0cc7002e2e2e2e89680483c0088b2e2e2e2e008b4a048b152e2e2e2e3bd575"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c0cc7002e2e2e2e89680483c0088b2e2e2e2e008b4a048b152e2e2e2e3bd5752e2e2e2e0000f6c201740383c901f6c202740383c902f6c204740383c90385d279"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_PRESENT_INTERVAL"
+},
+"GA_NATIVE_CAPTURE_6": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "011040682e2e2e2e89745c244cc7445c245440000000c7445c24502e2e2e2eff152e2e2e2e3bc65c7d5c0b50682e2e2e2e2e2e2e2e2e8b445c241c8b4c5c24188b152e2e2e2e56"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "011040682e2e2e2e89745c244cc7442e2e2e2e0000c7445c24502e2e2e2eff152e2e2e2e3bc65c7d5c0b50682e2e2e2e2e2e2e2e2e8b445c241c8b4c5c24188b152e2e2e2e56"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_7": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "000000410f842e2e2e2e8b3d2e2e2e2e8b2e2e2e2e008b5c0d2e2e2e2e682e2e2e2e812e2e2e2e0081e700feffff5750682e2e2e2e33ed55555551ff152e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "152e2e2e2e8b2e2e2e2e0083c3183bc55c7d04895c2beb548b152e2e2e2e2e2e2e2e2e2ee82e2e2e2e2e2e2e2e007515682e2e2e2ee82e2e2e2e83c4045f5c5e5c5d5c5b83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0000003d0000005c230f2e2e2e2e2ea02e2e2e2e84c07936a12e2e2e2e3bc7745c2d6a5c0d6a018d4c5c241b51682e2e2e2e50c6445c242701ff152e2e2e2e8b152e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_8": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e682e2e2e2e812e2e2e2e0081e700feffff5750682e2e2e2e33ed55555551ff152e2e2e2e8b2e2e2e2e0083c3183bc55c7d04895c2beb548b152e2e2e2e68"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0084c07936a12e2e2e2e3bc7745c2d6a5c0d6a018d4c5c241b51682e2e2e2e50c6445c242701ff152e2e2e2e8b152e2e2e2e52ff152e2e2e2e893d2e2e2e2e8b2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "445c2418760889445c241889745c241c6a485656568d4c5c245c2851682e2e2e2e8d545c2440526800011040682e2e2e2e89745c244cc7445c245440000000c7445c24502e2e2e2eff"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_9": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d745c2458f3a533f684c00f892e2e2e2e56568d445c245c2050682e2e2e2ec7052e2e2e2effffffffe82e2e2e2e85c07513e82e2e2e2e50682e2e2e2ee82e2e2e2e83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d745c2458f3a533f684c00f892e2e2e2e56568d445c245c2050682e2e2e2ec7052e2e2e2effffffffe82e2e2e2e85c07513e82e2e2e2e50682e2e2e2e2e2e2e2e2e83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d745c2458f3a533f684c00f892e2e2e2e56568d445c245c2050682e2e2e2ec7052e2e2e2effffffffe82e2e2e2e2e2e2e13e82e2e2e2e2e2e2e2e2e2ee82e2e2e2e83"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CAPTURE_CDEV": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc558bec83e4f083ec5c5c8b152e2e2e2e8b2e2e2e2e2e2e2e2e2e2e2e2ec0575c7d06d8052e2e2e2ed82e2e2e2e008b2e2e2e2e0085"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccc568b352e2e2e2e8b063b46045772052e2e2e2e2e8b4c5c245c0c0fb6545c240e8bf981e7ff000000c1e7105c0bd78b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_D3D_DEVICE_PTR"
+},
+"GA_NATIVE_CREATE": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec568b755c0c85f6795c7df7c60000000f755c0c81e6fffffffc81ce0000005c0c8bcec1e92e2e2e2ee8"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_18"
+},
+"GA_NATIVE_CREATE_10": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "0000805c3f000000000000000000000000000000000000805c3f00000000000000000000000000000000"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c7002e2e2e2ec740043c000000c740082e2e2e2e8d785c0c682e2e2e2e2e2e2e0000be2e2e2e2ef3a58d703c684008400056e82e2e2e2e682e2e2e2e6880084000"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0000be2e2e2e2ef3a58d703c684008400056e82e2e2e2e682e2e2e2e68800840008d464450e82e2e2e2e682e2e2e2e68c00840008d8e8800000051e82e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_11": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "0302002e2e2e2e00000000000000000000002e2e2e2e000000002e2e2e2e00000000002e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00682e2e2e2e56e82e2e2e2e4683fe5c0a72efbe39000000bf2e2e2e2eeb038d490081fe9a000000741383fe5c7e740e83fe7f745c098b075056e82e2e2e2e4683c704"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00682e2e2e2e56e82e2e2e2e4683fe5c0a722e2e2e2e0000bf2e2e2e2eeb2e2e2e2e81fe9a000000741383fe5c7e740e83fe7f745c098b075056e82e2e2e2e4683c704"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_12": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "01012e2e2e2e2e2e2e2e00000101020101012e2e2e2e0000000000000000002e2e2e2e2e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c985f60f95c151688f000000e82e2e2e2e33f633ff0fb6972e2e2e2e525756e82e2e2e2e4783ff5c2072eb566a1c56e82e2e2e2e6a0056e82e2e2e2e4683fe0472"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c985f60f95c12e2e2e2e0000e82e2e2e2e33f633ff0fb6972e2e2e2e525756e82e2e2e2e4783ff5c2072eb566a1c56e82e2e2e2e2e2e56e82e2e2e2e4683fe0472"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_13": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetScreenSpaceOffset",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "d9445c240456d8052e2e2e2e8b352e2e2e2e8bced92e2e2e2e00d9445c245c0cd8052e2e2e2ed92e2e2e2e"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_PersistDisplay",
+"offset": 304
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_14": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "508bf1e82e2e2e2e85c089465c24752e2e2e2e07805c5ec38b5c0d2e2e2e2ec1e92e2e2e2e89565c2889068b5c0d2e2e2e2e2ee92e2e2e2efcfdffff8b4630895604c7462c"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "fcfdffff8b4630895604c72e2e2e2e00002e2e2e2e0000a12e2e2e2e4833d2f7352e2e2e2e2ec9d1e82e2e2e2e2e2e2e2e0000d3e068000080648d14c5000000"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d47048d5c0c1f893e894c5c241c3bf8734c3b445c241c77468b1d2e2e2e2e8b46348b56488b6e38d1eb03df8b5c0cc2485c23c5894c5c24188b4cc2043bcf7303034e443bcb"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_MISC_17"
+},
+"GA_NATIVE_CREATE_15": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0007805c5ec38b5c0d2e2e2e2ec1e92e2e2e2e89565c2889068b5c0d2e2e2e2e2ee92e2e2e2efcfdffff8b4630895604c72e2e2e2e00002e2e2e2e0000a12e2e2e2e4833"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "04c72e2e2e2e00002e2e2e2e0000a12e2e2e2e4833d2f7352e2e2e2e2ec9d1e82e2e2e2e2e2e2e2e0000d3e068000080648d14c5000000008d48ff52894e38e8"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cee82e2e2e2e8b065f5c5e2e2e2e2ecccccccccccccccccca12e2e2e2e2ed1e82e2e2e2e2e2ec3cc8b5c0d2e2e2e2e8b018b4904568b745c24088d14b0812e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_167"
+},
+"GA_NATIVE_CREATE_16": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b4c5c245c0cc7002e2e2e2e89480483c00885c98906745c0a815c0d2e2e2e2e009000008b352e2e2e2e8b3d2e2e2e2e895c0d2e2e2e2e8b063b460472052e2e2e2e2e8b5c0d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89780489480883c05c0c8906893d2e2e2e2e5f2e2e2e2e8b152e2e2e2e812e2e2e2e00568b352e2e2e2e89152e2e2e2e8b063b460472052e2e2e2e2e8b4c5c2408c7"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c204008b152e2e2e2e812e2e2e2e00568b352e2e2e2e89152e2e2e2e8b063b460472052e2e2e2e2e8b4c5c2408c7002e2e2e2e89480483c0088906895c0d2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_DIRTY"
+},
+"GA_NATIVE_CREATE_17": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "538b5c5c5c245c0c5556578b3b8d9b000000008b2e2e2e2e0033edf72e2e2e2e00745c098bcbe82e2e2e2e8b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "68008b01f7d083e0018901c3558bec83ec1053568bf156682e2e2e2e8d868400000050ff152e2e2e2e8d2e2e2e2e0033db892e2e2e2e0089008d2e2e2e2e0043"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "68008b01f7d083e0018901c3558bec83ec1053568bf156682e2e2e2e2e2e2e2e000050ff152e2e2e2e8d2e2e2e2e0033db892e2e2e2e2e2e2e8d2e2e2e2e0043"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_18": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 107
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e558bec83ec5c0c6a00682e2e2e2e682e2e2e2eff152e2e2e2e6a00682e2e2e2eff152e2e2e2ea12e2e2e2e83252e2e2e2e2e83252e2e2e2e00f6000875"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8bec83ec1053568bf156682e2e2e2e8d868400000050ff152e2e2e2e8d2e2e2e2e0033db892e2e2e2e0089008d2e2e2e2e00438bcec62e2e2e2e0000c686a601"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_19": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "c701000000fd2e2e2e2efd83c8042e2e2e2efd33c0c705400160fd00000000c705409100fd000000"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "c701000000fd2e2e2e2efd83c8042e2e2e2efd33c0c705400160fd00000000c72e2e2e2efd000000"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE"
+},
+"GA_NATIVE_CREATE_20": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b118b2e2e2e2e00c1e82e2e2e2e00008981a80000008b2e2e2e2e0025ff0000008981c00000008b"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b2e2e2e2e2e2e00c1e82e2e2e2e00008981a80000008b2e2e2e2e0025ff0000008981c00000008b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_2"
+},
+"GA_NATIVE_CREATE_21": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 44
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "e82e2e2e2ecee82e2e2e2e85c074ee578d45f0506a03ff152e2e2e2e536a00ff75f08d5c7e145056682e2e2e2e57ff152e2e2e2e57ff152e2e2e2e84c0750733c0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "56682e2e2e2e8d2e2e2e2e0050ffd38d445c2410506a05ff152e2e2e2e6a016a00ff745c2418bb2e2e2e2e5056682e2e2e2e53ff152e2e2e2e53ff152e2e2e2e84c0"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_22": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "568b745c245c0c8b86a000000085c0578b3e0f842e2e2e2e8b2e2e2e2e0085c00f842e2e2e2e8b4e0881"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d45f0506a03ff152e2e2e2e536a00ff75f08d5c7e145056682e2e2e2e57ff152e2e2e2e57ff152e2e2e2e84c0750733c0e92e2e2e2e832e2e2e2e00008d866401"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d45f0506a03ff152e2e2e2e2e2e2eff75f08d5c7e142e2e2e2e2e2e2e57ff152e2e2e2e57ff152e2e2e2e84c0750733c0e92e2e2e2e832e2e2e2e00008d866401"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_23": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 109
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c246a006a008dbf2e2e2e2e51ff701c56682e2e2e2e57ff152e2e2e2e57ff152e2e2e2e33d2428d2e2e2e2e008d2e2e2e2e005251c7012e2e2e2e892e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c242e2e2e2e8dbf2e2e2e2e51ff701c56682e2e2e2e57ff152e2e2e2e57ff152e2e2e2e33d2428d2e2e2e2e008d2e2e2e2e005251c7012e2e2e2e892e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_24": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 98
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c2418bb2e2e2e2e5056682e2e2e2e53ff152e2e2e2e53ff152e2e2e2e84c07505bf0540008085ff5c7c336a018b2e2e2e2e1080feffffffffe82e2e2e2e8d862c05"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "7508be2e2e2e2e5057682e2e2e2e56ff152e2e2e2e56ff152e2e2e2e84c0be0540008075028bde85db5c7c3b6a006a01e82e2e2e2e85c075028bde85db5c7c5c286808"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_25": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b4c5c24048b152e2e2e2e8b819cfeffff81c19cfeffff85d2743681e2ff00000083fa03742183fa05"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "33c0e92e2e2e2e832e2e2e2e00008d2e2e2e2e005350c7002e2e2e2eff152e2e2e2e8bcee82e2e2e2e85c074d38d2e2e2e2e008945fcc72e2e2e2e0000ba0001"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_26": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 47
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8bec83ec3453565733db435333f6682e2e2e2e8975fcff152e2e2e2e2e2e2e2e2e6a5c0c5933c08d5c7dccf3ab8d45cc5033ff57c72e2e2e2e0000ff352e2e2e2eff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00832e2e2e2e00008d2e2e2e2e005350c7002e2e2e2eff152e2e2e2e8bcee82e2e2e2e85c074d38d2e2e2e2e008945fcc72e2e2e2e00002e2e2e2e0033c08b4d"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_41"
+},
+"GA_NATIVE_CREATE_27": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf1578b3ec72e2e2e2e0000000000c72e2e2e2e0000f800002e2e2e2e2ec786b4002e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_3"
+},
+"GA_NATIVE_CREATE_28": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "535556578bf98b378d2e2e2e2e008b088bd181e2fffcffff8910890883cbff892e2e2e2e008b87b4"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_4"
+},
+"GA_NATIVE_CREATE_29": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_CreateCtxDmaObject",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec515153565733c0508945f88945fc8d45fc508d45f850ff75108bd18b3ae82e2e2e2e8b5c5df8"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_5"
+},
+"GA_NATIVE_CREATE_3": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DResource_Release",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b745c24088b068bc881e1ffff000083f9012e2e2e2e2e2e2e3d2e2e2e2e755c0d8b461485c0740650"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DResource_AddRef",
+"offset": 64
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_152"
+},
+"GA_NATIVE_CREATE_30": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf157ff745c241433c0892e2e2e2e00892e2e2e2e00892e2e2e2e00892e2e2e2e008d2e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568bf157ff745c2414332e2e2e2e2e2e00892e2e2e2e00892e2e2e2e00892e2e2e2e008d2e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_7"
+},
+"GA_NATIVE_CREATE_31": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24048b10560fb7700656ff705c0c8bc2ff2e2e2e2e00c1e82e2e2e2ee82e2e2e2e2e2e2e2e0050"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_8"
+},
+"GA_NATIVE_CREATE_32": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec535633d2835c7d5c0c57578bd9761a8b455c0c83e82e2e2e2ee82e2e2e2ee82e2e2e2e2e2e2e0042"
+},
+{
+"kind": "sym",
+"name": "D3D8__CMiniport_CreateCtxDmaObject",
+"offset": 207
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_DEVICE_6"
+},
+"GA_NATIVE_CREATE_33": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": -20
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": -532
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FogEnable",
+"offset": -900
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_34": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetShaderConstantMode",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c2404a810538b1d2e2e2e2e8b4b087408812e2e2e2e00eb0681e1fffdffff83e0ef894b088983"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c2404a810538b1d2e2e2e2e2e2e087408812e2e2e2e00eb0681e1fffdffff83e0ef894b088983"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_35": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_Stream",
+"offset": 472
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_FVF_SHADER"
+},
+"GA_NATIVE_CREATE_36": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ee82e2e2e2e6a02e82e2e2e2e33c0b946000000bf2e2e2e2ef3abc7052e2e2e2e2e2e00008b2e2e2e2e008b2e2e2e2e005051e82e2e2e2ee82e2e2e2e"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_Stream",
+"offset": 192
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ee82e2e2e2e6a02e82e2e2e2e33c0b946000000bf2e2e2e2e2eabc7052e2e2e2e2e2e00008b2e2e2e2e008b2e2e2e2e005051e82e2e2e2ee82e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_37": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff6a02e82e2e2e2e33c0b946000000bf2e2e2e2ef3abc7052e2e2e2e2e2e00008b2e2e2e2e008b2e2e2e2e005051e82e2e2e2ee82e2e2e2e6a00680000805c3f6a"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_Stream",
+"offset": 196
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff6a02e82e2e2e2e33c0b946000000bf2e2e2e2e2eabc7052e2e2e2e2e2e00008b2e2e2e2e008b2e2e2e2e005051e82e2e2e2ee82e2e2e2e6a00680000805c3f6a"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_38": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_Clear",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec3853558b5c2d2e2e2e2e8b2e2e2e2e0056578b2e2e2e2e000fb6475c0d8a882e2e2e2e33f6f6c101"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec3853558b5c2d2e2e2e2e2e2e2e2e2e0056578b2e2e2e2e000fb6475c0d8a882e2e2e2e33f6f6c101"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_D3D8_2"
+},
+"GA_NATIVE_CREATE_39": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "080000812e2e2e2e0089500889705c0c894814895818c7401c2e2e2e2e2e2e2e2eefcdab6a05e82e2e2e2e6a00e82e2e2e2e33c05c5e5f5c5b812e2e2e2e2e2e2e2ecc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "080000812e2e2e2e0089500889705c0c894814895818c7401c2e2e2e2e2e2e2e2eefcdab6a05e82e2e2e2e2e2ee82e2e2e2e33c05c5e5f5c5b812e2e2e2e2e2e2e2ecc"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_4": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "5c095c0911911191a1a100002e2e2e2e08081292a28a00001292005c09115c0a92122e2e2e2e002e2e2e2e11"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b5c5c5c240856578b3d2e2e2e2e8b2e2e2e2e000fb6485c0d8a912e2e2e2e80e23c33f680fa5c2075028bf38b47088bc883e1013bf174368b4f0483f0018947088b073b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1083f80f7f5c0b8d0495000000002e2e2e2e0fb6465c0d0fb6802e2e2e2e83e03c0fafc2c1e82e2e2e2e2e8d04122e2e2e2e0fb6461340c1e0062e2e2e2ecccccccc"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_FORMAT_INFO"
+},
+"GA_NATIVE_CREATE_41": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e568b745c2408740839352e2e2e2e2e228b2e2e2e2e006a00566a5c0b50ff152e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "6a00566a5c0b50ff152e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc8b5c0d2e2e2e2e85c9a12e2e2e2e568b745c2408"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e2e2e745c2408740839352e2e2e2e74228b2e2e2e2e006a00566a5c0b2e2e2e2e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_MISC_15"
+},
+"GA_NATIVE_CREATE_42": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc8b5c0d2e2e2e2e85c9a12e2e2e2e568b745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5753ff152e2e2e2e8bf885ff75db8b4c5c2414a32e2e2e2ea32e2e2e2ee82e2e2e2e56ff152e2e2e2e6a015056ff152e2e2e2e56ff152e2e2e2e5f5c5e5c5b33c05c5d83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc8b5c0d2e2e2e2e85c9a12e2e2e2e2e2e745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_160"
+},
+"GA_NATIVE_CREATE_43": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e568b745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e006a00566a0e52ff152e2e2e2e33c085f60f95c0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e2e2e745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e006a00566a0e2e2e2e2e2e2e2e33c085f60f95c0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e2e8b745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e2e2e2e566a0e52ff152e2e2e2e33c085f60f95c0"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_MISC_16"
+},
+"GA_NATIVE_CREATE_44": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c241085ff742e2e2e2e2e2e2e8b445c245c0c8d3440c1e6028b862e2e2e2e85c0745c268b492c8948088b862e2e2e2e8b1081c20000f8ff8bcaf7c1ffff780089107506"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d3440c1e6028b862e2e2e2e85c0745c268b492c8948088b862e2e2e2e8b1081c20000f8ff8bcaf7c1ffff780089107506502e2e2e2e2e8b8e2e2e2e2e8b445c2414"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "06502e2e2e2e2e83c7044b75b933ff2e2e2e2e0000008b872e2e2e2e85c0741a8b1081c20000f8ff8bcaf7c1ffff780089107506502e2e2e2e2e83c75c0c81ffc0"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_45": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_Stream",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0000f8ff8bcaf7c1ffff780089107506502e2e2e2e2e8b8e2e2e2e2e8b445c24143bc18b5c0d2e2e2e2e89862e2e2e2e89be2e2e2e2e750e83c9405f895c0d2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "045c2a8b745c2410c1e0048b5c5c301c03c68b70148d34768b34b52e2e2e2ec1e60803f3893183c1044283fa1072d233db3bfb7563bf2e2e2e2e8d9b000000000fb604"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_58"
+},
+"GA_NATIVE_CREATE_46": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "4affffff0f77cccccccccccccccccccccccccccc8bc1f6052e2e2e2e10538b5c5c5c2408751556578bf8c1e70481c72e2e2e2e8bcb8bf2f3a55f5c5e538bc8e8f3feff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "08eb2e2e2e2e0000eb5c2aa12e2e2e2e83c82e2e2e2e0000a32e2e2e2eeb2e2e2e2e0000eb0ff6c22e2e2e2e0000742e2e2e2e00008bc15c0bc25c0bc78bd133d7d1e8"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c0755c0ac7052e2e2e2e2e8000008b445c24108b4c5c2414568b352e2e2e2e5783e010bf2e2e2e2e5c0bf0518bcf893d2e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_D3D8_5"
+},
+"GA_NATIVE_CREATE_47": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc558bec83e4f083ec5c5c8b152e2e2e2e8b2e2e2e2e2e2e2e2e2e2e2e2ec0575c7d06d8052e2e2e2ed82e2e2e2e008b2e2e2e2e0085"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccc568b352e2e2e2e8b063b46045772052e2e2e2e2e8b4c5c245c0c0fb6545c240e8bf981e7ff000000c1e7105c0bd78b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_D3D_DEVICE_PTR"
+},
+"GA_NATIVE_CREATE_48": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 2368
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_DoNotCullUncompressed",
+"offset": 2372
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZRead",
+"offset": 2376
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_5": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89445c24382e2e2e2e2e8b55008b4d3089445c24448b4504895c0d2e2e2e2e89545c243c8b551489445c24388b445c241c892e2e2e2e008b56084081e2ffbfffff892e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff8b063b46047205e82e2e2e2e832e2e2e2e00037379813d2e2e2e2e00000080745c0cc7002e2e2e2e89680483c0088b2e2e2e2e008b4a048b152e2e2e2e3bd575"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c0cc7002e2e2e2e89680483c0088b2e2e2e2e008b4a048b152e2e2e2e3bd5752e2e2e2e0000f6c201740383c901f6c202740383c902f6c204740383c90385d279"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_PRESENT_INTERVAL"
+},
+"GA_NATIVE_CREATE_6": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleMode",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89545c24180f2e2e2e2e2e8b2e2e2e2e008b2e2e2e2e008b5c2d2e2e2e2e894c5c24148b2e2e2e2e0089445c24108b411085c075128b495c0cc1e92e2e2e2e2e2e2e0000d3"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc8b445c24048b5c0d2e2e2e2ea32e2e2e2e8b2e2e2e2e003b2e2e2e2e00750733d2e82e2e2e2e2e2e2ecccccccccccccccccc8b445c24"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_129"
+},
+"GA_NATIVE_CREATE_7": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00eb5c0af6c602742e2e2e2e00008d5534891d2e2e2e2e893d2e2e2e2e833a000f842e2e2e2e8b5c7c5c242c85ff76618d2e2e2e2e0089445c24648d2e2e2e2e008bca89"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "6a00e82e2e2e2e83c60883fe5872da6a002e2e2e2e2e8b352e2e2e2e3b352e2e2e2e745c0a566a046a00e82e2e2e2e3b352e2e2e2e745c0a566a036a00e82e2e2e2e"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_PSTextureModes",
+"offset": -40
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_8": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": -24
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": -536
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FogEnable",
+"offset": -904
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_9": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "050140008002e001010606c0050160008002e001020505c0050140005c20035802030303c005014000"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff8bc8bbff000000bf00ff00005c23c35c23cf33d289445c2414be2e2e2e2e2eed8b065c23c73bc189745c2410740f832e2e2e2ec65c0c812e2e2e2e0072e5b8b90000003bd0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c0c812e2e2e2e0072e5b8b90000003bd073228d34528d34b52e2e2e2e2e0e5c23cb89745c2410740e3b4c5c241474084283c65c0c3bd072e82e2e2e2e5f5c5e5c5d5c5b5959c355"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_CREATE_DEV": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00a32e2e2e2e2e2e2ecccccccccccccccccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccca12e2e2e2e83c0083b052e2e2e2e735c0ca32e2e2e2e8948f88950fcc352512e2e2e2e2e595aebd9cccccccccccccccccc568b745c240883fe5c5c5c7d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccc53a12e2e2e2e83c01c3b052e2e2e2e7343a32e2e2e2ec740e42e2e2e2e8948e82e2e2e2e2e2e2ec1e1048d892e2e2e2e8b1a8958f089198b5a04"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_D3D8"
+},
+"GA_NATIVE_CREATE_MP": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 7216
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_DoNotCullUncompressed",
+"offset": 7220
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZRead",
+"offset": 7224
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_MINIPORT"
+},
+"GA_NATIVE_GEOMETRY_GRS": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1433c056eb5c092e2e2e2e0000008bff8bb02e2e2e2e2e34b52e2e2e2e8971fc8bb02e2e2e2e8b34b52e2e2e2e89318bb02e2e2e2e8b34b52e2e2e2e8971048bb0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "b02e2e2e2e2e34b52e2e2e2e8971fc8bb02e2e2e2e8b34b52e2e2e2e89318bb02e2e2e2e8b34b52e2e2e2e8971048bb02e2e2e2e8b34b52e2e2e2e8971088bb0"
+}
+],
+"libs": [
+"D3D8:5849",
+"D3D8LTCG:5849"
+],
+"alias": "GA_DRAW_G_RENDER_STATE"
+},
+"GA_NATIVE_LOGIC": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_LogicOp",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b4c5c240885c97518c7002e2e2e2e89480483c0088906895c0d2e2e2e2e2e2e2e2ec7002e2e2e2ec72e2e2e2e000089480883c05c0c8906895c0d2e2e2e2e2e2e2e2ecc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00c7002e2e2e2ec72e2e2e2e000089480883c05c0c8906895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc568b352e2e2e2e8b063b460472052e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_88"
+},
+"GA_NATIVE_MISC": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec568b755c0c85f6795c7df7c60000000f755c0c81e6fffffffc81ce0000005c0c8bcec1e92e2e2e2ee8"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_18"
+},
+"GA_NATIVE_MISC_10": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 3
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5056e82e2e2e2e8b4c5c24145051e82e2e2e2e50555753ff152e2e2e2e8bf885ff75db8b4c5c2414a32e2e2e2ea32e2e2e2ee82e2e2e2e56ff152e2e2e2e6a015056"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5056e82e2e2e2e8b4c5c241450512e2e2e2e2e50555753ff152e2e2e2e8bf885ff75db8b4c5c2414a32e2e2e2ea32e2e2e2e2e2e2e2e2e56ff152e2e2e2e6a015056"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_158"
+},
+"GA_NATIVE_MISC_12": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc8b5c0d2e2e2e2e85c9a12e2e2e2e568b745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5753ff152e2e2e2e8bf885ff75db8b4c5c2414a32e2e2e2ea32e2e2e2ee82e2e2e2e56ff152e2e2e2e6a015056ff152e2e2e2e56ff152e2e2e2e5f5c5e5c5b33c05c5d83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc8b5c0d2e2e2e2e85c9a12e2e2e2e2e2e745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_160"
+},
+"GA_NATIVE_MISC_13": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 180
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "75db8b4c5c2414a32e2e2e2ea32e2e2e2ee82e2e2e2e56ff152e2e2e2e6a015056ff152e2e2e2e56ff152e2e2e2e5f5c5e5c5b33c05c5d83c408c3ccccd9445c240456d805"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "106aff6a00ff745c2418ff152e2e2e2e8bf085f6742c56ff152e2e2e2e8b152e2e2e2e0102832e2e2e2e74168bc88bd157c1e92e2e2e2efef3ab8bca83e103f3aa"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_161"
+},
+"GA_NATIVE_MISC_14": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 178
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00a32e2e2e2ee82e2e2e2e56ff152e2e2e2e6a015056ff152e2e2e2e56ff152e2e2e2e5f5c5e5c5b33c05c5d83c408c3ccccd9445c240456d8052e2e2e2e8b352e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e85c0752e2e2e2e00c0e92e2e2e2e6a015650ff152e2e2e2e8b555c0c85d27505ba2e2e2e2ea12e2e2e2e2e578b3833c02e2e2e2e008d5f088bcef3aba1"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_162"
+},
+"GA_NATIVE_MISC_15": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e568b745c2408740839352e2e2e2e2e228b2e2e2e2e006a00566a5c0b50ff152e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "6a00566a5c0b50ff152e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e2e2e2e2ecccccccccccccccccccccccccccc8b5c0d2e2e2e2e85c9a12e2e2e2e568b745c2408"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e2e2e745c2408740839352e2e2e2e74228b2e2e2e2e006a00566a5c0b2e2e2e2e2e2e2ec7052e2e2e2e2e2e000089352e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_41"
+},
+"GA_NATIVE_MISC_16": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e568b745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e006a00566a0e52ff152e2e2e2e33c085f60f95c0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e2e2e745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e006a00566a0e2e2e2e2e2e2e2e33c085f60f95c0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccc8b5c0d2e2e2e2e85c9a12e2e2e2e2e8b745c240874118b152e2e2e2e33c985f60f95c13bd1745c288b2e2e2e2e2e2e2e566a0e52ff152e2e2e2e33c085f60f95c0"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_43"
+},
+"GA_NATIVE_MISC_17": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "508bf1e82e2e2e2e85c089465c24752e2e2e2e07805c5ec38b5c0d2e2e2e2ec1e92e2e2e2e89565c2889068b5c0d2e2e2e2e2ee92e2e2e2efcfdffff8b4630895604c7462c"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "fcfdffff8b4630895604c72e2e2e2e00002e2e2e2e0000a12e2e2e2e4833d2f7352e2e2e2e2ec9d1e82e2e2e2e2e2e2e2e0000d3e068000080648d14c5000000"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8d47048d5c0c1f893e894c5c241c3bf8734c3b445c241c77468b1d2e2e2e2e8b46348b56488b6e38d1eb03df8b5c0cc2485c23c5894c5c24188b4cc2043bcf7303034e443bcb"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_CREATE_14"
+},
+"GA_NATIVE_MISC_18": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0007805c5ec38b5c0d2e2e2e2ec1e92e2e2e2e89565c2889068b5c0d2e2e2e2e2ee92e2e2e2efcfdffff8b4630895604c72e2e2e2e00002e2e2e2e0000a12e2e2e2e4833"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "04c72e2e2e2e00002e2e2e2e0000a12e2e2e2e4833d2f7352e2e2e2e2ec9d1e82e2e2e2e2e2e2e2e0000d3e068000080648d14c5000000008d48ff52894e38e8"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cee82e2e2e2e8b065f5c5e2e2e2e2ecccccccccccccccccca12e2e2e2e2ed1e82e2e2e2e2e2ec3cc8b5c0d2e2e2e2e8b018b4904568b745c24088d14b0812e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_167"
+},
+"GA_NATIVE_MISC_3": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "755c0b8b2e2e2e2e2e2e008947048bd6c1ea0483e20f0fb6822e2e2e2e83e60f0fb68e2e2e2e2e0fafc103e82e2e2e2e2e83e00f892e2e2e2eede92e2e2e2e8bf0"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_MISC_4": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8947048bd6c1ea0483e20f0fb6822e2e2e2e83e60f0fb68e2e2e2e2e0fafc103e82e2e2e2e2e83e00f892e2e2e2eede92e2e2e2e8bf083e61f8bd6c1e2048d5c0c"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_MISC_5": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 1
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccccccccccccccc83ec08558b5c2d2e2e2e2eff152e2e2e2e85c0740f50ff152e2e2e2e6a00ff152e2e2e2e8b2e2e2e2e0085c0755c0ab8054000805c5d83"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5f5c5e5c5bc3cccccccccccccccccccccccccccc55568bf1ff152e2e2e2e33ed85c075128b2e2e2e2e00556a016a5c0950ff152e2e2e2e8b2e2e2e2e003bc574218b48"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_39"
+},
+"GA_NATIVE_MISC_6": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 171
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cc83ec08558b5c2d2e2e2e2eff152e2e2e2e85c0740f50ff152e2e2e2e6a00ff152e2e2e2e8b2e2e2e2e0085c0755c0ab8054000805c5d83c408c3538d2e2e2e2e0089"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2eff745c2404ff152e2e2e2e8b5c0d2e2e2e2e5c2901ff252e2e2e2e8b5c0d2e2e2e2e85c9568b745c245c0c745c2d562e2e2e2e2e8bd085d27427832e2e2e2e741c5357"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_163"
+},
+"GA_NATIVE_MISC_7": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 4
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_164"
+},
+"GA_NATIVE_MISC_8": {
+"rules": [
+{
+"kind": "kthunk",
+"ordinal": 166
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "d08d4401ffeb0533d283c8ff56ff7514ff7510505251ff152e2e2e2e8bf085f675076a08e82e2e2e2e8bc65c5e2e2e2e2e558bec56ff7518ff7514ff7510ff755c0c"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c21000558bec56ff7518ff7514ff7510ff755c0cff7508ff152e2e2e2e8bf085f675076a08e82e2e2e2e8bc65c5e2e2e2e2eff252e2e2e2e2e2e2e2e2e2e2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_MISC_9": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "5c095c0911911191a1a100002e2e2e2e08081292a28a00001292005c09115c0a92122e2e2e2e002e2e2e2e11"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b5c5c5c240856578b3d2e2e2e2e8b2e2e2e2e000fb6485c0d8a912e2e2e2e80e23c33f680fa5c2075028bf38b47088bc883e1013bf174368b4f0483f0018947088b073b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1083f80f7f5c0b8d0495000000002e2e2e2e0fb6465c0d0fb6802e2e2e2e83e03c0fafc2c1e82e2e2e2e2e8d04122e2e2e2e0fb6461340c1e0062e2e2e2ecccccccc"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_FORMAT_INFO"
+},
+"GA_NATIVE_MISC_DEVICE": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc558bec83e4f083ec5c5c8b152e2e2e2e8b2e2e2e2e2e2e2e2e2e2e2e2ec0575c7d06d8052e2e2e2ed82e2e2e2e008b2e2e2e2e0085"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccc568b352e2e2e2e8b063b46045772052e2e2e2e2e8b4c5c245c0c0fb6545c240e8bf981e7ff000000c1e7105c0bd78b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_D3D_DEVICE_PTR"
+},
+"GA_NATIVE_QUALITY_QRS": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1433c056eb5c092e2e2e2e0000008bff8bb02e2e2e2e2e34b52e2e2e2e8971fc8bb02e2e2e2e8b34b52e2e2e2e89318bb02e2e2e2e8b34b52e2e2e2e8971048bb0"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "b02e2e2e2e2e34b52e2e2e2e8971fc8bb02e2e2e2e8b34b52e2e2e2e89318bb02e2e2e2e8b34b52e2e2e2e8971048bb02e2e2e2e8b34b52e2e2e2e8971088bb0"
+}
+],
+"libs": [
+"D3D8:5849",
+"D3D8LTCG:5849"
+],
+"alias": "GA_DRAW_G_RENDER_STATE"
+},
+"GA_NATIVE_QUALITY_QTSS": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ec1e1055c0bf203c88b445c241089352e2e2e2e89048d2e2e2e2e2e2e2e2e75338b445c245c0c8b152e2e2e2e83f8191bc981e1f1bfffff81c10f4800005c0bd189"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "538bd88d4c5c243089445c241483cb10c1e00755894c5c24108d882e2e2e2e8b413056894c5c245c20894c5c245c2457eb068d9b000000008b4c5c245c248b79348b71388b693c33d2"
+}
+],
+"libs": [
+"D3D8:5849",
+"D3D8LTCG:5849"
+],
+"alias": "GA_DRAW_G_TEXTURE_STATE"
+},
+"GA_NATIVE_RESOURCES": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec568b755c0c85f6795c7df7c60000000f755c0c81e6fffffffc81ce0000005c0c8bcec1e92e2e2e2ee8"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_18"
+},
+"GA_NATIVE_RESOURCES_3": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "5c095c0911911191a1a100002e2e2e2e08081292a28a00001292005c09115c0a92122e2e2e2e002e2e2e2e11"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b5c5c5c240856578b3d2e2e2e2e8b2e2e2e2e000fb6485c0d8a912e2e2e2e80e23c33f680fa5c2075028bf38b47088bc883e1013bf174368b4f0483f0018947088b073b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1083f80f7f5c0b8d0495000000002e2e2e2e0fb6465c0d0fb6802e2e2e2e83e03c0fafc2c1e82e2e2e2e2e8d04122e2e2e2e0fb6461340c1e0062e2e2e2ecccccccc"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_FORMAT_INFO"
+},
+"GA_NATIVE_RESOURCES_4": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "83e03c0faf445c2404c1e82e2e2e2e83e0c033c98bff3b048d2e2e2e2e765c094183f91a722e2e2e2e8b048d2e2e2e2e2e2e2ecccccccc8b4c5c24040fb6515c0d0fb682"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c98bff3b048d2e2e2e2e765c094183f91a722e2e2e2e8b048d2e2e2e2e2e2e2ecccccccc8b4c5c24040fb6515c0d0fb6822e2e2e2eff5c24852e2e2e2e2e2e2e00008b49"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_RESOURCES_6": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec08568b745c2418578b5c7c5c24140fb6475c0d578906e82e2e2e2e8b4c5c241885c98946042e2e2e2e0000"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_RESOURCES_7": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc558bec83e4f083ec5c5c8b152e2e2e2e8b2e2e2e2e2e2e2e2e2e2e2e2ec0575c7d06d8052e2e2e2ed82e2e2e2e008b2e2e2e2e0085"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccc568b352e2e2e2e8b063b46045772052e2e2e2e2e8b4c5c245c0c0fb6545c240e8bf981e7ff000000c1e7105c0bd78b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_D3D_DEVICE_PTR"
+},
+"GA_NATIVE_STATES": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec5c24568bf18b2e2e2e2e00f6400412578bfa0f842e2e2e2e8d4c5c241c518d545c241052e82e2e2e2e"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetTextureStageStateNotInline",
+"offset": 352
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_168"
+},
+"GA_NATIVE_STATES_10": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "000000ff81fa0000008975158b4c5c240825ffffff008b04852e2e2e2e890133c0c381fa0000008a75358bc8c1e82e2e2e2e000081e1ff00000083f804731a83f9"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "1433c056eb5c092e2e2e2e0000008bff8bb02e2e2e2e2e34b52e2e2e2e8971fc8bb02e2e2e2e8b34b52e2e2e2e89318bb02e2e2e2e8b34b52e2e2e2e8971048bb0"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_73"
+},
+"GA_NATIVE_STATES_11": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c2410db445c24108bf05c7d06d8052e2e2e2ed9e0d9545c2410d85c0d2e2e2e2ed95c5c5c24088b4c5c2408516a4de82e2e2e2e8b545c24108bc2506a4e89545c2418e82e2e2e2e566a"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_13": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_ZBias",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "4fe82e2e2e2e566a50e82e2e2e2e566a51e82e2e2e2e893d2e2e2e2e5f5c5e2e2e2e2ecccccccccccccccccccccccc568b352e2e2e2e8b063b460472052e2e2e2e"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_LogicOp",
+"offset": -4
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_14": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_BackFillMode",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e8b063b460472052e2e2e2e2e8b5c0d2e2e2e2e8b152e2e2e2e85c98b4c5c240875028bd1c7002e2e2e2e89480489500883c05c0c8906895c0d2e2e2e2e5c5ec204"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccc8b445c2404568b352e2e2e2ea32e2e2e2e8b063b4604578b3d2e2e2e2e72052e2e2e2e2e8b5c0d2e2e2e2e85c98b5c0d2e2e2e2e75028b"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_15": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_TwoSidedLighting",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "815c0d2e2e2e2e009000008b352e2e2e2e8b3d2e2e2e2e895c0d2e2e2e2e8b063b460472052e2e2e2e2e8b5c0d2e2e2e2e85c98b5c0d2e2e2e2e75028bcfc7002e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e895c0d2e2e2e2e8b063b460472052e2e2e2e2e8b5c0d2e2e2e2e85c98b5c0d2e2e2e2e75028bcfc7002e2e2e2e89780489480883c05c0c8906893d2e2e2e2e5f"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_16": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "05302e2e2e2e00008db45c24e0000000f3a58b750883c334a12e2e2e2e85c0753a8d2e2e2e2e00528d445c245c24508d8c5c24a800000051e82e2e2e2e8d945c24a0000000"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_PSTextureModes",
+"offset": 4
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_ComplexRenderState",
+"offset": 4
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_17": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleMode",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89545c24180f2e2e2e2e2e8b2e2e2e2e008b2e2e2e2e008b5c2d2e2e2e2e894c5c24148b2e2e2e2e0089445c24108b411085c075128b495c0cc1e92e2e2e2e2e2e2e0000d3"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc8b445c24048b5c0d2e2e2e2ea32e2e2e2e8b2e2e2e2e003b2e2e2e2e00750733d2e82e2e2e2e2e2e2ecccccccccccccccccc8b445c24"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_129"
+},
+"GA_NATIVE_STATES_18": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleRenderTargetMode",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "0100000083e10fd3e0eb568b4310d9052e2e2e2e85c08b5c2d2e2e2e2ec72e2e2e2e00805c3f75128b4b5c0cc1e92e2e2e2e2e2e2e0000d3e2eb5c098bd0812e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ecccccccccccccccccc8b445c24048b5c0d2e2e2e2ea32e2e2e2e8b2e2e2e2e003b2e2e2e2e00740733d2e82e2e2e2e2e2e2ecccccccccccccccccc8b445c24"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_130"
+},
+"GA_NATIVE_STATES_19": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleAntiAlias",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00d82e2e2e2e008b500833c984f6d82e2e2e2e00792e2e2e2e2e2e2e7410d9c9d8252e2e2e2ed9c9d8252e2e2e2e8b2e2e2e2e2e2e2e2e2e2e2e2ed25c7d06d805"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "00d82e2e2e2e008b4e0833c084edd82e2e2e2e00792e2e2e2e2e2e2e7410d9c9d8252e2e2e2ed9c9d8252e2e2e2ed9c9c7072e2e2e2ed95f0489475c0c894710d9"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_2": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "545c2414db2e2e2e2e005c7d06d8052e2e2e2ed82e2e2e2e00a12e2e2e2e83f802d85c0d2e2e2e2ed9545c245c0cd9e0d95c5c5c2418d92e2e2e2e00d82e2e2e2e00d82e2e2e2e"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "5c20894f5c2483c75c288a2e2e2e2e2e2e2e2e000084c8755339052e2e2e2e7535d92e2e2e2e008b2e2e2e2e00d82e2e2e2e00892e2e2e2e00d82e2e2e2e00d99e101c"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89475c0c894710d95f088a2e2e2e2e0083c714a8017553833d2e2e2e2e02755c26d92e2e2e2e008b2e2e2e2e00d82e2e2e2e00892e2e2e2e00d82e2e2e2e00d99e08"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_65"
+},
+"GA_NATIVE_STATES_20": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff893cb52e2e2e2e5f2e2e2e2e81fe880000005c7d1c8b04b52e2e2e2e5c09052e2e2e2e8b4c5c245c0c895c0cb52e2e2e2e2e2e2e2e8b545c245c0c52ff14b52e2e2e2e5c5ec208"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "ff893cb52e2e2e2e5f2e2e2e2e2e2e2e2e00005c7d1c8b04b52e2e2e2e5c09052e2e2e2e8b4c5c245c0c895c0cb52e2e2e2e2e2e2e2e8b545c245c0c52ff14b52e2e2e2e5c5ec208"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_22": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c22e2e2e2e89108b545c245c0c89500483c0088906c1e10789912e2e2e2e2e2e2e2ecccccc568b352e2e2e2e8b063b460472052e2e2e2e2e8b4c5c24088d148de05c0a04"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": 116
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": -396
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_23": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": 120
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": -392
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_FogEnable",
+"offset": -760
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_24": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "152e2e2e2e5f5c5e5c5b33c05c5d83c408c3ccccd9445c240456d8052e2e2e2e8b352e2e2e2e8bced92e2e2e2e00d9445c245c0cd8052e2e2e2ed92e2e2e2e002e2e2e2e2e8b"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e8b352e2e2e2e8bced92e2e2e2e00d9445c245c0cd8052e2e2e2ed92e2e2e2e002e2e2e2e2e8b063b46047205e82e2e2e2e8bd08bcee82e2e2e2e89065c5ec2"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "0000085c3f5c20bcbecc5c20bcbecc5c20bcbe4c5c20bcbe2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_3": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "0002ff2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e00"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "bc2e2e2e2e2e2e2e2e00008bf2f3a58b352e2e2e2e8b5c0c852e2e2e2e5c0bf183f80189352e2e2e2e0f852e2e2e2ed9422cbe0000805c3fd9425c28dae92e2e2e2e445c7b"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_4": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b5c5c5c245c0c55568b352e2e2e2e578b5c7c5c24148bc7c1e00789982e2e2e2e8b068b4e0433d233ed3bc189545c2414895c5c5c2418725c092e2e2e2e2e8b545c241481e30000ffff"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2e005355b8b4f95c3f00565c2bc1bd2e2e2e2ec7445c245c0c2e2e2e2e8d2e2e2e2e0089445c241033db57908b445c24108b78e48b013b4104725c09e82e2e2e2e8b4c5c24"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": 112
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_5": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "14bd128500008bd1eb052e2e2e2e008a5c5c5c241880c35c09889f2e2e2e2e8d9f3cc00000c1e304891889680489680889685c0c83c01089068b2e2e2e2e0085c0750e85"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "142e2e2e2e008bd1eb052e2e2e2e008a5c5c5c241880c35c09889f2e2e2e2e8d9f3cc00000c1e304891889680489680889685c0c83c01089068b2e2e2e2e0085c0750e85"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_6": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b545c2404c1e20789822e2e2e2e2e2e2e83f8165c7d5c248b5c0c852e2e2e2e5c095c0d2e2e2e2e8b545c2404c1e20503d08b445c245c0c8904952e2e2e2e2e2e2e83f81c75128b4c"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_7": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "2e2e2e2ec1e1055c0bf203c88b445c241089352e2e2e2e89048d2e2e2e2e2e2e2e2e75338b445c245c0c8b152e2e2e2e83f8191bc981e1f1bfffff81c10f4800005c0bd189"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "81e1ff00000083f804731a83f95c207315c1e00503c18b14852e2e2e2e8b445c2408891033c0c3b857000780c381fa0000008b5657756825ff00000083f8040f839d"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_10"
+},
+"GA_NATIVE_STATES_8": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_PSTextureModes",
+"offset": 0
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_ComplexRenderState",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "751ab9390000008bf5bf2e2e2e2ef3a58b8dd8000000895c0d2e2e2e2e8b4c5c241085c9755c098bd08bcbe82e2e2e2ec7002e2e2e2e8d782e2e2e2e00008bf5f3a5c7"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_105"
+},
+"GA_NATIVE_STATES_9": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "052e2e2e2e2ec7002e2e2e2e89780483c0085f89065c5e891d2e2e2e2e2e2e2e2ecccccccccccccccccccccc538b5c5c5c240856578b3d2e2e2e2e8b2e2e2e2e000fb6"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_SampleAlpha",
+"offset": -4
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_MultiSampleRenderTargetMode",
+"offset": 8
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_NATIVE_STATES_DEVICE": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc558bec83e4f083ec5c5c8b152e2e2e2e8b2e2e2e2e2e2e2e2e2e2e2e2ec0575c7d06d8052e2e2e2ed82e2e2e2e008b2e2e2e2e0085"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccc568b352e2e2e2e8b063b46045772052e2e2e2e2e8b4c5c245c0c0fb6545c240e8bf981e7ff000000c1e7105c0bd78b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_D3D_DEVICE_PTR"
+},
+"GA_NATIVE_STATES_DIRTY": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "8b4c5c245c0cc7002e2e2e2e89480483c00885c98906745c0a815c0d2e2e2e2e009000008b352e2e2e2e8b3d2e2e2e2e895c0d2e2e2e2e8b063b460472052e2e2e2e2e8b5c0d"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "89780489480883c05c0c8906893d2e2e2e2e5f2e2e2e2e8b152e2e2e2e812e2e2e2e00568b352e2e2e2e89152e2e2e2e8b063b460472052e2e2e2e2e8b4c5c2408c7"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "c204008b152e2e2e2e812e2e2e2e00568b352e2e2e2e89152e2e2e2e8b063b460472052e2e2e2e2e8b4c5c2408c7002e2e2e2e89480483c0088906895c0d2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_DIRTY"
+},
+"GA_PROFILE": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetRenderState_PSTextureModes",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "8b445c24048b5c0d2e2e2e2e892e2e2e2e00815c0d2e2e2e2e00400000a32e2e2e2e2e2e2ecccccccccccc"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "000080bf000000008fc2155c3f0000805c3f4c37a95c3f48e12e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_PROFILE_2": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "8bc133c9890889480489480889485c0c89481089481489481889481c89485c20c3558bec8b450889018b"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_PROFILE_D3D_HI": {
+"rules": [
+{
+"kind": "section",
+"name": "D3D",
+"end": 1
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_PROFILE_VA_BEGIN": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_Begin",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2ee82e2e2e2e8b063b46047205e82e2e2e2e8b4c5c2408c7002e2e2e2e89480483c008"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_SetVertexDataColor",
+"offset": 80
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_PROFILE_VA_BEGIN_PUSH": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_InsertCallback",
+"offset": 112
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_IsFencePending",
+"offset": 144
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_PROFILE_VA_DRAW_INDEXED": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_DrawIndexedVertices",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "558bec83ec0853568b352e2e2e2e8b461c57508bce8975f8e82e2e2e2e8b5c5e08812e2e2e2e00685c09"
+},
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_DrawVertices",
+"offset": 160
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_PROFILE_VA_DRAW_VERTICES": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_DrawVertices",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "538b1d2e2e2e2e56576a008bcbe82e2e2e2e8b5c7c5c24188d77ffc1ee08468d460550e82e2e2e2e8b4c"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "538b1d2e2e2e2e2e2e6a008bcbe82e2e2e2e8b5c7c5c24188d77ffc1ee08468d460550e82e2e2e2e8b4c"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_PROFILE_VA_RUN_PUSHBUFFER": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_RunPushBuffer",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec2c5355568b352e2e2e2e5733ed558bcee82e2e2e2e8b5c5c5c2440833b000f2e2e2e2e2e8b435c0c8b"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec2c5355568b352e2e2e2e2e2eed558bcee82e2e2e2e8b5c5c5c2440833b000f2e2e2e2e2e8b435c0c8b"
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_PROFILE_VA_SWAP": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__D3DDevice_Swap",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e8b2e2e2e2e0085c0755c0a8b2e2e2e2e0085c074052e2e2e2e2e538b5c5c5c245c0c85db57"
+},
+{
+"kind": "sig",
+"at": true,
+"pat": "568b352e2e2e2e2e2e2e2e2e0085c0755c0a8b2e2e2e2e0085c07405e82e2e2e2e538b5c5c5c245c0c85db57"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_4"
+},
+"GA_SYNC": {
+"rules": [
+{
+"kind": "sig",
+"at": true,
+"pat": "83ec1c56578b5c7c5c245c288bd78bc783e21fc1e82e2e2e2e5c0d8bf18b0e0f2e2e2e2e2eff5c24952e2e2e2e"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "FN_SYNC"
+},
+"GA_SYNC_D3D_DEVICE_PTR": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 0
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "cccccccccccccccccccccccccc558bec83e4f083ec5c5c8b152e2e2e2e8b2e2e2e2e2e2e2e2e2e2e2e2ec0575c7d06d8052e2e2e2ed82e2e2e2e008b2e2e2e2e0085"
+},
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "895c0d2e2e2e2e2e2e2e2ecccccccccccccccccccccc568b352e2e2e2e8b063b46045772052e2e2e2e2e8b4c5c245c0c0fb6545c240e8bf981e7ff000000c1e7105c0bd78b"
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_NATIVE_API_D3D_DEVICE_PTR"
+},
+"GA_SYNC_GPULESS_FLAG": {
+"rules": [
+{
+"kind": "sig",
+"at": false,
+"operand": 24,
+"pat": "10002e2e2e2e75f48b2e2e2e2e0081e2ffffff0f892e2e2e2e2e2e2e85c0744a2e2e2e2e2e85c075f72e2e2e2e2e2e005c5ec38b06b92e2e2e2e83e92e2e2e2e1c"
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_DeferredTextureState",
+"offset": -16
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_RenderState",
+"offset": -528
+}
+],
+"libs": [
+"D3D8:5849"
+]
+},
+"GA_SYNC_MINIPORT": {
+"rules": [
+{
+"kind": "sym",
+"name": "D3D8__VAR__g_pDevice",
+"offset": 7216
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_DoNotCullUncompressed",
+"offset": 7220
+},
+{
+"kind": "sym",
+"name": "D3D8__VAR__D3DRS_RopZRead",
+"offset": 7224
+}
+],
+"libs": [
+"D3D8:5849"
+],
+"alias": "GA_DEVICE_MINIPORT"
+}
+}
