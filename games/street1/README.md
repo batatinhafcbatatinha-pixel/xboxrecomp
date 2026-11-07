@@ -14,73 +14,12 @@ An experimental original-Xbox FIFA Street port built through static recompilatio
 
 ## How to play
 
-> [!IMPORTANT]
-> **There is no ready-to-play download.** This page has only tools: they turn *your own* game disc into a PC game,
-> on your computer. The first time takes a while (20-60 minutes on a recent PC), mostly waiting.
-> After that, you just double-click to play.
+This port is built from **your own disc** by the launcher of the xboxrecomp repository: see
+[How to play a game](../../README.md#how-to-play-a-game). By hand: the `steps` of `setup.json` in this
+folder (or `Setup.cmd`), then the `Play-*.cmd` here.
 
-**You need**
-
-- **Windows 10 or 11** (64-bit) with about **15 GB** free. (Linux and Mac: see below.)
-- Your own **FIFA Street** (original Xbox, USA or Europe), as a disc image (`.iso`) made from your disc, or its extracted
-  files. Other versions are not accepted; the setup checks this for you.
-
-**Steps**
-
-**Easiest: `Setup.exe`.** Open [Releases](https://github.com/batatinhafcbatatinha-pixel/fifa-street-pc/releases), download **`Setup.exe`** from the newest one and run it.
-It downloads this kit (source code only), shows what your PC already has and what is missing on its
-*Dependencies* tab, installs what is missing, asks for your `.iso` and builds the game. Afterwards the same
-program (and its desktop shortcut) is your launcher: **Play**, and **PC settings** (the same options as F1 in
-the game, before it starts). Windows may say it protected your PC because the program is not signed: click
-*More info* > *Run anyway*. The program is built by GitHub from [tools/launcher](tools/launcher); nothing from the game is in it.
-
-**Or step by step:**
-
-1. **Download**, one of these two ways:
-   <details open><summary><b>Easiest: the ZIP</b></summary>
-
-   Open [Releases](https://github.com/batatinhafcbatatinha-pixel/fifa-street-pc/releases/latest), download **`fifa-street-pc-source-kit.zip`** and extract it to a short folder, such as
-   `C:\Games\fifa-street-pc`.
-   </details>
-   <details><summary><b>With Git: always the newest version</b></summary>
-
-   ```powershell
-   git clone --recursive https://github.com/batatinhafcbatatinha-pixel/fifa-street-pc.git C:\Games\fifa-street-pc
-   ```
-   To update later: `git pull --recurse-submodules`, then run `Setup.cmd` again.
-   </details>
-
-2. **Double-click `Setup.cmd`.** It asks before installing anything, then:
-   - installs Python and Microsoft's C++ Build Tools if you don't have them (free; Windows asks for permission once);
-   - downloads the other build tools (about 1 GB) **into this folder only**;
-   - opens a window where you **pick your `.iso`**: it checks the version and copies the game files;
-   - builds your PC version, and offers a desktop shortcut.
-
-   If anything stops, run `Setup.cmd` again: finished steps are skipped.
-
-3. **Play:** double-click **`Play-FIFA-Street.cmd`** (or the desktop shortcut).
-
-**In the game:** **F1** opens the PC settings. Controllers and the keyboard work: see [Controls](#controls).
-
-**Problems?** Open an [issue](https://github.com/batatinhafcbatatinha-pixel/fifa-street-pc/issues) with `setup-log.txt` and a screenshot. Never attach game files.
-
-`Setup.cmd` is new: so far it has been tried from a fresh download only with the FIFA Street 3 port. If it stops for you, please open an issue with `setup-log.txt`.
-
-<details><summary><b>Linux and Mac</b></summary>
-
-- **Linux:** works natively (no Wine), but the setup is by hand for now: see [Linux](#linux).
-- **Mac:** not playable yet. The Mac build files are an experiment that has never been compiled or run on a Mac. Details in [MACOS.md](MACOS.md); if you have a Mac and want to help test, open an issue.
-
-</details>
-
-<details><summary><b>Questions</b></summary>
-
-- **Is this legal?** This page contains no game, only tools. You use the game you already own.
-- **Can I share my built game?** No: it contains the game's code. Keep it on your PC.
-- **Will it run on my PC?** Any graphics card with DirectX 11 should work. Measured: a match stays at 60 fps (the game's own rate) up to 4K on a Ryzen 5 3600 + RTX 3050 Laptop.
-- **How do I remove it?** Delete the folder. Python and the Build Tools can be removed in Windows Settings > Apps.
-
-</details>
+**Problems?** Open an [issue](https://github.com/batatinhafcbatatinha-pixel/xboxrecomp/issues) naming the game, with `setup-log.txt` and a screenshot.
+Never attach game files.
 
 ## Status
 
@@ -140,7 +79,7 @@ The European executable is the same build of the game as the USA one, relinked: 
 Place your own extracted disc contents in this layout:
 
 ```text
-fifa-street-pc/
+xboxrecomp/games/street1/
   game_files/
     default.xbe
     data/
@@ -170,15 +109,11 @@ Use `.local/disc/game_files` instead of `game_files` in the build and launch com
 ### Windows
 
 ```sh
-git clone --recursive https://github.com/batatinhafcbatatinha-pixel/fifa-street-pc.git
-cd fifa-street-pc
+git clone --recursive https://github.com/batatinhafcbatatinha-pixel/xboxrecomp.git
+cd xboxrecomp/games/street1
 ```
 
-The xboxrecomp toolkit is the `xboxrecomp/` submodule ([batatinhafcbatatinha-pixel/xboxrecomp](https://github.com/batatinhafcbatatinha-pixel/xboxrecomp), branch `ports`). If you cloned without `--recursive`, run `git submodule update --init`.
-
-Alternatively, download the **source-kit ZIP** from [Releases](https://github.com/batatinhafcbatatinha-pixel/fifa-street-pc/releases), which includes the toolkit. Extract the entire archive. GitHub's **Code → Download ZIP** does not include the submodule. These downloads contain source and tools only; they do not contain a precompiled game.
-
-The GitHub Actions workflow audits the publication allowlist, tests ISO extraction, and creates a source-kit ZIP on release tags. It never receives a ROM or builds translated game code. Standard hosted runners are [free for public repositories](https://docs.github.com/en/billing/concepts/product-billing/github-actions); the workflow uses a standard Ubuntu runner and publishes the ZIP as a release asset.
+The xboxrecomp toolkit (runtime and translator) is this repository itself: the game folder sits in its `games/`, two levels below the root.
 
 Install Python 3.10+ (with Tkinter), Visual Studio 2022 Build Tools with the C++ workload and Windows SDK, LLVM/Clang, CMake and Ninja. The scripts discover installed tools; they do not install system dependencies.
 
