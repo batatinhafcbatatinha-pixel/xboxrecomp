@@ -29,6 +29,7 @@ def guard():
 def run(command, cwd, log):
     guard()
     print(subprocess.list2cmdline(list(map(str, command))), flush=True)
+    (ROOT / 'analysis').mkdir(exist_ok=True)
     with (ROOT / 'analysis' / log).open('w', encoding='utf-8') as stream:
         proc = subprocess.Popen(list(map(str, command)), cwd=cwd, stdout=stream,
                                 stderr=subprocess.STDOUT,
@@ -85,6 +86,21 @@ def strict_missing_code():
 
 
 
+def analyze():
+    """Disassembly and function identification of your default.xbe (analysis/, never published): the inputs of
+    the translation. Same stages and options as scripts/analyze_local.py; skipped when already present."""
+    analysis = ROOT / 'analysis'
+    xbe, dis, identified = ROOT / 'default.xbe', analysis / 'disasm', analysis / 'func-id'
+    if not (dis / 'functions.json').is_file():
+        run([sys.executable, '-u', '-m', 'tools.xbe_parser', xbe, '--quiet', '--json', analysis / 'xbe-analysis.json'],
+            TOOLKIT, 'xbe-parse.log')
+        run([sys.executable, '-u', '-m', 'tools.disasm', xbe, '--analysis-json', analysis / 'xbe-analysis.json',
+             '--text-only', '-o', dis], TOOLKIT, 'disasm.log')
+    if not (identified / 'identified_functions.json').is_file():
+        run([sys.executable, '-u', '-m', 'tools.func_id', xbe, '--functions', dis / 'functions.json',
+             '--strings', dis / 'strings.json', '--xrefs', dis / 'xrefs.json', '-o', identified], TOOLKIT, 'func-id.log')
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('stage', choices=['generate', 'configure', 'build'], default='generate', nargs='?')
@@ -97,6 +113,7 @@ def main():
     if hashlib.sha256((ROOT / 'default.xbe').read_bytes()).hexdigest() != EXPECTED:
         raise RuntimeError('Wrong Black executable identity')
     if args.stage == 'generate':
+        analyze()
         run([sys.executable, '-u', '-m', 'tools.recomp', ROOT / 'default.xbe', '--all',
              '--game-name', 'Black USA', '--disasm-dir', ROOT / 'analysis/disasm',
              '--func-id-dir', ROOT / 'analysis/func-id', '--split', '128',

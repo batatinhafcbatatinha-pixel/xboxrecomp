@@ -19,7 +19,9 @@
         "{python}",
         "tools/build_local.py",
         "--game-files",
-        "{game_files}"
+        "{game_files}",
+        "--jobs",
+        "{jobs}"
       ],
       "reuse_if": ".local/generation-complete.json",
       "reuse_arg": "--reuse-generated"

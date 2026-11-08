@@ -56,7 +56,7 @@ def main():
     worklist += [int(r['address'], 16) for r in previous.get('recovered', [])]
     # Entry points reached only indirectly: the D3D API table the native GPU binds (render-state setters are
     # called through the library's own tables) and indirect targets observed at run time.
-    bindings = json.loads((ROOT / 'analysis/native-gpu-bindings.json').read_text())['apiSymbols']
+    bindings = json.loads((ROOT / 'config/native-gpu-bindings.json').read_text())['apiSymbols']
     worklist += [int(b['address'], 16) for b in bindings]
     runtime_targets = ROOT / 'config/runtime-targets.json'
     if runtime_targets.exists():

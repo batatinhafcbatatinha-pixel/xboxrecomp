@@ -56,3 +56,4 @@ setup-log.txt
 !/tools/launcher/
 /tools/launcher/bin/
 /tools/launcher/obj/
+saves/

@@ -61,8 +61,34 @@ Or by hand inside `games/<game>/`: the `steps` of its `setup.json` (each game's 
 
 ## Screenshots
 
-Screenshots of each port at the furthest point it reaches are being captured and will appear here, one framed
-picture per game with its name.
+Each port at the furthest point it reaches today.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/street1.jpg" alt="FIFA Street" width="100%"><br>
+      <b>FIFA Street</b><br>
+      <sub>Xbox &middot; a match, England against Brazil</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/street2.jpg" alt="FIFA Street 2" width="100%"><br>
+      <b>FIFA Street 2</b><br>
+      <sub>Xbox &middot; a match, Brazil against England</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/black.jpg" alt="Black" width="100%"><br>
+      <b>Black</b><br>
+      <sub>Xbox &middot; mission 1, Veblensk</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/mka.jpg" alt="Mortal Kombat: Armageddon" width="100%"><br>
+      <b>Mortal Kombat: Armageddon</b><br>
+      <sub>Xbox &middot; a fight, Scorpion against Dairou</sub>
+    </td>
+  </tr>
+</table>
 
 ## Upstream
 

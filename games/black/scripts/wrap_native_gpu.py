@@ -7,7 +7,7 @@ import re
 root = Path(__file__).resolve().parents[1]
 gen = root / 'project/src/recomp/gen'
 bindings = root / 'project/src/native_gpu/black_gpu_bindings.inc'
-metadata = json.loads((root / 'analysis/native-gpu-bindings.json').read_text())
+metadata = json.loads((root / 'config/native-gpu-bindings.json').read_text())
 addresses = {int(v,16) for v in re.findall(r'^\{(0x[0-9A-F]+)u,', bindings.read_text(), re.MULTILINE)}
 symbols = {int(s['address'],16):s for s in metadata['apiSymbols']}
 found = set()

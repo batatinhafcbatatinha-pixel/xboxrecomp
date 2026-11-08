@@ -95,6 +95,7 @@ def main():
     parser.add_argument('--dxvk-native-dir', type=Path)
     parser.add_argument('--vkd3d-dir', type=Path)
     parser.add_argument('--dxmt-dir', type=Path, help='macOS: DXMT prefix from tools/macos/build-deps.sh')
+    parser.add_argument('--jobs', type=int, default=4, help='Parallel compiler jobs (about 2 GB of memory each)')
     args = parser.parse_args()
     assets = args.game_files.resolve()
     xbe = assets / 'default.xbe'
@@ -131,7 +132,7 @@ def main():
             raise ValueError('macOS: pass --dxmt-dir and --vkd3d-dir (see MACOS.md)')
         configure += ['-DDXMT_DIR=' + str(args.dxmt_dir.resolve()), '-DCMAKE_OSX_ARCHITECTURES=x86_64']
     run(configure, ROOT, env)
-    run([cmake, '--build', local / 'build', '--parallel', '4', '--target', 'fifastreet_recomp'], ROOT, env)
+    run([cmake, '--build', local / 'build', '--parallel', str(args.jobs), '--target', 'fifastreet_recomp'], ROOT, env)
     if os.name == 'nt':
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         __import__('fetch_pad_support').install(local / 'build', sdl3=True)

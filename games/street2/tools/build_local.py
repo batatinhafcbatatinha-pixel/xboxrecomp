@@ -47,7 +47,8 @@ def generate(xbe, local, tools, env):
     source = local / 'source/street2'
     if source.exists():
         shutil.rmtree(source)
-    shutil.copytree(ROOT / 'street2', source)
+    # A checkout that was built in place may hold an old project/src/recomp/gen: never copy it (duplicate symbols).
+    shutil.copytree(ROOT / 'street2', source, ignore=lambda d, names: ['gen'] if Path(d).name == 'recomp' else [])
     gen = source / 'project/src/recomp/gen'
     work = local / 'recomp-work'
     if work.exists():
@@ -152,7 +153,8 @@ def main():
     # These host sources must also reach an existing --reuse-generated tree:
     # the command-worker hook renames the generated entry to *_gen, so omitting
     # its native implementation leaves sub_00227853 undefined at link time.
-    for relative in ('CMakeLists.txt', 'src/native_metal_bridge.m', 'src/native_command_worker.c', 'src/native_kernel_clock.c', 'src/hle_posix_win32.h'):
+    # (The Metal bridge, kernel clock and POSIX Win32 subset are shared: hle/d3d8, read from the repository.)
+    for relative in ('CMakeLists.txt', 'src/native_command_worker.c'):
         shutil.copy2(ROOT / 'street2/project' / relative, project / relative)
     build = local / 'build'
     configure = [cmake, '-S', project, '-B', build, '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
