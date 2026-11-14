@@ -16,56 +16,45 @@ hands it to you in the shape a decomp wants.
 build/split/
   manifest.json              every function: address, size, signature, call graph, file
   asm/
-    text/sub_0002A4D4.s      one file per function
-    text/sub_0002A40F.s
+    text/sub_00011000.s      one file per function
+    text/sub_00011040.s
     D3D/sub_000B2630.s
 ```
 
-Each `.s` looks like this — the Xbox Dashboard's main loop:
+Each `.s` looks like this (an invented function, written for this document; it is not taken from any title):
 
 ```asm
-; sub_0002A4D4
-; 0x0002A4D4 - 0x0002A4FD  (41 bytes, 14 instructions)
+; sub_00011000
+; 0x00011000 - 0x0001100F  (16 bytes, 9 instructions)
 ; section .text, detected by call_target (confidence 0.90)
 ; cdecl, 0 params, returns int_or_void, frame fpo_leaf
-; called by: sub_0002A4FD
+; called by: sub_00011040
 ;
 ; The bytes below are the original encoding, emitted as data so
 ; this assembles byte-identically. The disassembly is the comment
 ; beside each one -- read that, write the C, delete this file.
 
-sub_0002A4D4:
-    db 0x56                                       ; 0002A4D4  push esi
-    db 0xBE, 0xF0, 0x1E, 0x12, 0x00               ; 0002A4D5  mov esi, 0x121ef0
-    db 0x8B, 0xCE                                 ; 0002A4DA  mov ecx, esi
-    db 0xE8, 0x2E, 0xFF, 0xFF, 0xFF               ; 0002A4DC  call 0x2a40f   -> sub_0002A40F
-    db 0x84, 0xC0                                 ; 0002A4E1  test al, al
-    db 0x75, 0x08                                 ; 0002A4E3  jne 0x2a4ed
-    db 0x8B, 0xCE                                 ; 0002A4E5  mov ecx, esi
-    db 0x5E                                       ; 0002A4E7  pop esi
-    db 0xE9, 0x8A, 0xF2, 0xFF, 0xFF               ; 0002A4E8  jmp 0x29777   -> sub_00029777
+sub_00011000:
+    db 0x56                                       ; 00011000  push esi
+    db 0x8B, 0xF1                                 ; 00011001  mov esi, ecx
+    db 0x8B, 0x46, 0x04                           ; 00011003  mov eax, [esi+4]
+    db 0x85, 0xC0                                 ; 00011006  test eax, eax
+    db 0x74, 0x04                                 ; 00011008  je 0x1100e
+    db 0x40                                       ; 0001100A  inc eax
+    db 0x89, 0x46, 0x04                           ; 0001100B  mov [esi+4], eax
 
-.L_0002A4ED:
-    db 0x8B, 0xCE                                 ; 0002A4ED  mov ecx, esi
-    db 0xE8, 0xD0, 0xF2, 0xFF, 0xFF               ; 0002A4EF  call 0x297c4   -> sub_000297C4
-    db 0x8B, 0xCE                                 ; 0002A4F4  mov ecx, esi
-    db 0xE8, 0x9B, 0xFA, 0xFF, 0xFF               ; 0002A4F6  call 0x29f96   -> sub_00029F96
-    db 0xEB, 0xF0                                 ; 0002A4FB  jmp 0x2a4ed
+.L_0001100E:
+    db 0x5E                                       ; 0001100E  pop esi
+    db 0xC3                                       ; 0001100F  ret
 ```
 
 Which reads straight out as:
 
 ```c
-void XApp_Run(void)
+void Counter_Bump(Counter *c)
 {
-    XApp *app = (XApp *)0x121EF0;
-
-    if (!XApp_Init(app))
-        return XApp_Shutdown(app);          /* the tail jump */
-    for (;;) {
-        XApp_Tick(app);
-        XApp_Render(app);
-    }
+    if (c->value)
+        c->value++;
 }
 ```
 
@@ -156,23 +145,23 @@ project's `docs/symbols.md`.
 
 ```json
 {
-  "name": "sub_0002A4D4",
-  "address": "0x0002A4D4",
-  "end": "0x0002A4FD",
-  "size": 41,
+  "name": "sub_00011000",
+  "address": "0x00011000",
+  "end": "0x00011010",
+  "size": 16,
   "section": ".text",
-  "instructions": 14,
+  "instructions": 9,
   "has_prologue": false,
   "detection_method": "call_target",
   "confidence": 0.9,
-  "called_by": ["0x0002A4FD"],
-  "calls_to": ["0x00029777", "0x000297C4", "0x00029F96", "0x0002A40F"],
+  "called_by": ["0x00011040"],
+  "calls_to": [],
   "calling_convention": "cdecl",
   "estimated_params": 0,
   "return_hint": "int_or_void",
   "frame_type": "fpo_leaf",
   "stack_frame_size": 0,
-  "file": "asm/text/sub_0002A4D4.s"
+  "file": "asm/text/sub_00011000.s"
 }
 ```
 
