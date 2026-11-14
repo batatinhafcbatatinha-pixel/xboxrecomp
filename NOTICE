@@ -46,6 +46,41 @@ LGPL-2.1-or-later — extracted from xemu
   satisfies that.
 
 
+GPL-2.0-or-later — DSP interpreter extracted from xemu
+-------------------------------------------------------
+
+  https://github.com/xemu-project/xemu, revision 478b4f496102379c7eaa7f3ec10e714a703c4300
+  (recorded in src/apu/dsp/UPSTREAM.md)
+
+  Files under src/apu/dsp/, with the copyright each one carries:
+
+    interp/dsp_cpu.c, interp/dsp_cpu.h, interp/dsp_cpu_regs.h,
+    interp/dsp_emu.c.inc, interp/dsp_dis.c.inc, interp/debug.c
+                          DSP56300 interpreter and debug output
+                          (c) 2015 espes; 2020-2025 Matt Borgerson;
+                          adapted from Hatari's DSP M56001 emulation
+                          (C) 2003-2008 ARAnyM developer team,
+                          (C) 2008 Thomas Huth
+    interp/dsp_native.c.inc, dsp_runtime.c, dsp_runtime.h
+                          this project's adapter around that interpreter,
+                          GPL-2.0-or-later like the code it wraps
+    dsp_dma.c, dsp_dma.h, dsp_dma_regs.h
+                          DSP DMA (LGPL-2.0-or-later, see the section above)
+
+  The interpreter files are licensed under the GNU General Public License,
+  version 2 or (at your option) any later version; the text is in
+  src/apu/dsp/COPYING.GPL-2.0. src/apu/apu_dsp_real.c is adapted from xemu's
+  LGPL source at the same revision.
+
+  Unlike the LGPL files above, the GPL does not allow linking this code into
+  an MIT-licensed program without the combined work being distributed under
+  the GPL. It is built into xbox_apu (src/apu/CMakeLists.txt). Until the
+  project's owner decides how to resolve that (relicense the combined work,
+  make the DSP interpreter an optional component that is not built by
+  default, or replace it), treat any binary that links xbox_apu as subject
+  to GPL-2.0-or-later.
+
+
 Derived algorithms — credited, independently implemented
 --------------------------------------------------------
 
