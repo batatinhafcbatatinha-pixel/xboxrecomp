@@ -18,7 +18,8 @@ IMAGE = (0x11000, 0x314008)
 # Files whose addresses are rewritten (relative to street1/).
 SOURCES = ['project/src/*.c', 'project/src/*.h', 'hle/hle_functions.json', 'hle/dsound_functions.json',
            'hle/sync_functions.json', 'hle/input_functions.json', 'hle/smp_serial_functions.json',
-           'hle/game_hooks.json']
+           'hle/game_hooks.json',
+           'project/local/*.c', 'hle/local/game_hooks.json']  # the local overlay is not published
 TOKEN = re.compile(r'(?<![0-9A-Za-z_])(?:(0x)([0-9A-Fa-f]{5,8})(?![0-9A-Fa-f])|'
                    r'(sub_|HLE_API\(|HLE_DS\(|")([0-9A-Fa-f]{8})(?![0-9A-Za-z]))')
 

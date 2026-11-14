@@ -1,5 +1,8 @@
 """Give every function defined natively in project/src/native_d3d precedence over its translated body.
 
+The git-ignored folder project/local (hand-written native versions that are not published) is read too when it
+exists; without it the translated bodies of those functions run.
+
 A native file defines `void sub_XXXXXXXX(void)` (or `sub_XXXXXXXX_gpu_original` for a body behind the native GPU
 wrapper); the translated definition of the same name in project/src/recomp/gen is renamed to `<name>_gen`, so the
 native one links and can still call the original where it wants to. Idempotent; run after wrap_native_gpu.py.
@@ -8,15 +11,16 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-NATIVE = ROOT / 'project/src/native_d3d'
+NATIVE_DIRS = [ROOT / 'project/src/native_d3d', ROOT / 'project/local']
 GEN = ROOT / 'project/src/recomp/gen'
 DEF = re.compile(r'^void (sub_[0-9A-F]{8}(?:_gpu_original)?)\(void\)\s*(?:/\*.*?\*/\s*)?\{', re.M)
 
 
 def main():
     names = set()
-    for path in sorted(NATIVE.glob('*.c')):
-        names.update(DEF.findall(path.read_text(encoding='utf-8')))
+    for folder in NATIVE_DIRS:
+        for path in sorted(folder.glob('*.c')):
+            names.update(DEF.findall(path.read_text(encoding='utf-8')))
     renamed = restored = 0
     for path in sorted(GEN.glob('*.c')):
         text = path.read_text(encoding='utf-8')

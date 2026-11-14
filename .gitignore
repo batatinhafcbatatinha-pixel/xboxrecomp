@@ -40,3 +40,6 @@ tools/split/output/
 
 # Launcher downloads and portable build tools (Launcher.cmd / port-installer setup)
 /.local/
+
+# Local overlays: hand-written native versions of game functions, never published (PROVENANCE rule 3).
+/games/**/local/

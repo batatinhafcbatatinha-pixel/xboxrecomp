@@ -12,7 +12,7 @@ Source kit only: no game, no XBE, no generated code and no executable. Bring you
 - **Every pad through SDL3:** PlayStation and generic controllers work in the game and in the F1 settings, not only Xbox pads.
 - **Controller vibration** on/off in the F1 settings.
 - Texture changes found exactly through page write-watch instead of hashing every frame.
-- Native skinning blend, bone matrices and matrix multiply.
+- (Local builds only: native skinning blend, bone matrices and matrix multiply; the published source does not include them.)
 - The shared game-data installer (`Install-Files.cmd`) extracts and verifies your disc.
 - The installer launcher is now `Install-Files.cmd` (English name); experimental macOS build files (not compiled or run yet).
 - Native Linux build path for the kit (not built for this release).

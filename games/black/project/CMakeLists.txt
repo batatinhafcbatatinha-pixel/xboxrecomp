@@ -44,6 +44,10 @@ if(BLACK_BUILD_NATIVE_HOST AND NOT BLACK_BUILD_COMPAT_HOST)
 endif()
 # Native replacements of library functions (scripts/apply_native_overrides.py renames the translated ones to *_gen).
 file(GLOB BLACK_NATIVE_D3D CONFIGURE_DEPENDS "src/native_d3d/*.c")
+# Hand-written native versions of game functions are not published; the git-ignored local/*.c, when present,
+# is compiled in too (apply_native_overrides.py then renames the translated bodies it replaces).
+file(GLOB BLACK_LOCAL_NATIVE CONFIGURE_DEPENDS "local/*.c")
+list(APPEND BLACK_NATIVE_D3D ${BLACK_LOCAL_NATIVE})
 add_library(black_aot STATIC ${BLACK_AOT} src/integration.c src/black_timing.c src/native_gpu_calls.c ${BLACK_NATIVE_D3D})
 # Preserve the generated clock as a helper without editing/regenerating AOT sources.
 set_source_files_properties(src/recomp/gen/recomp_0023.c PROPERTIES

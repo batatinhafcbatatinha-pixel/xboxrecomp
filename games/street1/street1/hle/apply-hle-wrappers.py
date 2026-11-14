@@ -32,6 +32,9 @@ if serial_path.exists():
     table.update(json.loads(serial_path.read_text(encoding='utf-8')))
 # Game functions observed by project/src/game_hooks.c (front-end screens).
 hooks_path = here / 'game_hooks.json'
+# Unpublished hand-written native versions are listed in the git-ignored hle/local/game_hooks.json (a full copy).
+if (here / 'local' / 'game_hooks.json').exists():
+    hooks_path = here / 'local' / 'game_hooks.json'
 if hooks_path.exists():
     table.update(json.loads(hooks_path.read_text(encoding='utf-8')))
 addrs = sorted(int(a, 16) for a in table)

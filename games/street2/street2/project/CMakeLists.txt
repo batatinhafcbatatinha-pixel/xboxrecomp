@@ -54,6 +54,12 @@ file(GLOB RECOMP_GEN_SOURCES CONFIGURE_DEPENDS "src/recomp/gen/*.c")
 include("${CMAKE_CURRENT_SOURCE_DIR}/recover_frontend.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/native_engine_hooks.cmake")
 
+# Hand-written native versions of game functions are not published: the git-ignored local/game_hooks.c,
+# when present, replaces the published src/game_hooks.c (and hle/local/game_hooks.json the routing table).
+set(GAME_HOOKS_SOURCE src/game_hooks.c)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/local/game_hooks.c")
+  set(GAME_HOOKS_SOURCE local/game_hooks.c)
+endif()
 set(GAME_SOURCES
     src/main.c
     ${HLE_D3D8_DIR}/port_native_policy.c
@@ -73,7 +79,7 @@ set(GAME_SOURCES
     ${HLE_D3D8_DIR}/hle_native_resources.c
     ${HLE_D3D8_DIR}/hle_native_states.c
     ${HLE_D3D8_DIR}/hle_native_create.c
-    src/game_hooks.c
+    ${GAME_HOOKS_SOURCE}
     src/native_engine_batch.c
     src/native_command_worker.c
     ${HLE_D3D8_DIR}/native_audio_output.c

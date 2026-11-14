@@ -1,6 +1,8 @@
-# Native animation math — 2026-10-30
+# Native animation math — 2026-10-30 (local build only)
 
-Three of the game's own functions now run as native C: the skinning palette
+**Not in the published build.** These native versions were written from the translated code, so they are not distributed: the published source runs the translated functions, and the figures below describe a local build that keeps them in a git-ignored overlay (`project/local/game_hooks.c`, `hle/local/game_hooks.json`).
+
+Three of the game's own functions ran as native C in that build: the skinning palette
 blend (0x1A4BF0), the skeleton's bone matrices (0x1A7DD0) and the matrix
 multiply used all over the game (0x25424B). They are the same code as Street
 1's 0x1A03B0, 0x1A4EE0 and 0x161386 (the translations differ only in

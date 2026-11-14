@@ -50,6 +50,12 @@ add_subdirectory(${XBOXRECOMP_DIR} ${CMAKE_BINARY_DIR}/xboxrecomp)
 file(GLOB RECOMP_GEN_SOURCES CONFIGURE_DEPENDS "src/recomp/gen/*.c")
 
 # Game logic: guest-side HLE, no host graphics API.
+# Hand-written native versions of game functions are not published: the git-ignored local/game_hooks.c,
+# when present, replaces the published src/game_hooks.c (and hle/local/game_hooks.json the routing table).
+set(GAME_HOOKS_SOURCE src/game_hooks.c)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/local/game_hooks.c")
+  set(GAME_HOOKS_SOURCE local/game_hooks.c)
+endif()
 set(GAME_SOURCES
     src/main.c
     src/recomp_manual.c
@@ -67,7 +73,7 @@ set(GAME_SOURCES
     ${HLE_D3D8_DIR}/hle_native_resources.c
     ${HLE_D3D8_DIR}/hle_native_states.c
     ${HLE_D3D8_DIR}/hle_native_create.c
-    src/game_hooks.c
+    ${GAME_HOOKS_SOURCE}
     ${HLE_D3D8_DIR}/hle_nv2a_watch.c
     ${HLE_D3D8_DIR}/hle_device.c
 )
