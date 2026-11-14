@@ -72,13 +72,14 @@ GPL-2.0-or-later — DSP interpreter extracted from xemu
   src/apu/dsp/COPYING.GPL-2.0. src/apu/apu_dsp_real.c is adapted from xemu's
   LGPL source at the same revision.
 
-  Unlike the LGPL files above, the GPL does not allow linking this code into
-  an MIT-licensed program without the combined work being distributed under
-  the GPL. It is built into xbox_apu (src/apu/CMakeLists.txt). Until the
-  project's owner decides how to resolve that (relicense the combined work,
-  make the DSP interpreter an optional component that is not built by
-  default, or replace it), treat any binary that links xbox_apu as subject
-  to GPL-2.0-or-later.
+  Licensing of the combination: this repository's own files stay under the
+  MIT license (LICENSE), which is compatible with the GPL. The GPL files keep
+  their license. A program that links xbox_apu (directly or through
+  the audio library; src/apu/CMakeLists.txt builds the interpreter into it)
+  is a combined work, and its binaries are distributed under
+  GPL-2.0-or-later: whoever distributes such a binary must offer the
+  complete corresponding source under those terms. The MIT license alone
+  describes only builds that leave src/apu/dsp/interp out.
 
 
 Derived algorithms — credited, independently implemented

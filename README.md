@@ -93,4 +93,12 @@ Each port at the furthest point it reaches today.
 ## Upstream
 
 This repository is a fork of [sp00nznet/xboxrecomp](https://github.com/sp00nznet/xboxrecomp); its documentation (pipeline, runtime, tools) is
-in that project's README and in `docs/`. The original license and credits apply unchanged. The DSP sources in `src/apu/dsp/` come from xemu under GPL-2.0/LGPL-2.1 (see `src/apu/dsp/UPSTREAM.md`).
+in that project's README and in `docs/`. The original license and credits apply unchanged.
+
+## License
+
+The repository's own code is under the MIT license ([LICENSE](LICENSE)). It also carries code from xemu under
+LGPL-2.1-or-later and, in `src/apu/dsp/`, a DSP interpreter under GPL-2.0-or-later (files, authors and revision
+in [NOTICE](NOTICE) and `src/apu/dsp/UPSTREAM.md`). **A binary that links the audio processing library (`xbox_apu`), and with it
+that interpreter, is distributed under GPL-2.0-or-later**; the MIT terms alone apply only to a build without
+`src/apu/dsp/interp`.
