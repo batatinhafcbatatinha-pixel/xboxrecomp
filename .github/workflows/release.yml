@@ -1,0 +1,134 @@
+name: Release
+# A release of this repository: one ZIP per platform with the source as a player needs it (submodules filled) and,
+# in the Windows ZIP, the newest Launcher.exe of port-installer at the root. Runs on every push to the default
+# branch, by hand, and daily; the daily and manual runs publish only when the source or the launcher changed.
+# Tags: v<YYYY.MM.DD>.<run number> (one per published build, never moved or deleted); the newest is "latest", so
+# https://github.com/<repo>/releases/latest/download/<name>-<platform>.zip always points at it.
+on:
+  push:
+    branches: [ports]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Publish even when neither the source nor the launcher changed
+        type: boolean
+        default: false
+  schedule:
+    - cron: '35 4 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+env:
+  NAME: xboxrecomp
+  LAUNCHER_REPO: batatinhafcbatatinha-pixel/port-installer
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.plan.outputs.publish }}
+      tag: ${{ steps.plan.outputs.tag }}
+      launcher_tag: ${{ steps.plan.outputs.launcher_tag }}
+      launcher_sha256: ${{ steps.plan.outputs.launcher_sha256 }}
+    steps:
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          ltag=$(gh release view -R "$LAUNCHER_REPO" --json tagName -q .tagName)
+          curl -fsSL --retry 5 --retry-all-errors -o Launcher.exe "https://github.com/$LAUNCHER_REPO/releases/download/$ltag/Launcher.exe"
+          [ "$(head -c 2 Launcher.exe)" = "MZ" ] || { echo "Launcher.exe is not a Windows program"; exit 1; }
+          lsha=$(sha256sum Launcher.exe | cut -d' ' -f1)
+          prev=$(gh release view -R "$GITHUB_REPOSITORY" --json body -q .body 2>/dev/null || true)
+          publish=true
+          if [ "$GITHUB_EVENT_NAME" != push ] && [ "$FORCE" != true ] \
+             && grep -qF "source: $GITHUB_SHA" <<<"$prev" && grep -qF "launcher: $ltag $lsha" <<<"$prev"; then
+            publish=false
+            echo "Nothing changed since the newest release (source $GITHUB_SHA, launcher $ltag): not publishing."
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "tag=v$(date -u +%Y.%m.%d).$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "launcher_tag=$ltag" >> "$GITHUB_OUTPUT"
+          echo "launcher_sha256=$lsha" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher
+          path: Launcher.exe
+  zip:
+    needs: plan
+    if: needs.plan.outputs.publish == 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { platform: windows, os: windows-latest }
+          - { platform: linux, os: ubuntu-latest }
+          - { platform: macos, os: ubuntu-latest }
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Text files as the platform expects them: CRLF in the Windows ZIP, LF in the others (.gitattributes wins).
+      # --system: actions/checkout runs git with its own HOME, so a --global setting would not reach it.
+      - if: matrix.platform == 'windows'
+        run: git config --system core.autocrlf true
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/download-artifact@v4
+        with:
+          name: launcher
+          path: launcher
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - shell: bash
+        run: >-
+          python .github/scripts/release_zip.py --name "$NAME" --platform "${{ matrix.platform }}" --sha "$GITHUB_SHA"
+          --launcher launcher/Launcher.exe --launcher-tag "${{ needs.plan.outputs.launcher_tag }}"
+          --out "out/$NAME-${{ matrix.platform }}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zip-${{ matrix.platform }}
+          path: out/*.zip
+  release:
+    needs: [plan, zip]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: zip-*
+          path: out
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          LTAG: ${{ needs.plan.outputs.launcher_tag }}
+          LSHA: ${{ needs.plan.outputs.launcher_sha256 }}
+        run: |
+          set -euo pipefail
+          cd out
+          for z in *.zip; do
+            echo "== $z"; unzip -l "$z" | tail -n 1
+            # one top folder, no directory entries (so no empty folders), Launcher.exe only in the Windows ZIP
+            [ "$(unzip -Z1 "$z" | cut -d/ -f1 | sort -u)" = "$NAME" ]
+            if unzip -Z1 "$z" | grep '/$' >/dev/null; then echo "$z has directory entries"; exit 1; fi
+            case "$z" in
+              *-windows.zip)
+                [ "$(unzip -p "$z" "$NAME/Launcher.exe" | sha256sum | cut -d' ' -f1)" = "$LSHA" ]
+                [ "$(unzip -p "$z" "$NAME/Launcher.cmd" | tr -cd '\r' | wc -c)" -gt 0 ]   # CRLF for cmd.exe
+                ;;
+              *) if unzip -Z1 "$z" | grep -x "$NAME/Launcher.exe" >/dev/null; then exit 1; fi ;;
+            esac
+          done
+          notes="$NAME built from the source of commit $GITHUB_SHA.
+          xboxrecomp-windows.zip: the source and Launcher.exe. xboxrecomp-linux.zip / xboxrecomp-macos.zip: the same source with LF line endings and no launcher (it is a Windows program); build as docs/GETTING_STARTED.md describes for Linux / macOS (OpenGL backend, less complete than Windows).
+          Unzip and keep the folder; the Windows ZIP has Launcher.exe at its root, next to launcher.json.
+          Source code and configuration only: no game data, no generated game code. The game always comes from your own disc.
+
+          source: $GITHUB_SHA
+          launcher: $LTAG $LSHA"
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$NAME $TAG" --notes "$notes" --latest
+          gh release upload "$TAG" *.zip -R "$GITHUB_REPOSITORY" --clobber

@@ -1,5 +1,7 @@
 # xboxrecomp (fork with game ports)
 
+**Download:** [Windows](https://github.com/batatinhafcbatatinha-pixel/xboxrecomp/releases/latest/download/xboxrecomp-windows.zip) (source + `Launcher.exe`: unzip, open `Launcher.exe`) · [Linux](https://github.com/batatinhafcbatatinha-pixel/xboxrecomp/releases/latest/download/xboxrecomp-linux.zip) · [macOS](https://github.com/batatinhafcbatatinha-pixel/xboxrecomp/releases/latest/download/xboxrecomp-macos.zip) (source only, LF line endings, no launcher: build as [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) says).
+
 Fork of [sp00nznet/xboxrecomp](https://github.com/sp00nznet/xboxrecomp) (v0.13.1) with native PC ports of original-Xbox
 games in [`games/`](games/) and a launcher that builds and starts them from **your own disc**. No game content (disc
 image, executable, data or generated code) is in this repository.
