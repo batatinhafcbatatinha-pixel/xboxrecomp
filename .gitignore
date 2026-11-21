@@ -43,3 +43,6 @@ tools/split/output/
 
 # Local overlays: hand-written native versions of game functions, never published (PROVENANCE rule 3).
 /games/**/local/
+
+# tools.capture output holds extracted game bytes
+cases/local/

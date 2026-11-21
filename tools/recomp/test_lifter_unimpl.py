@@ -23,8 +23,11 @@ The third is the negative control: without it a change that put RECOMP_UNIMPL
 on every unhandled mnemonic including the deliberate ones would pass the first
 two and flood the [UNIMPL] log with `prefetch`.
 """
+import contextlib
+import io
 import unittest
 
+from .__main__ import _report_unimplemented
 from .disasm import Instruction, Operand
 from .lifter import Lifter
 
@@ -83,15 +86,40 @@ class UnimplementedMarkerTest(unittest.TestCase):
         self.assertNotIn("TODO", out)
         self.assertEqual(lifter.unimplemented, {})
 
-    def test_port_reads_clear_the_destination(self):
-        lifter, out = _lift("in", "al, dx", [_reg("al"), _reg("dx")])
-        self.assertEqual(out, "SET_LO8(eax, 0); /* in port: no host device */")
+    def test_writeback_cache_flush_uses_coherent_host_memory(self):
+        lifter, out = _lift("wbinvd")
+        self.assertNotIn("RECOMP_UNIMPL", out)
+        self.assertIn("coherent host memory", out)
         self.assertEqual(lifter.unimplemented, {})
 
-    def test_port_writes_are_explicit_noops(self):
-        lifter, out = _lift("out", "dx, al", [_reg("dx"), _reg("al")])
-        self.assertEqual(out, "/* out port: host device bridge */")
-        self.assertEqual(lifter.unimplemented, {})
+
+class UnimplementedReportTest(unittest.TestCase):
+
+    def test_summary_describes_runtime_calls(self):
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            _report_unimplemented({
+                "unimplemented": {
+                    "daa": [0x12340, 0x12350],
+                    "hlt": [0xABCDEF],
+                },
+            })
+
+        report = stderr.getvalue()
+        self.assertIn(
+            "3 instruction(s) unimplemented, emitted as RECOMP_UNIMPL "
+            "runtime calls (2 distinct mnemonics):",
+            report,
+        )
+        self.assertNotIn("no-op comments", report)
+        self.assertIn("2  daa", report)
+        self.assertIn("1  hlt", report)
+
+    def test_empty_summary_is_silent(self):
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            _report_unimplemented({})
+        self.assertEqual(stderr.getvalue(), "")
 
 
 if __name__ == "__main__":

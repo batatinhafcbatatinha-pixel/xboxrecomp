@@ -11,8 +11,10 @@ import validate_game  # noqa: E402
 
 # Native D3D8 -> D3D11/Vulkan, DirectSound -> host audio, XInput -> host pads; no console device threads.
 PROFILE = {'RECOMP_HLE_PRIMARY': '1', 'RECOMP_HLE_NOGPU': '1', 'RECOMP_AUDIO_NATIVE': '1', 'RECOMP_DS_NATIVE': '1',
-           'RECOMP_INPUT_NATIVE': '1', 'RECOMP_VBLANK': '1', 'RECOMP_TITLE_KEVENTS': '1', 'RECOMP_GUEST_LOCK': '1',
-           'RECOMP_GPU': 'd3d11', 'RECOMP_KEYBOARD': '1'}
+           'RECOMP_INPUT_NATIVE': '1', 'RECOMP_VBLANK': '1', 'RECOMP_TITLE_KEVENTS': '1', 'RECOMP_PORT_GUEST_LOCK': '1',
+           'RECOMP_GPU': 'd3d11', 'RECOMP_KEYBOARD': '1',
+           # FIFA layout on the keyboard map (src/input/keyboard.c)
+           'RECOMP_KEYMAP': 'a=L,Enter;b=semicolon,Backspace;x=K;y=O;right_trigger=P;start=Enter,Escape;back=Tab;right_stick_up=none;right_stick_down=none;right_stick_left=none;right_stick_right=none'}
 
 
 def main():

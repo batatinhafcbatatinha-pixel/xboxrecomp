@@ -40,7 +40,8 @@ SITE = 0x00010040
 
 
 def _cc():
-    return shutil.which("clang") or shutil.which("gcc") or shutil.which("cc")
+    from tools.recomp.c_fixture import compiler
+    return compiler()
 
 
 def _macro(name):
@@ -75,7 +76,7 @@ typedef void (*recomp_func_t)(void);
 volatile uint32_t g_icall_trace[ICALL_TRACE_SIZE], g_icall_trace_idx;
 volatile uint64_t g_icall_count;
 uint32_t g_xbox_code_lo = 0x00010000u, g_xbox_code_hi = 0x00020000u;
-uint32_t g_esp, eax;
+uint32_t g_esp, eax, g_ebp, g_seh_ebp;
 #define esp g_esp
 #define PUSH32(sp, v) do { (sp) -= 4; } while (0)
 #define RECOMP_ICALL_OBSERVE(va, flags) ((void)0)
@@ -128,11 +129,12 @@ int main(void) {
 """
 
 
-def _run(tmp, srcs, extra=()):
+def _run(tmp, srcs, *, defines=(), include_dirs=()):
+    from tools.recomp.c_fixture import command
     exe = os.path.join(tmp, "t.exe")
-    r = subprocess.run([_cc(), "-w", *extra, *srcs, "-o", exe],
-                       capture_output=True, text=True)
-    assert r.returncode == 0, r.stderr[-3000:]
+    r = subprocess.run(command(_cc(), srcs, exe, defines=defines, include_dirs=include_dirs),
+                       cwd=tmp, capture_output=True, text=True)
+    assert r.returncode == 0, (r.stdout + r.stderr)[-3000:]
     r = subprocess.run([exe], capture_output=True, text=True, cwd=tmp)
     return r
 
@@ -177,7 +179,7 @@ def test_runtime_site_dump_round_trips_through_the_merge_parser():
         with open(p, "w") as f:
             f.write(RECORDER)
         r = _run(tmp, [p, FEEDBACK_C],
-                 ["-DRECOMP_ICALL_FEEDBACK", "-I", FEEDBACK_H_DIR])
+                 defines=['RECOMP_ICALL_FEEDBACK'], include_dirs=[FEEDBACK_H_DIR])
         assert r.returncode == 0, r.stdout + r.stderr
         sites = parse_sites_dump(os.path.join(tmp, "icall_sites.dump"))
         assert sites[0x00010040] == ({0x00011000}, False)

@@ -114,7 +114,7 @@ def main():
         raise RuntimeError('Wrong Black executable identity')
     if args.stage == 'generate':
         analyze()
-        run([sys.executable, '-u', '-m', 'tools.recomp', ROOT / 'default.xbe', '--all',
+        run([sys.executable, '-u', '-m', 'tools.recomp', '--guest-cpu-yield', ROOT / 'default.xbe', '--all',
              '--game-name', 'Black USA', '--disasm-dir', ROOT / 'analysis/disasm',
              '--func-id-dir', ROOT / 'analysis/func-id', '--split', '128',
              '--gen-dir', PROJECT / 'src/recomp/gen', '-o', ROOT / 'analysis/aot'],

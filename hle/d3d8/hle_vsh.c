@@ -7,7 +7,7 @@
  * Xbox vertex shader microcode -> HLSL vertex shader for the native D3D11
  * pipeline of the HLE backend.
  *
- * Instruction semantics follow xboxrecomp's nv2a_vsh_translate.c (compute
+ * Instruction semantics follow the NV2A vertex-shader translator the toolkit had (compute
  * version, validated against the interpreter); this one is a graphics-stage
  * VS that pulls its inputs itself (SV_VertexID + ByteAddressBuffer), so any
  * Xbox vertex format works without an input layout per declaration.

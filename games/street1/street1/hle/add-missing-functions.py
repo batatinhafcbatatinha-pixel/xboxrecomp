@@ -28,7 +28,7 @@ disasm, func_id, abi = sys.argv[1:4]
 
 bodies = []
 for a in MISSING:
-    out = subprocess.run([str(python), '-m', 'tools.recomp', str(xbe), '-f', f'0x{a:X}',
+    out = subprocess.run([str(python), '-m', 'tools.recomp', '--guest-cpu-yield', str(xbe), '-f', f'0x{a:X}',
                           '--game-name', 'FIFA Street', '--disasm-dir', disasm,
                           '--func-id-dir', func_id, '--abi-dir', abi],
                          cwd=Path(__file__).resolve().parents[4], capture_output=True, text=True, check=True).stdout

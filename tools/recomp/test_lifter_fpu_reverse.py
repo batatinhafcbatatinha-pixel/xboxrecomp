@@ -64,11 +64,11 @@ class FpuReverseFormTest(unittest.TestCase):
 
     def test_transcendentals_emit_statements_rather_than_comments(self):
         for mnemonic, expected in (
-            ("fpatan", "atan2(fp_st1(), fp_top())"),
+            ("fpatan", "recomp_atan2(fp_st1(), fp_top())"),
             ("fsin", "sin(fp_top())"),
             ("fcos", "cos(fp_top())"),
             ("frndint", "recomp_frndint(fp_top(), g_fp_control_word)"),
-            ("fyl2x", "log2(fp_top())"),
+            ("fyl2x", "recomp_log2(fp_top())"),
         ):
             with self.subTest(mnemonic=mnemonic):
                 lifted = _lift(mnemonic, "", [])
@@ -76,8 +76,8 @@ class FpuReverseFormTest(unittest.TestCase):
                 self.assertNotIn("/* FPU:", lifted[0])
 
     def test_fptan_pushes_the_implicit_one(self):
-        """FPTAN leaves tan(x) and then 1.0 on the stack."""
-        self.assertIn("fp_push(1.0);", _lift("fptan", "", [])[0])
+        """FPTAN leaves tan(x) and then 1.0 (NaN for a non-finite x)."""
+        self.assertIn("fp_push(isfinite(_a) ? 1.0 : _a - _a);", _lift("fptan", "", [])[0])
 
 
 if __name__ == "__main__":

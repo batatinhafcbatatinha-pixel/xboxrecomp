@@ -11,6 +11,14 @@
  * whatever the guest actually wrote, so the fewer stages between guest memory
  * and the screen the better -- and it must keep working while the D3D8 layer
  * is busy with something else, such as the FMV player's own window.
+ * RECOMP_D3D_PRESENT=1 shows the same frames through a D3D11 swap chain of
+ * the window's own instead (gpu_present.c): scaled on the GPU, vsync-paced.
+ *
+ * The window opens at RECOMP_WINDOW_SCALE times the frame (default 2, made
+ * smaller until it fits the desktop) and can be resized; the frame is
+ * letterboxed to its 4:3 shape. F11 or Alt+Enter toggles borderless
+ * fullscreen, RECOMP_FULLSCREEN=1 starts in it. Closing the window ends the
+ * process, as the SDL window does.
  *
  * Off unless RECOMP_FB_WINDOW is set.
  */
@@ -21,6 +29,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+/* Which keys are down, for the pad stand-in in src/input: this window
+ * records them in the shared key table (src/input/keyboard.c).
+ *
+ * GetAsyncKeyState looked like the cheaper way to ask and does not work
+ * here: it reads a state Wine keeps for the X server, and a guest process
+ * drawing through GDI never sees it change. The window that has the focus
+ * is the thing that receives the keys, so that is what has to remember
+ * them. */
+#include "keyboard.h"   /* src/input */
+#include "gpu_present.h"
+#include "recomp_exit_hook.h"   /* src/platform */
+#include <stdbool.h>
+#include "pvideo_scanout.h"
+#include "../nv2a/nv2a_mmio_hook.h"
 
 extern ptrdiff_t xbox_GetMemoryOffset(void);
 
@@ -37,39 +59,74 @@ static uint32_t     *s_rgb;           /* converted 32-bit copy for GDI */
  * finished frame once per flip means the window never reads memory the
  * rasteriser is writing, so what it shows cannot be half of anything.
  *
- * The publication lock covers both producer writes and consumer snapshots:
- * an index swap alone cannot prevent a fast producer reusing a buffer that
- * the window is still copying two flips later. */
+ * The lock also protects the window's copy: two flips can otherwise reuse
+ * the buffer the window is still reading. */
 static uint32_t     *s_present[2];
-static volatile LONG s_present_idx = -1;   /* -1 until the first flip */
-static CRITICAL_SECTION s_present_lock;
-static INIT_ONCE s_present_once = INIT_ONCE_STATIC_INIT;
-static HANDLE s_present_event;             /* auto-reset; latest frame wins */
+static LONG          s_present_idx = -1;   /* -1 until the first flip */
+static SRWLOCK       s_present_lock = SRWLOCK_INIT;
 
-static BOOL CALLBACK fb_publication_init(PINIT_ONCE once, PVOID param, PVOID *ctx)
-{
-    (void)once; (void)param; (void)ctx;
-    InitializeCriticalSection(&s_present_lock);
-    s_present_event = CreateEventW(NULL, FALSE, FALSE, NULL);
-    return TRUE;
-}
+/* The last PVIDEO frame shown. A frame stays on screen until the next one or
+ * STOP, but once its bank is consumed the title may reuse the memory, so the
+ * pixels are kept here rather than read again. */
+static uint8_t      *s_pvideo_source;
+static size_t        s_pvideo_bytes;
+static unsigned      s_pvideo_bank;
+static uint32_t      s_pvideo_regs[0x1000 / 4];
 
-static void fb_publication_ready(void)
+/* Draw the video overlay over s_rgb: a newly submitted bank if there is one
+ * (copied, drawn, then handed back to the title), else the last frame. */
+static void fb_overlay(void)
 {
-    InitOnceExecuteOnce(&s_present_once, fb_publication_init, NULL, NULL);
-}
+    uint32_t regs[0x1000 / 4];
+    unsigned bank;
+    bool presented = false;
 
-static int fb_snapshot(uint32_t *dst)
-{
-    int available = 0;
-    fb_publication_ready();
-    EnterCriticalSection(&s_present_lock);
-    if (s_present_idx >= 0 && s_present[s_present_idx]) {
-        memcpy(dst, s_present[s_present_idx], (size_t)s_fb_width * s_fb_height * 4);
-        available = 1;
+    if (!s_rgb || !nv2a_hook_pvideo_snapshot(regs)) return;
+    if ((regs[NV_PVIDEO_STOP / 4] & 1u) ||
+        (s_pvideo_source &&
+         regs[(NV_PVIDEO_SIZE_IN + s_pvideo_bank * 4) / 4] == UINT32_MAX)) {
+        free(s_pvideo_source);
+        s_pvideo_source = NULL;
+        if (regs[NV_PVIDEO_STOP / 4] & 1u) return;
     }
-    LeaveCriticalSection(&s_present_lock);
-    return available;
+    for (bank = 0; bank < 2; ++bank) {
+        uint64_t physical = (uint64_t)regs[(NV_PVIDEO_BASE + bank * 4) / 4] +
+                            regs[(NV_PVIDEO_OFFSET + bank * 4) / 4];
+        unsigned pitch = regs[(NV_PVIDEO_FORMAT + bank * 4) / 4] & NV_PVIDEO_FORMAT_PITCH;
+        unsigned height = (regs[(NV_PVIDEO_SIZE_IN + bank * 4) / 4] >> 16) & 0x7ff;
+        uint64_t bytes = (uint64_t)pitch * height;
+        uintptr_t va;
+        MEMORY_BASIC_INFORMATION mapping;
+        uint8_t *snapshot;
+
+        if (!(regs[NV_PVIDEO_BUFFER / 4] & (1u << (bank * 4u)))) continue;
+        if (!bytes || physical + bytes > 0x04000000u) continue;
+        va = (uintptr_t)(0x80000000u + (uint32_t)physical) +
+             (uintptr_t)xbox_GetMemoryOffset();
+        if (!VirtualQuery((const void *)va, &mapping, sizeof(mapping)) ||
+            mapping.State != MEM_COMMIT ||
+            (mapping.Protect & (PAGE_GUARD | PAGE_NOACCESS)) ||
+            bytes > mapping.RegionSize - (size_t)(va - (uintptr_t)mapping.BaseAddress))
+            continue;
+        snapshot = (uint8_t *)malloc((size_t)bytes);
+        if (!snapshot) continue;
+        memcpy(snapshot, (const void *)va, (size_t)bytes);
+        if (!pvideo_scanout(regs, snapshot, (size_t)bytes, s_rgb,
+                            s_fb_width, s_fb_height, bank)) {
+            free(snapshot);
+            continue;
+        }
+        free(s_pvideo_source);
+        s_pvideo_source = snapshot;
+        s_pvideo_bytes = (size_t)bytes;
+        s_pvideo_bank = bank;
+        memcpy(s_pvideo_regs, regs, sizeof(s_pvideo_regs));
+        presented = true;
+        nv2a_hook_pvideo_consume(bank);
+    }
+    if (!presented && s_pvideo_source)
+        pvideo_scanout(s_pvideo_regs, s_pvideo_source, s_pvideo_bytes, s_rgb,
+                       s_fb_width, s_fb_height, s_pvideo_bank);
 }
 
 void xbox_FramebufferWindowSet(uint32_t fb_va, uint32_t pitch)
@@ -85,60 +142,52 @@ void xbox_FramebufferWindowSet(uint32_t fb_va, uint32_t pitch)
         s_fb_pitch = pitch;
 }
 
+/* Vertical anti-aliasing factor of the surface being shown: 2 for 2x2, where
+ * the surface has twice the rows as well as twice the columns, and 1 for
+ * everything else (2x1 included). Only the pushbuffer executor knows it. */
+static uint32_t s_fb_aa_sy = 1;
+
+void xbox_FramebufferWindowSetAA(uint32_t sy)
+{
+    s_fb_aa_sy = sy ? sy : 1;
+}
+
 /* Called by the pushbuffer executor when the title flips. */
-void xbox_FramebufferWindowPresentSurface(uint32_t fb_va, uint32_t pitch,
-                                           uint32_t bpp, uint32_t sx, uint32_t sy)
+void xbox_FramebufferWindowPresent(uint32_t fb_va, uint32_t pitch)
 {
     const uint8_t *src;
     LONG next;
-    uint32_t x, y;
+    uint32_t bpp, x, y;
 
     if (!s_fb_running || !fb_va || !pitch)
         return;
     if (getenv("RECOMP_FB_VA"))
         return;                       /* pinned: leave the old path alone */
-    if (!sx || !sy || (bpp != 2 && bpp != 4)) return;
-    fb_publication_ready();
-    EnterCriticalSection(&s_present_lock);
+    AcquireSRWLockExclusive(&s_present_lock);
     next = (s_present_idx == 0) ? 1 : 0;
     if (!s_present[next]) {
         s_present[next] = (uint32_t *)calloc((size_t)s_fb_width * s_fb_height,
                                              4);
         if (!s_present[next]) {
-            LeaveCriticalSection(&s_present_lock);
+            ReleaseSRWLockExclusive(&s_present_lock);
+            fprintf(stderr, "  [FBWIN] cannot allocate a presentation frame\n");
             return;
         }
     }
+    bpp = pitch / s_fb_width;
     src = (const uint8_t *)((uintptr_t)fb_va + xbox_GetMemoryOffset());
     for (y = 0; y < s_fb_height; y++) {
-        const uint8_t *row = src + (size_t)y * sy * pitch;
+        const uint8_t *row = src + (size_t)y * pitch * (bpp == 8 ? s_fb_aa_sy : 1);
         uint32_t *dst = s_present[next] + (size_t)y * s_fb_width;
 
-        if (sx > 1 || sy > 1) {
-            for (x = 0; x < s_fb_width; ++x) {
-                uint32_t sums[3] = {0, 0, 0};
-                for (unsigned iy = 0; iy < sy; ++iy) {
-                    const uint8_t *sample_row = row + (size_t)iy * pitch;
-                    for (unsigned ix = 0; ix < sx; ++ix) {
-                        unsigned col = x * sx + ix;
-                        uint32_t v;
-                        if (bpp == 4) v = ((const uint32_t *)sample_row)[col];
-                        else {
-                            uint16_t t = ((const uint16_t *)sample_row)[col];
-                            v = ((t & 31) * 255 / 31)
-                              | ((((t >> 5) & 63) * 255 / 63) << 8)
-                              | ((((t >> 11) & 31) * 255 / 31) << 16);
-                        }
-                        sums[0] += v & 255;
-                        sums[1] += (v >> 8) & 255;
-                        sums[2] += (v >> 16) & 255;
-                    }
-                }
-                unsigned count = sx * sy;
-                dst[x] = (sums[0] / count) | ((sums[1] / count) << 8) | ((sums[2] / count) << 16);
-            }
-        } else if (bpp == 4) {
+        if (bpp == 4) {
             memcpy(dst, row, (size_t)s_fb_width * 4);
+        } else if (bpp == 8) {
+            /* 2x-wide anti-aliased 32-bit surface: every other pixel, as in
+             * fb_convert. */
+            const uint32_t *p = (const uint32_t *)row;
+            for (x = 0; x < s_fb_width; x++)
+                dst[x] = p[x * 2];
         } else if (bpp == 2) {
             const uint16_t *p = (const uint16_t *)row;
             for (x = 0; x < s_fb_width; x++) {
@@ -152,29 +201,23 @@ void xbox_FramebufferWindowPresentSurface(uint32_t fb_va, uint32_t pitch,
             memset(dst, 0, (size_t)s_fb_width * 4);
         }
     }
-    /* Published only once it is whole. */
-    InterlockedExchange(&s_present_idx, next);
-    LeaveCriticalSection(&s_present_lock);
-    if (s_present_event) SetEvent(s_present_event);
+    s_present_idx = next;
+    ReleaseSRWLockExclusive(&s_present_lock);
 }
 
-void xbox_FramebufferWindowPresent(uint32_t fb_va, uint32_t pitch)
+static int fb_copy_presented_frame(uint32_t *dst)
 {
-    xbox_FramebufferWindowPresentSurface(fb_va, pitch, pitch / s_fb_width, 1, 1);
-}
+    int copied = 0;
 
-/* Which keys are down, for the pad stand-in in src/input.
- *
- * GetAsyncKeyState looked like the cheaper way to ask and does not work
- * here: it reads a state Wine keeps for the X server, and a guest process
- * drawing through GDI never sees it change. The window that has the focus
- * is the thing that receives the keys, so that is what has to remember
- * them.
- *
- * Reading this needs no lock. Each entry is written only by the window
- * thread and read only by the USB thread, one byte at a time, and a press
- * seen a frame late is indistinguishable from one made a frame later. */
-static volatile unsigned char s_key_down[256];
+    AcquireSRWLockShared(&s_present_lock);
+    if (s_present_idx >= 0) {
+        memcpy(dst, s_present[s_present_idx],
+               (size_t)s_fb_width * s_fb_height * 4);
+        copied = 1;
+    }
+    ReleaseSRWLockShared(&s_present_lock);
+    return copied;
+}
 
 /* Title bar, the way ps3recomp's window shows it. Written by the flip,
  * read once a second by the window thread; a torn read shows one stale
@@ -198,35 +241,76 @@ void xbox_FramebufferWindowFrameStats(uint32_t draws)
     InterlockedExchange(&s_frame_draws, (LONG)draws);
 }
 
-/* Keyboard from another window -- the native renderer's, when it is the one
- * on screen (RECOMP_HLE_PRIMARY). vk < 0 releases every key (focus lost). */
-void xbox_FramebufferKeyEvent(int vk, int down)
+/* Alt+Enter / F11: borderless fullscreen on the window's monitor, and back.
+ * (DXGI's own Alt+Enter, exclusive mode at the frame's 640x480, is off --
+ * gpu_present.c; both presenters letterbox to any size.) */
+static void fb_toggle_fullscreen(HWND h)
 {
-    if (vk < 0)
-        memset((void *)s_key_down, 0, sizeof s_key_down);
-    else if (vk < 256)
-        s_key_down[vk] = (uint8_t)(down != 0);
-}
-
-int xbox_FramebufferKeyDown(int vk)
-{
-    if ((unsigned)vk > 255)
-        return 0;
-    return s_key_down[vk] != 0;
+    static int full;
+    static RECT saved;
+    static LONG_PTR saved_style;
+    if (!full) {
+        MONITORINFO mi;
+        mi.cbSize = sizeof mi;
+        if (!GetMonitorInfoA(MonitorFromWindow(h, MONITOR_DEFAULTTONEAREST), &mi))
+            return;
+        GetWindowRect(h, &saved);
+        saved_style = GetWindowLongPtrA(h, GWL_STYLE);
+        SetWindowLongPtrA(h, GWL_STYLE, (saved_style & ~WS_OVERLAPPEDWINDOW) | WS_POPUP);
+        SetWindowPos(h, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top,
+                     mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
+                     SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+        full = 1;
+    } else {
+        SetWindowLongPtrA(h, GWL_STYLE, saved_style);
+        SetWindowPos(h, NULL, saved.left, saved.top, saved.right - saved.left,
+                     saved.bottom - saved.top, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_SHOWWINDOW);
+        full = 0;
+    }
 }
 
 static LRESULT CALLBACK fb_wndproc(HWND h, UINT m, WPARAM w, LPARAM l)
 {
+    /* First press only (bit 30: the key was already down), and with Alt held
+     * (bit 29) for Enter; neither reaches the key table. */
+    if ((m == WM_SYSKEYDOWN && w == VK_RETURN && (l & (1 << 29)) && !(l & (1 << 30)))
+        || (m == WM_KEYDOWN && w == VK_F11 && !(l & (1 << 30)))) {
+        fb_toggle_fullscreen(h);
+        return 0;
+    }
+    if (m == WM_SYSKEYDOWN && w == VK_RETURN)
+        return 0;                       /* auto-repeat of Alt+Enter */
     switch (m) {
     case WM_CLOSE:
     case WM_DESTROY:
+        /* Closing the window ends the run. Only stopping this thread left
+         * every other one running -- audio played on, and the process had
+         * to be ended from Task Manager. The guest has no exit path of its
+         * own to ask. TerminateProcess rather than ExitProcess: the guest
+         * threads are still running, and ExitProcess's cleanup can wait on
+         * a lock one of them held. The exit hook does the reporting that
+         * would otherwise be skipped. RECOMP_CLOSE_KEEPS_RUNNING=1 only
+         * closes the window, as before. */
         InterlockedExchange(&s_fb_running, 0);
+        if (!getenv("RECOMP_CLOSE_KEEPS_RUNNING")) {
+            fprintf(stderr, "  [FBWIN] window closed: exiting\n");
+            recomp_exit_hook_run("window");
+            fflush(stdout);
+            fflush(stderr);
+            TerminateProcess(GetCurrentProcess(), 0);
+        }
         return 0;
 
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
-        if ((unsigned)w < 256)
-            s_key_down[w] = 1;
+        xbox_InputKeySet((int)w, 1);
+        /* A Shift, Ctrl or Alt is also its side's key, for bindings to
+         * "lshift" and the like; wParam stays the either-side one. */
+        {
+            int side = xbox_InputWin32SideVk((int)w, (uint32_t)l);
+            if (side)
+                xbox_InputKeySet(side, 1);
+        }
         /* RECOMP_KEY_TRACE: each key as it arrives, edge-triggered.
          *
          * The obvious diagnostic -- sampling which keys are held, once a
@@ -247,13 +331,43 @@ static LRESULT CALLBACK fb_wndproc(HWND h, UINT m, WPARAM w, LPARAM l)
 
     case WM_KEYUP:
     case WM_SYSKEYUP:
-        if ((unsigned)w < 256)
-            s_key_down[w] = 0;
+        xbox_InputKeySet((int)w, 0);
+        {
+            int side = xbox_InputWin32SideVk((int)w, (uint32_t)l);
+            if (side)
+                xbox_InputKeySet(side, 0);
+            /* With both Shifts down Windows sends one key-up, for the
+             * last released, so the other side would stay held. Autorepeat
+             * sets a Shift still down again. */
+            if (w == VK_SHIFT) {
+                xbox_InputKeySet(VK_LSHIFT, 0);
+                xbox_InputKeySet(VK_RSHIFT, 0);
+            }
+        }
         return m == WM_SYSKEYUP ? DefWindowProcA(h, m, w, l) : 0;
+
+    /* Mouse buttons go in the same table, for bindings that name them.
+     * Capturing the mouse while one is down delivers its release even
+     * outside the window. */
+    case WM_LBUTTONDOWN: case WM_LBUTTONUP:
+    case WM_RBUTTONDOWN: case WM_RBUTTONUP:
+    case WM_MBUTTONDOWN: case WM_MBUTTONUP:
+    case WM_XBUTTONDOWN: case WM_XBUTTONUP:
+        {
+            int down = 0;
+            int vk = xbox_InputWin32MouseVk(m, (uint32_t)w, &down);
+            if (vk)
+                xbox_InputKeySet(vk, down);
+            if (down)
+                SetCapture(h);
+            else if (!(w & (MK_LBUTTON | MK_RBUTTON | MK_MBUTTON | MK_XBUTTON1 | MK_XBUTTON2)))
+                ReleaseCapture();
+        }
+        return m == WM_XBUTTONDOWN || m == WM_XBUTTONUP ? TRUE : 0;
 
     /* Alt-tabbing away with a key held would leave it held for ever. */
     case WM_KILLFOCUS:
-        memset((void *)s_key_down, 0, sizeof s_key_down);
+        xbox_InputKeysClear();
         return 0;
     }
     return DefWindowProcA(h, m, w, l);
@@ -267,11 +381,20 @@ static void fb_convert(const uint8_t *src, uint32_t bpp)
     uint32_t x, y;
 
     for (y = 0; y < s_fb_height; y++) {
-        const uint8_t *row = src + (size_t)y * s_fb_pitch;
+        const uint8_t *row = src + (size_t)y * s_fb_pitch
+                           * (bpp == 8 ? s_fb_aa_sy : 1);
         uint32_t *dst = s_rgb + (size_t)y * s_fb_width;
 
         if (bpp == 4) {
             memcpy(dst, row, (size_t)s_fb_width * 4);
+        } else if (bpp == 8) {
+            /* A 2x-wide anti-aliased 32-bit surface (pitch = 2 * width * 4):
+             * take every other pixel. X-Men Legends renders its 640-wide
+             * frame into a 1280-wide surface, which read as "8 bytes per
+             * pixel" and showed black. */
+            const uint32_t *p = (const uint32_t *)row;
+            for (x = 0; x < s_fb_width; x++)
+                dst[x] = p[x * 2];
         } else if (bpp == 2) {
             const uint16_t *p = (const uint16_t *)row;
             for (x = 0; x < s_fb_width; x++) {
@@ -331,18 +454,52 @@ int xbox_FramebufferDumpBmp(const char *path)
     return 0;
 }
 
+/* GDI: the frame letterboxed into the client area, like the D3D11
+ * presenter; the borders are cleared when the size changes. */
+static void gdi_blit(HWND hwnd, HDC hdc, const BITMAPINFO *bi)
+{
+    static LONG lw, lh;
+    RECT c;
+    LONG cw, ch, w, h;
+    GetClientRect(hwnd, &c);
+    cw = c.right - c.left; ch = c.bottom - c.top;
+    if (cw <= 0 || ch <= 0)
+        return;
+    if (cw != lw || ch != lh) {
+        FillRect(hdc, &c, (HBRUSH)GetStockObject(BLACK_BRUSH));
+        lw = cw; lh = ch;
+    }
+    if ((long long)cw * s_fb_height <= (long long)ch * s_fb_width) {
+        w = cw; h = (LONG)((long long)cw * s_fb_height / s_fb_width);
+    } else {
+        h = ch; w = (LONG)((long long)ch * s_fb_width / s_fb_height);
+    }
+    SetStretchBltMode(hdc, HALFTONE);
+    SetBrushOrgEx(hdc, 0, 0, NULL);     /* HALFTONE wants it after the mode */
+    StretchDIBits(hdc, (cw - w) / 2, (ch - h) / 2, w, h,
+                  0, 0, (int)s_fb_width, (int)s_fb_height,
+                  s_rgb, bi, DIB_RGB_COLORS, SRCCOPY);
+}
+
+/* The converted frame in s_rgb, on screen: D3D11 when it is up (which waits
+ * for vsync, so returns 1 when the loop is already paced), else GDI. */
+static int fb_show(HWND hwnd, HDC hdc, const BITMAPINFO *bi)
+{
+    if (gpu_present_active())
+        return gpu_present_frame(s_rgb);
+    gdi_blit(hwnd, hdc, bi);
+    return 0;
+}
+
 static DWORD WINAPI fb_thread(LPVOID unused)
 {
     HWND hwnd;
     HDC hdc;
     BITMAPINFO bi;
     RECT r;
-    LARGE_INTEGER poll_frequency, next_poll;
+    int fb_pinned;
 
     (void)unused;
-    fb_publication_ready();
-    QueryPerformanceFrequency(&poll_frequency);
-    QueryPerformanceCounter(&next_poll);
 
     {
         WNDCLASSA wc;
@@ -353,18 +510,43 @@ static DWORD WINAPI fb_thread(LPVOID unused)
         wc.lpszClassName = "XboxRecompFramebuffer";
         RegisterClassA(&wc);
     }
-    r.left = 0; r.top = 0; r.right = (LONG)s_fb_width; r.bottom = (LONG)s_fb_height;
-    AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
-    hwnd = CreateWindowExA(0, "XboxRecompFramebuffer", "Xbox Recomp - Framebuffer",
-                           WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                           CW_USEDEFAULT, CW_USEDEFAULT,
-                           r.right - r.left, r.bottom - r.top,
-                           NULL, NULL, GetModuleHandleA(NULL), NULL);
+    {
+        /* RECOMP_WINDOW_SCALE (1-8, default 2, as in the SDL window): the
+         * client area is the frame times this, made smaller until the window
+         * fits the desktop work area, and centred on it. */
+        const char *e = getenv("RECOMP_WINDOW_SCALE");
+        int scale = e ? atoi(e) : 2;
+        RECT work;
+        if (scale < 1 || scale > 8)
+            scale = 2;
+        if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &work, 0)) {
+            work.left = work.top = 0; work.right = 1920; work.bottom = 1080;
+        }
+        for (;; scale--) {
+            r.left = 0; r.top = 0;
+            r.right = (LONG)s_fb_width * scale; r.bottom = (LONG)s_fb_height * scale;
+            AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
+            if (scale <= 1 || (r.right - r.left <= work.right - work.left
+                               && r.bottom - r.top <= work.bottom - work.top))
+                break;
+        }
+        hwnd = CreateWindowExA(0, "XboxRecompFramebuffer", "Xbox Recomp - Framebuffer",
+                               WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+                               work.left + ((work.right - work.left) - (r.right - r.left)) / 2,
+                               work.top + ((work.bottom - work.top) - (r.bottom - r.top)) / 2,
+                               r.right - r.left, r.bottom - r.top,
+                               NULL, NULL, GetModuleHandleA(NULL), NULL);
+    }
     if (!hwnd) {
         InterlockedExchange(&s_fb_running, 0);
         return 0;
     }
     hdc = GetDC(hwnd);
+    {
+        const char *fs = getenv("RECOMP_FULLSCREEN");
+        if (fs && *fs && *fs != '0')
+            fb_toggle_fullscreen(hwnd);
+    }
 
     memset(&bi, 0, sizeof(bi));
     bi.bmiHeader.biSize        = sizeof(bi.bmiHeader);
@@ -375,32 +557,37 @@ static DWORD WINAPI fb_thread(LPVOID unused)
     bi.bmiHeader.biCompression = BI_RGB;
 
     s_rgb = (uint32_t *)calloc((size_t)s_fb_width * s_fb_height, 4);
+    /* A window pinned to one address shows that memory and nothing else. */
+    fb_pinned = getenv("RECOMP_FB_VA") != NULL;
 
     fprintf(stderr, "  [FBWIN] framebuffer window open (%ux%u)\n",
             s_fb_width, s_fb_height);
+    if (gpu_present_enabled())
+        gpu_present_init(hwnd, s_fb_width, s_fb_height);
 
     while (InterlockedCompareExchange(&s_fb_running, 1, 1)) {
         MSG msg;
+        int paced = 0;
         while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessageA(&msg);
         }
-        if (s_rgb && fb_snapshot(s_rgb)) {
+        if (s_rgb && fb_copy_presented_frame(s_rgb)) {
             /* A finished frame, published by the flip. Copied into s_rgb so
              * the dump path and GDI see one consistent image even if the
              * next flip lands mid-blit. */
-            StretchDIBits(hdc, 0, 0, (int)s_fb_width, (int)s_fb_height,
-                          0, 0, (int)s_fb_width, (int)s_fb_height,
-                          s_rgb, &bi, DIB_RGB_COLORS, SRCCOPY);
+            if (!fb_pinned)
+                fb_overlay();
+            paced = fb_show(hwnd, hdc, &bi);
         } else if (s_fb_va && s_fb_pitch && s_rgb) {
             /* No flip yet, or pinned with RECOMP_FB_VA: read guest memory as
              * before, which is also what a title that never flips needs. */
             const uint8_t *src =
                 (const uint8_t *)((uintptr_t)s_fb_va + xbox_GetMemoryOffset());
             fb_convert(src, s_fb_pitch / s_fb_width);
-            StretchDIBits(hdc, 0, 0, (int)s_fb_width, (int)s_fb_height,
-                          0, 0, (int)s_fb_width, (int)s_fb_height,
-                          s_rgb, &bi, DIB_RGB_COLORS, SRCCOPY);
+            if (!fb_pinned)
+                fb_overlay();
+            paced = fb_show(hwnd, hdc, &bi);
         }
         {
             /* One dump a few seconds in, so the title has had time to render
@@ -440,31 +627,17 @@ static DWORD WINAPI fb_thread(LPVOID unused)
                 t0 = now; f0 = f;
             }
         }
-        {
-            DWORD timeout = s_present_event ? 1000 : 16;
-            /* Wake for title statistics, or new frames/messages. If event
-             * allocation failed, retain a bounded presentation fallback. */
-            if (s_present_idx < 0 || getenv("RECOMP_FB_VA")) {
-                LARGE_INTEGER now;
-                LONGLONG step = poll_frequency.QuadPart / 60;
-                QueryPerformanceCounter(&now);
-                if (next_poll.QuadPart <= now.QuadPart) {
-                    next_poll.QuadPart += step;
-                    if (next_poll.QuadPart <= now.QuadPart)
-                        next_poll.QuadPart = now.QuadPart + step;
-                }
-                timeout = (DWORD)(((next_poll.QuadPart - now.QuadPart) * 1000
-                                    + poll_frequency.QuadPart - 1) / poll_frequency.QuadPart);
-            }
-            MsgWaitForMultipleObjectsEx(s_present_event ? 1 : 0, &s_present_event,
-                                        timeout, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
-        }
+        if (!paced)
+            Sleep(16);                  /* D3D11's Present waited for vsync */
     }
 
+    gpu_present_shutdown();
     ReleaseDC(hwnd, hdc);
     DestroyWindow(hwnd);
     free(s_rgb);
     s_rgb = NULL;
+    free(s_pvideo_source);
+    s_pvideo_source = NULL;
     return 0;
 }
 
@@ -472,9 +645,8 @@ void xbox_FramebufferWindowStart(void)
 {
     HANDLE th;
 
-    if (!getenv("RECOMP_FB_WINDOW") || getenv("RECOMP_HLE_PRIMARY"))
+    if (!getenv("RECOMP_FB_WINDOW"))
         return;
-    fb_publication_ready();
     if (InterlockedCompareExchange(&s_fb_running, 1, 0) != 0)
         return;
     th = CreateThread(NULL, 0, fb_thread, NULL, 0, NULL);
@@ -484,23 +656,4 @@ void xbox_FramebufferWindowStart(void)
         InterlockedExchange(&s_fb_running, 0);
 }
 
-#else
-#include <string.h>
-void xbox_FramebufferWindowSet(uint32_t fb_va, uint32_t pitch) { (void)fb_va; (void)pitch; }
-void xbox_FramebufferWindowPresent(uint32_t fb_va, uint32_t pitch) { (void)fb_va; (void)pitch; }
-void xbox_FramebufferWindowPresentSurface(uint32_t va, uint32_t pitch, uint32_t bpp, uint32_t sx, uint32_t sy)
-{ (void)va; (void)pitch; (void)bpp; (void)sx; (void)sy; }
-void xbox_FramebufferWindowStart(void) {}
-/* The keys the native renderer's window holds (hle_d3d11.c feeds them). */
-static volatile uint8_t s_key_down[256];
-void xbox_FramebufferKeyEvent(int vk, int down)
-{
-    if (vk < 0)
-        memset((void *)s_key_down, 0, sizeof s_key_down);
-    else if (vk < 256)
-        s_key_down[vk] = (uint8_t)(down != 0);
-}
-int xbox_FramebufferKeyDown(int vk) { return (unsigned)vk <= 255 && s_key_down[vk] != 0; }
-void xbox_FramebufferWindowSetTitle(const uint16_t *n, int m) { (void)n; (void)m; }
-void xbox_FramebufferWindowFrameStats(uint32_t draws) { (void)draws; }
-#endif
+#endif /* _WIN32: POSIX hosts get the SDL2 window in fb_present_sdl.c */

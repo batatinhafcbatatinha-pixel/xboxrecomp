@@ -87,7 +87,7 @@ def generate(xbe, local, tools, env):
          '--xrefs', disasm / 'xrefs.json', '--output', ident], tools, env)
     run([py, '-m', 'tools.abi_analysis', xbe, '--disasm-dir', disasm, '--func-id-dir', ident,
          '--output', abi / 'abi_functions.json'], tools, env)
-    run([py, '-m', 'tools.recomp', xbe, '--game-name', 'FIFA Street 2', '--all', '--split', '250',
+    run([py, '-m', 'tools.recomp', '--guest-cpu-yield', xbe, '--game-name', 'FIFA Street 2', '--all', '--split', '250',
          '--disasm-dir', disasm, '--func-id-dir', ident, '--abi-dir', abi, '--gen-dir', gen], tools, env)
     missing = [m['start'] for m in MANUAL_FUNCTIONS
                if not any(f'void sub_{int(m["start"], 16):08X}(void)' in p.read_text(encoding='utf-8', errors='replace')

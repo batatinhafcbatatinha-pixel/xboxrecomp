@@ -18,7 +18,9 @@ def translate(hex_bytes):
         [config.Section('.text', BASE, len(image), 0, len(image), True)],
         entry_point=BASE, kernel_thunk_addr=BASE, origin='guest-yield-test')
     db = {BASE: {'end': BASE + len(image), 'size': len(image)}}
-    return FunctionTranslator(image, db).translate_function(BASE, db[BASE])
+    translator = FunctionTranslator(image, db)
+    translator.guest_cpu_yield = True       # the ports' option (--guest-cpu-yield)
+    return translator.translate_function(BASE, db[BASE])
 
 
 def test_self_jump_yields():
@@ -58,8 +60,9 @@ def test_cli_sti_use_runtime_and_keep_unsupported_instruction_accounting():
         code = lifter.lift_instruction(Instruction(BASE + offset, 1, mnemonic, '', raw))
         assert code == [f'guest_cpu_{mnemonic}(); /* {mnemonic}: guest interrupt flag */']
     assert not lifter.unimplemented
-    lifter.lift_instruction(Instruction(BASE + 2, 2, 'wbinvd', '', '0f09'))
-    assert lifter.unimplemented == {'wbinvd': [BASE + 2]}
+    # wbinvd is lifted now (coherent host memory); daa still is not.
+    lifter.lift_instruction(Instruction(BASE + 2, 1, 'daa', '', '27'))
+    assert lifter.unimplemented == {'daa': [BASE + 2]}
     # test eax,eax / cli / sti / jne test / ret: CLI/STI preserve ZF.
     code = translate('85 c0 fa fb 75 fa c3')
     assert 'guest_cpu_cli();' in code and 'guest_cpu_sti();' in code

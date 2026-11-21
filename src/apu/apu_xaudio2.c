@@ -12,8 +12,7 @@
 #include <math.h>
 #include "apu_xaudio2.h"
 
-/* The XAudio2 backend is Windows-only. On Linux all xa2_* functions are
- * stubbed to report inactive; real audio output via SDL2 comes later. */
+/* The XAudio2 backend is Windows-only; apu_sdl2.c is the POSIX one. */
 #if defined(_WIN32)
 
 #define COBJMACROS
@@ -46,6 +45,7 @@ static int                     g_xa2_size[XA2_NUM_BUFS];
 static float                   g_xa2_avg = XA2_TARGET, g_xa2_ratio = 1.0f;
 static unsigned                g_xa2_underruns, g_xa2_drops, g_xa2_submits;
 static float                   g_xa2_volume = -1.0f;   /* asked before the voice existed */
+static int                     g_xa2_drain_expected;
 
 int xa2_init(void)
 {
@@ -181,8 +181,11 @@ int xa2_submit_samples(const int16_t *samples, int num_samples)
     }
     if (state.BuffersQueued == 0 && g_xa2_frames_written) {
         /* Starved: the gap already happened; start again with a cushion so
-         * it does not chatter. */
-        g_xa2_underruns++;
+         * it does not chatter. A drain the frame thread announced
+         * (xa2_expect_drain) is not an underrun. */
+        if (!g_xa2_drain_expected)
+            g_xa2_underruns++;
+        g_xa2_drain_expected = 0;
         xa2_queue(NULL, XA2_TARGET / 2);
         queued = XA2_TARGET / 2;
     }
@@ -220,154 +223,57 @@ void xa2_set_volume(float volume)
         IXAudio2MasteringVoice_SetVolume(g_xa2_master, volume, XAUDIO2_COMMIT_NOW);
 }
 
-#else /* !_WIN32 -- SDL2 audio, the same queue and rate nudge as above */
 
-/* The APU frame thread writes into a ring; SDL's callback reads it at a
- * fractional step (the rate nudge, <= 0.5%, linear interpolation) so the
- * ring stays near SDL_TARGET samples deep without dropping or starving
- * blocks -- the role SetFrequencyRatio plays for XAudio2. */
-#include <SDL2/SDL.h>
-
-#define SDL_RATE    48000
-#define SDL_TARGET  2048
-#define SDL_HOLD    3072                     /* deeper than this: wait for the device */
-#define SDL_MAX     8192
-#define SDL_RING    16384                    /* stereo frames, power of two */
-
-static SDL_AudioDeviceID s_dev;
-static int16_t s_ring[SDL_RING][2];
-static volatile uint64_t s_w;                /* frames written (producer) */
-static double s_r;                           /* read position (callback) */
-static float s_ratio = 1.0f, s_avg = SDL_TARGET, s_volume = 1.0f;
-static unsigned s_underruns, s_drops, s_submits;
-static int s_started;
-
-static void sdl_callback(void *ud, Uint8 *stream, int len)
+/* The pacing contract of the APU frame thread (apu_core.c), over the
+ * rate-nudged queue above. The frame thread keeps the queue between the
+ * marks xa2_pacing_marks derives from buffer size x count, so the count
+ * reported is the one that puts the high mark at XA2_TARGET: the depth the
+ * rate nudge aims for. */
+int xa2_get_buffer_count(void)
 {
-    int16_t *out = (int16_t *)stream;
-    int n = len / 4, i;
-    uint64_t w = __atomic_load_n(&s_w, __ATOMIC_ACQUIRE);
-    float vol = s_volume, step = s_ratio;
-    (void)ud;
-    for (i = 0; i < n; i++) {
-        uint64_t k = (uint64_t)s_r;
-        float f = (float)(s_r - (double)k);
-        if (k + 1 >= w) {                        /* starved */
-            if (s_started)
-                s_underruns++;
-            for (; i < n; i++)
-                out[2 * i] = out[2 * i + 1] = 0;
-            break;
-        }
-        for (int c = 0; c < 2; c++) {
-            float a = s_ring[k & (SDL_RING - 1)][c], b = s_ring[(k + 1) & (SDL_RING - 1)][c];
-            float v = (a + (b - a) * f) * vol;
-            out[2 * i + c] = (int16_t)(v > 32767.0f ? 32767 : v < -32768.0f ? -32768 : v);
-        }
-        s_r += step;
-    }
+    return XA2_TARGET / XA2_BUF_SAMPLES;
 }
 
-int xa2_init(void)
+
+/* Samples handed over and not yet played. */
+int xa2_queued_samples(void)
 {
-    SDL_AudioSpec want, have;
-    if (s_dev)
-        return 1;
-    if (!SDL_WasInit(SDL_INIT_AUDIO) && SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
-        fprintf(stderr, "[XA2] SDL audio init failed: %s\n", SDL_GetError());
-        return 0;
-    }
-    SDL_zero(want);
-    want.freq = SDL_RATE;
-    want.format = AUDIO_S16SYS;
-    want.channels = 2;
-    want.samples = 512;
-    want.callback = sdl_callback;
-    s_dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
-    if (!s_dev) {
-        fprintf(stderr, "[XA2] SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
-        return 0;
-    }
-    SDL_PauseAudioDevice(s_dev, 0);
-    fprintf(stderr, "[XA2] SDL audio on \"%s\" (%d Hz stereo 16-bit, %d-sample periods)\n",
-            SDL_GetCurrentAudioDriver(), have.freq, have.samples);
-    return 1;
+    XAUDIO2_VOICE_STATE state;
+    int queued = 0;
+
+    if (!g_xa2_initialized || !g_xa2_source) return 0;
+    IXAudio2SourceVoice_GetState(g_xa2_source, &state, XAUDIO2_VOICE_NOSAMPLESPLAYED);
+    for (UINT32 i = 1; i <= state.BuffersQueued; i++)
+        queued += g_xa2_size[(g_xa2_next_buf + XA2_NUM_BUFS - (int)i) % XA2_NUM_BUFS];
+    if (state.BuffersQueued)
+        g_xa2_drain_expected = 0;
+    return queued;
 }
 
-void xa2_shutdown(void)
+/* The frame thread is about to pause: the next empty queue is on purpose,
+ * so xa2_submit_samples does not count it as an underrun. */
+void xa2_expect_drain(void)
 {
-    if (s_dev) {
-        SDL_CloseAudioDevice(s_dev);
-        s_dev = 0;
-    }
+    g_xa2_drain_expected = 1;
 }
 
-int xa2_is_active(void)
+unsigned xa2_underruns(void)
 {
-    return s_dev != 0;
+    return g_xa2_underruns;
 }
 
-int xa2_submit_samples(const int16_t *samples, int num_samples)
+/* Samples the device has consumed since init. */
+uint64_t xa2_samples_played(void)
 {
-    uint64_t w, r;
-    int queued, i;
-    float ratio;
-    if (!s_dev || num_samples <= 0)
-        return 0;
-    /* A device clock slower than the nudge can follow (WSLg's PulseAudio runs
-     * ~1% under 48 kHz) would fill the ring until blocks drop: instead the
-     * producer waits for the device, so the mixer follows the device clock. */
-    for (i = 0; i < 100; i++) {
-        SDL_LockAudioDevice(s_dev);
-        w = s_w;
-        r = (uint64_t)s_r;
-        queued = (int)(w > r ? w - r : 0);
-        if (queued <= SDL_HOLD)
-            break;
-        SDL_UnlockAudioDevice(s_dev);
-        SDL_Delay(1);
-    }
-    if (i == 100)
-        SDL_LockAudioDevice(s_dev);
-    w = s_w;
-    r = (uint64_t)s_r;
-    queued = (int)(w > r ? w - r : 0);
-    if (queued > SDL_MAX || queued + num_samples >= SDL_RING) {
-        s_drops++;
-        SDL_UnlockAudioDevice(s_dev);
-        return 0;
-    }
-    if (queued <= 1 && s_started) {
-        /* Starved: restart with a cushion of silence so it does not chatter. */
-        s_r = (double)w;
-        for (i = 0; i < SDL_TARGET / 2; i++, w++)
-            s_ring[w & (SDL_RING - 1)][0] = s_ring[w & (SDL_RING - 1)][1] = 0;
-        queued = SDL_TARGET / 2;
-    }
-    for (i = 0; i < num_samples; i++, w++) {
-        s_ring[w & (SDL_RING - 1)][0] = samples[2 * i];
-        s_ring[w & (SDL_RING - 1)][1] = samples[2 * i + 1];
-    }
-    __atomic_store_n(&s_w, w, __ATOMIC_RELEASE);
-    s_started = 1;
-    s_avg += ((float)queued - s_avg) * 0.02f;
-    ratio = 1.0f + 0.005f * (s_avg - SDL_TARGET) / SDL_TARGET;
-    s_ratio = ratio < 0.995f ? 0.995f : ratio > 1.005f ? 1.005f : ratio;
-    SDL_UnlockAudioDevice(s_dev);
-    if (++s_submits % 2000 == 0)
-        fprintf(stderr, "[XA2] queue %.0f samples (target %d), rate %.4f, underruns %u, drops %u\n",
-                s_avg, SDL_TARGET, s_ratio, s_underruns, s_drops);
-    return 1;
+    XAUDIO2_VOICE_STATE state;
+
+    if (!g_xa2_initialized || !g_xa2_source) return 0;
+    IXAudio2SourceVoice_GetState(g_xa2_source, &state, 0);
+    return (uint64_t)state.SamplesPlayed;
 }
 
-int xa2_get_buffer_size(void)
-{
-    return 1024;
-}
+#else /* !_WIN32: apu_sdl2.c implements the same contract over SDL2 */
 
-void xa2_set_volume(float v)
-{
-    s_volume = v < 0.0f ? 0.0f : v > 1.0f ? 1.0f : v;
-}
+typedef int apu_xaudio2_empty_translation_unit;
 
 #endif /* _WIN32 */

@@ -33,7 +33,7 @@ rw = street2 / 'recomp-work'
 
 bodies = []
 for a in MISSING:
-    out = subprocess.run([str(python), '-m', 'tools.recomp', str(xbe), '-f', f'0x{a:X}',
+    out = subprocess.run([str(python), '-m', 'tools.recomp', '--guest-cpu-yield', str(xbe), '-f', f'0x{a:X}',
                           '--game-name', 'FIFA Street 2', '--disasm-dir', str(rw / 'disasm-extra'),
                           '--func-id-dir', str(rw / 'ident'), '--abi-dir', str(rw / 'abi')],
                          cwd=Path(__file__).resolve().parents[3], capture_output=True, text=True, check=True).stdout

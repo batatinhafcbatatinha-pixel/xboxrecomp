@@ -20,15 +20,10 @@ add_compile_definitions(
     WIN32_LEAN_AND_MEAN
     NOMINMAX
 )
-# The image of this title runs to 0x0095A000, past the runtime's default kernel
-# data page (0x00740000) and stack (0x00780000): both move above it. The stack
-# shrinks to 6 MB so the heap still starts at 0x00F70000 (the guest's main
-# thread stack on the Xbox is far smaller). Applies to the runtime too.
-add_compile_definitions(
-    XBOX_KERNEL_DATA_BASE=0x00960000
-    XBOX_STACK_BASE=0x00970000
-    XBOX_STACK_SIZE=0x00600000
-)
+# The image of this title runs to 0x0095A000, past the old fixed kernel data
+# page (0x00740000) and stack (0x00780000). The runtime now places its region
+# (kernel data, stack, heap) above the highest loaded section by itself
+# (xbox_MemoryLayoutInit, g_xbox_region_base), so nothing is set here.
 
 # ── xboxrecomp toolkit ──────────────────────────────────────────
 #

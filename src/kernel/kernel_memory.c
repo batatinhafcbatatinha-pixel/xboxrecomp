@@ -10,6 +10,7 @@
  */
 
 #include "kernel.h"
+#include "xbox_memory_layout.h"   /* xbox_PhysNoteRamName */
 #if defined(_WIN32)
 /* _aligned_malloc/_aligned_free; POSIX gets them from win32_compat.h */
 #include <malloc.h>
@@ -167,8 +168,9 @@ ULONG_PTR __stdcall xbox_MmGetPhysicalAddress(PVOID BaseAddress)
 {
     /*
      * The contiguous arena is the virtual window onto physical RAM, so an
-     * address inside it is its physical offset plus XBOX_CONTIG_BASE. Low RAM
-     * gets XBOX_LOWRAM_PHYS_TAG, so bus masters can tell the two stores apart.
+     * address inside it is its physical offset plus XBOX_CONTIG_BASE. Anything
+     * outside is the identity, except a heap page below 64 MB, which is named
+     * by its alias in the first RAM mirror (xbox_PhysRamName).
      *
      * The only implementation. bridge_MmGetPhysicalAddress calls this rather
      * than repeating the arithmetic: the two used to disagree, with the bridge
@@ -180,9 +182,12 @@ ULONG_PTR __stdcall xbox_MmGetPhysicalAddress(PVOID BaseAddress)
      */
     uint32_t va = (uint32_t)(uintptr_t)BaseAddress;
     if (va >= XBOX_CONTIG_BASE &&
-        (uint64_t)va < (uint64_t)XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE)
+            (uint64_t)va < (uint64_t)XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE)
         return (ULONG_PTR)(va - XBOX_CONTIG_BASE);
-    return (ULONG_PTR)(va && va < XBOX_LOWRAM_PHYS_TAG ? va | XBOX_LOWRAM_PHYS_TAG : va);
+    /* RAM gets a number no window page has, where it can (xbox_PhysRamName:
+     * a heap page's alias in the first mirror; otherwise the identity, with
+     * the RAM name recorded for the APU). */
+    return (ULONG_PTR)xbox_PhysRamName(va);
 }
 
 VOID __stdcall xbox_MmPersistContiguousMemory(PVOID BaseAddress, ULONG NumberOfBytes, BOOLEAN Persist)

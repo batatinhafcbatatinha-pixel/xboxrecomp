@@ -129,7 +129,7 @@ def main():
             empty.write_text('[]\n')
             icalls = ANALYSIS / 'empty-icalls.json'
             icalls.write_text('{}\n')
-            stage('entry-translation', ['tools.recomp', xbe, '--game-name', 'Black',
+            stage('entry-translation', ['tools.recomp', '--guest-cpu-yield', xbe, '--game-name', 'Black',
                   '--disasm-dir', dis, '--func-id-dir', identified, '--abi', empty,
                   '--icall-sites', icalls, '-o', ANALYSIS / 'entry-output',
                   '--function', independent['entryPoint']], ANALYSIS / 'entry-preview.c')

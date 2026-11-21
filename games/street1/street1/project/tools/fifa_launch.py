@@ -10,7 +10,9 @@ ROOT = Path(__file__).resolve().parent
 # 100% native: no model of any console device (NV2A, APU/DSP, AC97, USB, flash).
 PROFILE = {key: '1' for key in ('RECOMP_NO_HW', 'RECOMP_HLE_PRIMARY', 'RECOMP_HLE_NOGPU',
     'RECOMP_DS_NATIVE', 'RECOMP_INPUT_NATIVE', 'RECOMP_VBLANK', 'RECOMP_TITLE_KEVENTS',
-    'RECOMP_GUEST_LOCK', 'RECOMP_GUEST_SMP', 'RECOMP_KEYBOARD')}
+    'RECOMP_PORT_GUEST_LOCK', 'RECOMP_GUEST_SMP', 'RECOMP_KEYBOARD')}
+# FIFA layout on the keyboard map (src/input/keyboard.c)
+PROFILE['RECOMP_KEYMAP'] = 'a=L,Enter;b=semicolon,Backspace;x=K;y=O;right_trigger=P;start=Enter,Escape;back=Tab;right_stick_up=none;right_stick_down=none;right_stick_left=none;right_stick_right=none'
 
 
 def main():

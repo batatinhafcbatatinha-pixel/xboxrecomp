@@ -82,7 +82,7 @@ Image ends 0x0095A000: kernel data 0x00960000, stack 0x00970000 (6 MB), heap fro
   legal screen and the intro movie (OPENINGN.SFD). Next: skip movie / reach the main menu with input (run-test -LiveInputFile).
 - 2026-11-06 noite (Claude): "tela preta depois do vídeo" não existe: OPENINGN.SFD (308 MB, MPEG 640x480 29,97 fps) dura
   ~4,5 min e depois vem TITLEN.SFD (logo + PRESS START, correto). Vídeo roda a 22-24 fps (CPU: decodificador numa thread
-  do jogo disputa a CPU única do RECOMP_GUEST_LOCK; testar RECOMP_GUEST_SMP=1).
+  do jogo disputa a CPU única do RECOMP_PORT_GUEST_LOCK; testar RECOMP_GUEST_SMP=1).
   - Pular vídeo: o player (sub_0025D380(id, cb) -> sub_0028AB00, laço `while(!sub_0028A990(m))`) chama a cada quadro o
     callback em 0x5A8D64 (sub_002EDB80, estado 2/3); se der 1 vai ao estado 4 (fade) e termina. O callback da intro é
     sub_000280E0: lê o pad (sub_0026A9C0) e sub_000282A0 -> sub_000A10F0(ação 0xB = START 0x800 / 6 = A 0x40), que só

@@ -32,7 +32,7 @@
  * Vertices are pulled by the vertex shader from a raw buffer (hle_vsh.c), so
  * every Xbox vertex format works with one code path. Pixels go through one
  * pixel shader that evaluates the register combiners from a constant buffer
- * (the logic of xboxrecomp's validated nv2a_gpu_combiner.hlsl), plus a small
+ * (the logic of the NV2A combiner shader the toolkit had, validated), plus a small
  * fixed-function texture-stage evaluator for draws without a pixel shader.
  */
 #include "hle_d3d11_internal.h"

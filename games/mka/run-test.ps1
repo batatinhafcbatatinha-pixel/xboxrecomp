@@ -17,7 +17,7 @@ New-Item -ItemType Directory -Path $run | Out-Null
 Get-ChildItem Env:RECOMP_* | ForEach-Object { Remove-Item -LiteralPath ('Env:' + $_.Name) }
 $profile = [ordered]@{
     RECOMP_VBLANK='1'
-    RECOMP_TITLE_KEVENTS='1'; RECOMP_GUEST_LOCK='1'; RECOMP_GPU='d3d11'; RECOMP_KEYBOARD='1'
+    RECOMP_TITLE_KEVENTS='1'; RECOMP_PORT_GUEST_LOCK='1'; RECOMP_GPU='d3d11'; RECOMP_KEYBOARD='1'
     RECOMP_OPTIONS='0'; RECOMP_LANGUAGE='1'
 }
 if (-not $Legacy) {

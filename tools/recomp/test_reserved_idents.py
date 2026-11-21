@@ -54,10 +54,8 @@ SHARP_MSVC = ("onexit",)
 
 
 def _find_cc():
-    cc = shutil.which("clang") or shutil.which("gcc") or shutil.which("cc")
-    if not cc and os.path.exists(r"C:\Program Files\LLVM\bin\clang.exe"):
-        cc = r"C:\Program Files\LLVM\bin\clang.exe"
-    return cc
+    from .c_fixture import compiler
+    return compiler()
 
 
 def _targets_msvc_crt():
@@ -76,9 +74,13 @@ def _compile(body):
         src = os.path.join(tmp, "t.c")
         with open(src, "w") as f:
             f.write(HEADERS + body)
-        r = subprocess.run([cc, "-c", src, "-o", os.path.join(tmp, "t.o")],
-                           capture_output=True, text=True)
-        return r.returncode, r.stderr
+        from .c_fixture import command
+        # MSVC diagnoses some conflicting declarations as warnings; require
+        # those diagnostics to reject the negative control as GCC does.
+        r = subprocess.run(command(cc, [src], os.path.join(tmp, "t.obj"),
+                                   compile_only=True, gnu_flags=['-Werror']),
+                           cwd=tmp, capture_output=True, text=True)
+        return r.returncode, r.stdout + r.stderr
 
 
 class ReservedIdentTest(unittest.TestCase):
@@ -117,6 +119,31 @@ class ReservedIdentTest(unittest.TestCase):
                     f"`void {name}(void);` compiled clean, so it does not "
                     f"need to be in the reserved set -- or the headers this "
                     f"test includes no longer match a generated TU")
+
+
+    def test_posix_isatty_is_mangled(self):
+        """A guest isatty must not shadow the host libc function."""
+        if os.name != "posix":
+            self.skipTest("POSIX-only host symbol")
+
+        ident = _func_ident(ADDR, "isatty")
+        self.assertEqual(ident, f"isatty_{ADDR:08X}")
+
+        # Negative control: the original declaration conflicts
+        # with the POSIX function declared by unistd.h.
+        rc, _ = _compile(
+            "#include <unistd.h>\n"
+            "void isatty(void) {}\n"
+        )
+        self.assertNotEqual(rc, 0)
+
+        # Mangled guest and real host function coexist.
+        rc, err = _compile(
+            "#include <unistd.h>\n"
+            f"void {ident}(void) {{}}\n"
+            "int host_isatty(void) { return isatty(-1); }\n"
+        )
+        self.assertEqual(rc, 0, err)
 
     def test_ordinary_names_are_left_alone(self):
         """Mangling is not free: it shows up in every trace and backtrace."""

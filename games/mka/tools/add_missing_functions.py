@@ -59,7 +59,7 @@ for a in MISSING:
         bodies.append(old.group(0))
         print(f'kept sub_{a:08X}')
         continue
-    out = subprocess.run([str(python), '-m', 'tools.recomp', str(xbe), '-f', f'0x{a:X}',
+    out = subprocess.run([str(python), '-m', 'tools.recomp', '--guest-cpu-yield', str(xbe), '-f', f'0x{a:X}',
                           '--game-name', 'Mortal Kombat Armageddon', '--disasm-dir', str(rw / 'disasm-extra'),
                           '--func-id-dir', str(rw / 'ident'), '--abi-dir', str(rw / 'abi')],
                          cwd=Path(__file__).resolve().parents[3], capture_output=True, text=True, check=True).stdout

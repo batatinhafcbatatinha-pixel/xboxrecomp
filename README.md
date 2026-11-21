@@ -2,7 +2,7 @@
 
 **Download:** [Windows](https://github.com/batatinhafcbatatinha-pixel/xboxrecomp/releases/latest/download/xboxrecomp-windows.zip) (source + `Launcher.exe`: unzip, open `Launcher.exe`) · [Linux](https://github.com/batatinhafcbatatinha-pixel/xboxrecomp/releases/latest/download/xboxrecomp-linux.zip) · [macOS](https://github.com/batatinhafcbatatinha-pixel/xboxrecomp/releases/latest/download/xboxrecomp-macos.zip) (source only, LF line endings, no launcher: build as [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) says).
 
-Fork of [sp00nznet/xboxrecomp](https://github.com/sp00nznet/xboxrecomp) (v0.13.1) with native PC ports of original-Xbox
+Fork of [sp00nznet/xboxrecomp](https://github.com/sp00nznet/xboxrecomp) (v0.18.0) with native PC ports of original-Xbox
 games in [`games/`](games/) and a launcher that builds and starts them from **your own disc**. No game content (disc
 image, executable, data or generated code) is in this repository.
 
@@ -47,12 +47,16 @@ setup and game code, then stops at functions the first analysis missed; those ar
 - `games/`: game profiles (recompiler config, native game code, build and play scripts)
 - `hle/d3d8/`: one shared Direct3D 8 / DirectSound / input HLE (native Direct3D 11 renderer, PC settings menu, native audio)
 - launcher + one-click install/build/play (`Launcher.cmd`, [port-installer](https://github.com/batatinhafcbatatinha-pixel/port-installer) submodule in `tools/port-installer`)
-- NV2A: D3D11 compute path, vertex shader translation, push-buffer executor
-- APU: DSP from xemu (GP/EP), XAudio2 and SDL2 output
-- kernel: title KEVENTs, guest events, threads, memory layout, overridable kernel data/stack bases, guest-write hook around NtReadFile
-- input: XInput and OHCI updates, non-XInput pads through run-time SDL3
-- platform: POSIX side of the Win32 compatibility layer, MMIO decoding
-- recompiler: guest CPU yield hooks at backward branches, lifter fixes
+- NV2A: native-GPU mode for the HLE ports (no FIFO touched, native vblank), flush-kick thread
+- APU: DSP from xemu (GP/EP) and the native DirectSound mix of the ports on upstream's period pacing; XAudio2 queue
+  with a rate nudge (the ports submit at their own pace)
+- kernel: the ports' guest CPU lock (`RECOMP_PORT_GUEST_LOCK=1`, with `RECOMP_GUEST_SMP=1`), beside upstream's
+  `RECOMP_GUEST_LOCK` (only one of the two is ever on); title KEVENTs, guest events, interrupt-object locks,
+  guest-write hook around NtReadFile, ordered NV2A software-method notifications
+- input: non-XInput pads through run-time SDL3; `RECOMP_KEYMAP` over upstream's keyboard map (FIFA layout)
+- recompiler: `--guest-cpu-yield` (the ports' lock hands the CPU over at loop back edges), EBP bridging across calls;
+  unresolved direct calls are recorded for the next build (`missing_code.txt`, `tools/xboxport`)
+- `tools/xboxport`: the generic path for any disc with no profile
 
 ## Building
 

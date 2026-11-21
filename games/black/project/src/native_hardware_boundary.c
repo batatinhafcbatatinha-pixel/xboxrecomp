@@ -9,13 +9,16 @@ static void unsupported(const char *name) {
     fprintf(stderr, "Black native host: unsupported hardware path %s\n", name);
     abort();
 }
-void nv2a_pb_scan(uint32_t start, uint32_t end) {
-    (void)start; (void)end; unsupported("nv2a_pb_scan");
+void nv2a_pb_scan(uint32_t put) {
+    (void)put; unsupported("nv2a_pb_scan");
+}
+void nv2a_pb_scan_segment(uint32_t start, uint32_t end) {
+    (void)start; (void)end; unsupported("nv2a_pb_scan_segment");
 }
 void nv2a_pb_scan_report(void) { unsupported("nv2a_pb_scan_report"); }
-uint32_t nv2a_pb_run(uint32_t start, uint32_t end) {
-    (void)start; (void)end; unsupported("nv2a_pb_run"); return 0;
-}
+void nv2a_pb_resync(uint32_t get) { (void)get; unsupported("nv2a_pb_resync"); }
+int nv2a_pb_dma_walk(void) { unsupported("nv2a_pb_dma_walk"); return 0; }
+int nv2a_pb_scan_in_call(void) { return 0; }
 void xbox_OhciReport(void) { fprintf(stderr, "Black native host: no OHCI controller attached\n"); }
 void xbox_OhciServicePendingInterrupts(void) {
     /* No OHCI device is attached in SetNoHardware mode, hence no queued

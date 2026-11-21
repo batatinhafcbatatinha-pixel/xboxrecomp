@@ -11,8 +11,10 @@ for v in $(env | grep -o '^RECOMP_[A-Z0-9_]*'); do unset "$v"; done
 # 100% native: no model of any console device (NV2A, APU/DSP, AC97, USB, flash).
 export RECOMP_NO_HW=1 RECOMP_HLE_PRIMARY=1 RECOMP_HLE_NOGPU=1
 export RECOMP_DS_NATIVE=1 RECOMP_INPUT_NATIVE=1
-export RECOMP_VBLANK=1 RECOMP_TITLE_KEVENTS=1 RECOMP_GUEST_LOCK=1
+export RECOMP_VBLANK=1 RECOMP_TITLE_KEVENTS=1 RECOMP_PORT_GUEST_LOCK=1
 export RECOMP_GUEST_SMP=1 RECOMP_KEYBOARD=1
+# FIFA layout on the keyboard map (src/input/keyboard.c)
+export RECOMP_KEYMAP='a=L,Enter;b=semicolon,Backspace;x=K;y=O;right_trigger=P;start=Enter,Escape;back=Tab;right_stick_up=none;right_stick_down=none;right_stick_left=none;right_stick_right=none'
 export DXVK_LOG_LEVEL="${DXVK_LOG_LEVEL:-none}"
 mkdir -p logs
 ./linux/fifastreet_recomp > logs/stdout.log 2> logs/stderr.log

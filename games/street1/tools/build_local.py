@@ -66,7 +66,7 @@ def generate(xbe, release, local, env):
          '--strings', disasm / 'strings.json', '--xrefs', disasm / 'xrefs.json', '--output', identified], runtime, env)
     run([sys.executable, '-m', 'tools.abi_analysis', xbe, '--disasm-dir', disasm,
          '--func-id-dir', identified, '--output', abi / 'abi_functions.json'], runtime, env)
-    run([sys.executable, '-m', 'tools.recomp', xbe, '--game-name', 'FIFA Street', '--all',
+    run([sys.executable, '-m', 'tools.recomp', '--guest-cpu-yield', xbe, '--game-name', 'FIFA Street', '--all',
          '--split', '250', '--disasm-dir', disasm, '--func-id-dir', identified,
          '--abi-dir', abi, '--gen-dir', gen], runtime, env)
     # Preserve hardware acknowledgement semantics without publishing translated instructions.
