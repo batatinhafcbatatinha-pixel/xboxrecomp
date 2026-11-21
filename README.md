@@ -31,7 +31,16 @@ Windows 10/11 x64. About 10 GB free and 20-60 minutes for the first build of a g
 | [Black](games/black/) | Xbox, USA | playable |
 | [Mortal Kombat: Armageddon](games/mka/) | Xbox, USA | early work, not in the launcher yet |
 
-Only these exact discs are supported (checked by SHA-256, see each `games/<game>/installer.json`).
+These exact discs have a profile (checked by SHA-256, see each `games/<game>/installer.json`).
+
+**Any other Xbox disc** goes through the generic path ([`tools/xboxport`](tools/xboxport/xboxport.py)): the launcher
+shows it as **BUILD (GENERIC)** and runs the same steps for every game, with no game-specific code. It analyses
+`default.xbe`, translates the whole game (its own Direct3D and DirectSound libraries included) and compiles it with
+llvm-mingw (no Visual Studio needed) against this toolkit's runtime, whose emulated NV2A and APU stand in for the
+console's graphics and sound chips. Functions the analysis misses are recorded while you play
+(`observed/missing_code.txt`) and translated in the next build (`tools.seed_from_log` checks each one). Games without a
+profile may not work or may stop somewhere. Tested so far: Black (USA) boots, runs the kernel, memory, APU and NV2A
+setup and game code, then stops at functions the first analysis missed; those are what the next build learns.
 
 ## Differences from upstream
 

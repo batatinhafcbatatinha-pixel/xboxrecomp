@@ -29,5 +29,49 @@
       }
     ]
   },
-  "groups": []
+  "groups": [],
+  "generic": {
+    "play": "Play.cmd",
+    "play_cmd": "@echo off\r\nrem Starts this game (built by the launcher with tools/xboxport).\r\npython \"%~dp0..\\..\\..\\tools\\xboxport\\xboxport.py\" play --port \"%~dp0.\"\r\nexit /b %errorlevel%\r\n",
+    "exe": "build/out/bin/game.exe",
+    "disk_gb": 10,
+    "download_gb": 1,
+    "minutes": "30-90",
+    "tools": [
+      "llvm-mingw",
+      "cmake",
+      "ninja"
+    ],
+    "gb_per_job": 2,
+    "requirements": "../../../tools/xboxport/requirements.txt",
+    "steps": [
+      {
+        "name": "Analyse and translate your game (xboxrecomp)",
+        "run": [
+          "{python}",
+          "../../../tools/xboxport/xboxport.py",
+          "prepare",
+          "--port",
+          "{root}"
+        ],
+        "done_if": "project/src/recomp/gen/recomp_funcs.h",
+        "prepare": true
+      },
+      {
+        "name": "Compile",
+        "run": [
+          "{python}",
+          "../../../tools/xboxport/xboxport.py",
+          "compile",
+          "--port",
+          "{root}",
+          "--jobs",
+          "{jobs}"
+        ],
+        "retry_if": "build/out/build.ninja"
+      }
+    ],
+    "buildtools": false
+  },
+  "generic_label": "^[0-9A-F]{8}$"
 }
