@@ -27,6 +27,7 @@
 #include <vulkan/vulkan.h>
 
 #include "port_gfx_shaders.h"
+#include "port_ngx.h"
 
 #define FRAMES 2          /* frames in flight */
 #define MAX_IMAGES 8      /* swapchain images */
@@ -134,6 +135,9 @@ static struct {
     uint32_t frame_index;
 
     Image source;                       /* the pixels' image */
+    Image shared;                       /* a Direct3D 12 texture imported from its shared handle */
+    void *shared_handle;
+    int external_memory;                /* the device has VK_KHR_external_memory_win32 */
     Image intermediate;                 /* EASU / DLSS output, at the drawn size */
     VkFramebuffer intermediate_fb;
     int source_fresh;                   /* layout still UNDEFINED */
@@ -157,46 +161,13 @@ typedef struct NgxResource {
     int type;              /* 0: image view */
     unsigned char read_write;
 } NgxResource;
-typedef struct NgxPathList { const wchar_t *const *paths; unsigned int count; } NgxPathList;
-typedef struct NgxLogging { void *callback; int minimum_level; unsigned char disable_other_sinks; } NgxLogging;
-typedef struct NgxFeatureInfo { NgxPathList paths; void *internal; NgxLogging logging; } NgxFeatureInfo;
-
-/* NVSDK_NGX_Parameter is a C++ interface built with MSVC: overloads of one name share a slot group, in reverse
- * declaration order. Its methods are reached through that vtable. */
-enum {
-    NGX_SET_VOIDP = 0, NGX_SET_D3D12, NGX_SET_D3D11, NGX_SET_I, NGX_SET_UI, NGX_SET_D, NGX_SET_F, NGX_SET_ULL,
-    NGX_GET_VOIDP, NGX_GET_D3D12, NGX_GET_D3D11, NGX_GET_I, NGX_GET_UI, NGX_GET_D, NGX_GET_F, NGX_GET_ULL, NGX_RESET
-};
-typedef struct NgxParameter { void **vtable; } NgxParameter;
-typedef void (*NgxSetUI)(NgxParameter *, const char *, unsigned int);
-typedef void (*NgxSetI)(NgxParameter *, const char *, int);
-typedef void (*NgxSetF)(NgxParameter *, const char *, float);
-typedef void (*NgxSetP)(NgxParameter *, const char *, void *);
-typedef int (*NgxGetI)(const NgxParameter *, const char *, int *);
-
-static void ngx_ui(NgxParameter *p, const char *k, unsigned int v) { ((NgxSetUI)p->vtable[NGX_SET_UI])(p, k, v); }
-static void ngx_i(NgxParameter *p, const char *k, int v) { ((NgxSetI)p->vtable[NGX_SET_I])(p, k, v); }
-static void ngx_f(NgxParameter *p, const char *k, float v) { ((NgxSetF)p->vtable[NGX_SET_F])(p, k, v); }
-static void ngx_p(NgxParameter *p, const char *k, void *v) { ((NgxSetP)p->vtable[NGX_SET_VOIDP])(p, k, v); }
-static int ngx_get_i(const NgxParameter *p, const char *k, int def)
-{
-    int v = def;
-    return (((NgxGetI)p->vtable[NGX_GET_I])(p, k, &v) & 0xFFF00000u) == 0xBAD00000u ? def : v;
-}
-
-#define NGX_OK(r) ((((unsigned)(r)) & 0xFFF00000u) != 0xBAD00000u)
-#define NGX_VERSION_API 0x14
-#define NGX_FEATURE_SUPER_SAMPLING 1
-#define NGX_FLAG_MV_LOW_RES 2
-#define NGX_FLAG_AUTO_EXPOSURE 64
-
 typedef unsigned (*PfnNgxInit)(unsigned long long, const wchar_t *, VkInstance, VkPhysicalDevice, VkDevice,
                                PFN_vkGetInstanceProcAddr, PFN_vkGetDeviceProcAddr, const NgxFeatureInfo *, int);
 typedef unsigned (*PfnNgxParams)(NgxParameter **);
 typedef unsigned (*PfnNgxCreate1)(VkDevice, VkCommandBuffer, int, NgxParameter *, void **);
 typedef unsigned (*PfnNgxEvaluate)(VkCommandBuffer, const void *, const NgxParameter *, void *);
 typedef unsigned (*PfnNgxRelease)(void *);
-typedef unsigned (*PfnNgxShutdown1)(VkDevice);
+typedef unsigned (*PfnNgxShutdown)(void);
 
 static struct {
     void *library;
@@ -206,7 +177,7 @@ static struct {
     PfnNgxCreate1 create;
     PfnNgxEvaluate evaluate;
     PfnNgxRelease release;
-    PfnNgxShutdown1 shutdown;
+    PfnNgxShutdown shutdown;
     int ready;
     NgxParameter *params;
     void *feature;
@@ -225,28 +196,13 @@ static const char *const kNgxDeviceExtensions[] = {
     "VK_NVX_binary_import", "VK_NVX_image_view_handle", "VK_KHR_push_descriptor",
 };
 
-#if defined(_WIN32)
-static void *ngx_load(void)
+
+/* PORT_GFX_NGX_LOG=1: what the NGX runtime says, on stderr. */
+static void ngx_log(const char *message, int level, int feature)
 {
-    /* The driver records where its NGX core lives. */
-    wchar_t dir[MAX_PATH] = L"", path[MAX_PATH + 32];
-    DWORD size = sizeof dir;
-    HMODULE m = NULL;
-    if (RegGetValueW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\NVIDIA Corporation\\Global\\NGXCore", L"FullPath",
-                     RRF_RT_REG_SZ, NULL, dir, &size) == ERROR_SUCCESS && dir[0]) {
-        _snwprintf(path, MAX_PATH + 31, L"%ls\\_nvngx.dll", dir);
-        path[MAX_PATH + 31] = 0;
-        m = LoadLibraryW(path);
-    }
-    if (!m)
-        m = LoadLibraryW(L"_nvngx.dll");
-    return m;
+    (void)level; (void)feature;
+    fprintf(stderr, "[ngx] %s", message ? message : "");
 }
-#define NGX_SYM(lib, name) ((void *)GetProcAddress((HMODULE)(lib), name))
-#else
-static void *ngx_load(void) { return NULL; }
-#define NGX_SYM(lib, name) NULL
-#endif
 
 static int ngx_start(void)
 {
@@ -265,8 +221,11 @@ static int ngx_start(void)
     ngx.destroy = (unsigned (*)(NgxParameter *))NGX_SYM(ngx.library, "NVSDK_NGX_VULKAN_DestroyParameters");
     ngx.create = (PfnNgxCreate1)NGX_SYM(ngx.library, "NVSDK_NGX_VULKAN_CreateFeature1");
     ngx.evaluate = (PfnNgxEvaluate)NGX_SYM(ngx.library, "NVSDK_NGX_VULKAN_EvaluateFeature_C");
+    if (!ngx.evaluate)   /* the driver's own runtime exports it without the suffix; with no callback they are the same */
+        ngx.evaluate = (PfnNgxEvaluate)NGX_SYM(ngx.library, "NVSDK_NGX_VULKAN_EvaluateFeature");
     ngx.release = (PfnNgxRelease)NGX_SYM(ngx.library, "NVSDK_NGX_VULKAN_ReleaseFeature");
-    ngx.shutdown = (PfnNgxShutdown1)NGX_SYM(ngx.library, "NVSDK_NGX_VULKAN_Shutdown1");
+    /* Not Shutdown1(device): the driver runtime faults in it after frames were evaluated. */
+    ngx.shutdown = (PfnNgxShutdown)NGX_SYM(ngx.library, "NVSDK_NGX_VULKAN_Shutdown");
     if (!ngx.init || !ngx.capability || !ngx.allocate || !ngx.create || !ngx.evaluate || !ngx.release) {
         snprintf(g_error, sizeof g_error, "DLSS: the NGX runtime lacks the Vulkan entry points");
         return 0;
@@ -283,6 +242,10 @@ static int ngx_start(void)
     memset(&info, 0, sizeof info);
     info.paths.paths = paths;
     info.paths.count = 1;
+    if (getenv("PORT_GFX_NGX_LOG")) {
+        info.logging.callback = (void *)ngx_log;
+        info.logging.minimum_level = 2;
+    }
     r = ngx.init(0x5047u /* any id: DLSS needs none registered */, exe_dir, g.instance, g.physical, g.device,
                  vkGetInstanceProcAddr_, vkGetDeviceProcAddr_, &info, NGX_VERSION_API);
     if (!NGX_OK(r)) {
@@ -292,7 +255,7 @@ static int ngx_start(void)
     if (!NGX_OK(ngx.capability(&caps)) || !caps || !ngx_get_i(caps, "SuperSampling.Available", 0)) {
         snprintf(g_error, sizeof g_error, "DLSS: not available on this card or driver (needs an RTX card and "
                                           "nvngx_dlss.dll next to the game)");
-        if (ngx.shutdown) ngx.shutdown(g.device);
+        if (ngx.shutdown) ngx.shutdown();
         return 0;
     }
     ngx.ready = 1;
@@ -489,7 +452,7 @@ static int create_instance(void)
 static int adapter_luid(int index, uint8_t luid[8])
 {
 #if defined(_WIN32)
-    typedef HRESULT(WINAPI * PfnFactory)(REFIID, void **);
+    typedef HRESULT(WINAPI * PfnFactory)(const GUID *, void **);   /* REFIID, the same in C and C++ */
     static const GUID iid_factory1 = {0x770aae78, 0xf26f, 0x4dba, {0xa8, 0x29, 0x25, 0x3c, 0x83, 0xd1, 0xb3, 0x87}};
     HMODULE dxgi = LoadLibraryA("dxgi.dll");
     PfnFactory create = dxgi ? (PfnFactory)(void *)GetProcAddress(dxgi, "CreateDXGIFactory1") : NULL;
@@ -517,12 +480,25 @@ static int adapter_luid(int index, uint8_t luid[8])
 #endif
 }
 
+static uint8_t g_prefer_luid[8];
+static int g_prefer_luid_set;
+
+void port_gfx_prefer_adapter_luid(const void *luid)
+{
+    g_prefer_luid_set = luid != NULL;
+    if (luid) memcpy(g_prefer_luid, luid, 8);
+}
+
 static int pick_device(void)
 {
     VkPhysicalDevice list[16];
     uint32_t n = 16, best = UINT32_MAX;
     uint8_t want[8];
     int by_luid = adapter_luid(g.config.adapter, want);
+    if (g_prefer_luid_set) {   /* a Direct3D 12 runtime's own adapter: shared textures only work on the same GPU */
+        memcpy(want, g_prefer_luid, 8);
+        by_luid = 1;
+    }
     vkEnumeratePhysicalDevices_(g.instance, &n, list);
     if (n == 0) {
         snprintf(g_error, sizeof g_error, "no graphics card here supports Vulkan");
@@ -603,6 +579,9 @@ static int create_device(void)
     available = (VkExtensionProperties *)calloc(ne ? ne : 1, sizeof *available);
     vkEnumerateDeviceExtensionProperties_(g.physical, NULL, &ne, available);
     extensions[count++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+    g.external_memory = has_extension(available, ne, "VK_KHR_external_memory_win32");
+    if (g.external_memory)
+        extensions[count++] = "VK_KHR_external_memory_win32";
     if (g.config.scaler == PORT_GFX_DLSS)
         for (size_t i = 0; i < sizeof kNgxDeviceExtensions / sizeof *kNgxDeviceExtensions; ++i)
             if (has_extension(available, ne, kNgxDeviceExtensions[i]))
@@ -921,7 +900,7 @@ static void ngx_close(void)
 {
     if (ngx.feature && ngx.release) ngx.release(ngx.feature);
     if (ngx.params && ngx.destroy) ngx.destroy(ngx.params);
-    if (ngx.ready && ngx.shutdown) ngx.shutdown(g.device);
+    if (ngx.ready && ngx.shutdown) ngx.shutdown();
     if (g.device) { destroy_image(&ngx.depth); destroy_image(&ngx.motion); }
     memset(&ngx, 0, sizeof ngx);
 }
@@ -936,6 +915,7 @@ void port_gfx_close(void)
         if (g.easu_intermediate) vkDestroyPipeline_(g.device, g.easu_intermediate, NULL);
         if (g.intermediate_fb) vkDestroyFramebuffer_(g.device, g.intermediate_fb, NULL);
         destroy_image(&g.source);
+        destroy_image(&g.shared);
         destroy_image(&g.intermediate);
         for (int f = 0; f < FRAMES; ++f) {
             if (g.frame[f].staging) vkDestroyBuffer_(g.device, g.frame[f].staging, NULL);
@@ -1242,7 +1222,7 @@ static int begin(uint32_t *index)
     return f;
 }
 
-int port_gfx_present_pixels(const void *pixels, uint32_t width, uint32_t height, uint32_t pitch)
+static int present_pixels(const void *pixels, uint32_t width, uint32_t height, uint32_t pitch, VkFormat format)
 {
     uint32_t index;
     int f;
@@ -1277,9 +1257,9 @@ int port_gfx_present_pixels(const void *pixels, uint32_t width, uint32_t height,
     for (uint32_t y = 0; y < height; ++y)
         memcpy((uint8_t *)g.frame[f].staging_map + (size_t)y * width * 4, (const uint8_t *)pixels + (size_t)y * pitch,
                (size_t)width * 4);
-    if (!g.source.image || g.source.width != width || g.source.height != height) {
+    if (!g.source.image || g.source.width != width || g.source.height != height || g.source.format != format) {
         vkDeviceWaitIdle_(g.device);
-        if (!create_image(&g.source, VK_FORMAT_B8G8R8A8_UNORM, width, height,
+        if (!create_image(&g.source, format, width, height,
                           VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
             vkEndCommandBuffer_(cmd);
             return 0;
@@ -1300,6 +1280,16 @@ int port_gfx_present_pixels(const void *pixels, uint32_t width, uint32_t height,
     return finish(cmd, index, g.source.image, g.source.view, g.source.format, width, height, VK_NULL_HANDLE);
 }
 
+int port_gfx_present_pixels(const void *pixels, uint32_t width, uint32_t height, uint32_t pitch)
+{
+    return present_pixels(pixels, width, height, pitch, VK_FORMAT_B8G8R8A8_UNORM);
+}
+
+int port_gfx_present_pixels_rgba(const void *pixels, uint32_t width, uint32_t height, uint32_t pitch)
+{
+    return present_pixels(pixels, width, height, pitch, VK_FORMAT_R8G8B8A8_UNORM);
+}
+
 int port_gfx_present_image(uint64_t image, uint64_t view, uint32_t format, uint32_t width, uint32_t height,
                            uint64_t wait_semaphore)
 {
@@ -1309,6 +1299,124 @@ int port_gfx_present_image(uint64_t image, uint64_t view, uint32_t format, uint3
         return 0;
     return finish(g.frame[f].cmd, index, (VkImage)(uintptr_t)image, (VkImageView)(uintptr_t)view, (VkFormat)format,
                   width, height, (VkSemaphore)(uintptr_t)wait_semaphore);
+}
+
+/* ---------------------------------------------------------------------------------------- Direct3D 12 frames */
+
+/* VK_KHR_external_memory_win32 and its companions, by value: the headers bundled here are not relied on for them. */
+#define PG_HANDLE_TYPE_D3D12_RESOURCE 0x00000040u
+#define PG_STYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO 1000072001
+#define PG_STYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO 1000073000
+#define PG_STYPE_MEMORY_DEDICATED_ALLOCATE_INFO 1000127001
+#define PG_QUEUE_FAMILY_EXTERNAL (~1u)
+typedef struct PgExternalMemoryImageCreateInfo { int sType; const void *pNext; uint32_t handleTypes; } PgExternalMemoryImageCreateInfo;
+typedef struct PgImportMemoryWin32HandleInfo { int sType; const void *pNext; uint32_t handleType; void *handle; const void *name; } PgImportMemoryWin32HandleInfo;
+typedef struct PgMemoryDedicatedAllocateInfo { int sType; const void *pNext; VkImage image; VkBuffer buffer; } PgMemoryDedicatedAllocateInfo;
+
+static VkFormat dxgi_to_vk(uint32_t dxgi)
+{
+    switch (dxgi) {
+    case 27: case 28: case 29: return VK_FORMAT_R8G8B8A8_UNORM;      /* R8G8B8A8 typeless / unorm / srgb: bytes as they are */
+    case 87: case 90: case 91: return VK_FORMAT_B8G8R8A8_UNORM;      /* B8G8R8A8 */
+    case 23: case 24: return VK_FORMAT_A2B10G10R10_UNORM_PACK32;     /* R10G10B10A2 */
+    case 10: return VK_FORMAT_R16G16B16A16_SFLOAT;
+    default: return VK_FORMAT_UNDEFINED;
+    }
+}
+
+static int import_shared(void *handle, VkFormat format, uint32_t w, uint32_t h)
+{
+    Image *im = &g.shared;
+    VkImageCreateInfo ci = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    PgExternalMemoryImageCreateInfo ext = {PG_STYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, NULL, PG_HANDLE_TYPE_D3D12_RESOURCE};
+    PgImportMemoryWin32HandleInfo import = {PG_STYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO, NULL, PG_HANDLE_TYPE_D3D12_RESOURCE, handle, NULL};
+    PgMemoryDedicatedAllocateInfo dedicated = {PG_STYPE_MEMORY_DEDICATED_ALLOCATE_INFO, &import, VK_NULL_HANDLE, VK_NULL_HANDLE};
+    VkMemoryRequirements req;
+    VkMemoryAllocateInfo ai = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    VkImageViewCreateInfo vi = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    VkResult r;
+    vkDeviceWaitIdle_(g.device);
+    destroy_image(im);
+    g.shared_handle = NULL;
+    ci.pNext = &ext;
+    ci.imageType = VK_IMAGE_TYPE_2D;
+    ci.format = format;
+    ci.extent.width = w; ci.extent.height = h; ci.extent.depth = 1;
+    ci.mipLevels = 1; ci.arrayLayers = 1;
+    ci.samples = VK_SAMPLE_COUNT_1_BIT;
+    ci.tiling = VK_IMAGE_TILING_OPTIMAL;
+    ci.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+    ci.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    if ((r = vkCreateImage_(g.device, &ci, NULL, &im->image)) != VK_SUCCESS) { fail("vkCreateImage (shared)", r); return 0; }
+    vkGetImageMemoryRequirements_(g.device, im->image, &req);
+    dedicated.image = im->image;
+    ai.pNext = &dedicated;
+    ai.allocationSize = req.size;
+    ai.memoryTypeIndex = memory_type(req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (ai.memoryTypeIndex == UINT32_MAX) ai.memoryTypeIndex = memory_type(req.memoryTypeBits, 0);
+    if (ai.memoryTypeIndex == UINT32_MAX || (r = vkAllocateMemory_(g.device, &ai, NULL, &im->memory)) != VK_SUCCESS ||
+        (r = vkBindImageMemory_(g.device, im->image, im->memory, 0)) != VK_SUCCESS) {
+        snprintf(g_error, sizeof g_error, "importing the Direct3D 12 texture (%ux%u) failed (%d)", w, h, (int)r);
+        destroy_image(im);
+        return 0;
+    }
+    vi.image = im->image;
+    vi.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    vi.format = format;
+    vi.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    vi.subresourceRange.levelCount = 1;
+    vi.subresourceRange.layerCount = 1;
+    if ((r = vkCreateImageView_(g.device, &vi, NULL, &im->view)) != VK_SUCCESS) {
+        fail("vkCreateImageView (shared)", r);
+        destroy_image(im);
+        return 0;
+    }
+    im->format = format; im->width = w; im->height = h;
+    g.shared_handle = handle;
+    return 1;
+}
+
+int port_gfx_present_d3d12(void *handle, uint32_t dxgi_format, uint32_t width, uint32_t height)
+{
+    VkFormat format = dxgi_to_vk(dxgi_format);
+    uint32_t index;
+    static int fresh;   /* imported, not yet moved to the sampled layout */
+    int f;
+    if (!g.device || !handle || !width || !height)
+        return 0;
+    if (!g.external_memory) {
+        snprintf(g_error, sizeof g_error, "%s has no VK_KHR_external_memory_win32", g.device_name);
+        return 0;
+    }
+    if (format == VK_FORMAT_UNDEFINED) {
+        snprintf(g_error, sizeof g_error, "Direct3D format %u is not supported", dxgi_format);
+        return 0;
+    }
+    if (handle != g.shared_handle || g.shared.width != width || g.shared.height != height || g.shared.format != format) {
+        if (!import_shared(handle, format, width, height))
+            return 0;
+        fresh = 1;
+    }
+    if ((f = begin(&index)) < 0)
+        return 0;
+    if (fresh) {
+        fresh = 0;
+        /* Taken over from Direct3D once; it stays in the sampled layout, and Direct3D keeps writing the same memory. */
+        VkImageMemoryBarrier b = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+        b.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        b.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        b.srcQueueFamilyIndex = PG_QUEUE_FAMILY_EXTERNAL;
+        b.dstQueueFamilyIndex = g.family;
+        b.image = g.shared.image;
+        b.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        b.subresourceRange.levelCount = 1;
+        b.subresourceRange.layerCount = 1;
+        b.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        vkCmdPipelineBarrier_(g.frame[f].cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 0,
+                              NULL, 1, &b);
+    }
+    return finish(g.frame[f].cmd, index, g.shared.image, g.shared.view, format, width, height, VK_NULL_HANDLE);
 }
 
 void port_gfx_set_dlss_inputs(uint64_t depth_image, uint64_t depth_view, uint32_t depth_format,

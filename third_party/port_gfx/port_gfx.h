@@ -65,6 +65,8 @@ int port_gfx_scaler(void);
 /* Shows one frame of B8G8R8A8 pixels (the guest's A8R8G8B8 in memory order), pitch in bytes. Returns 1 when it was
  * presented with vsync pacing (the caller need not sleep), 0 otherwise. The pixels are copied before it returns. */
 int port_gfx_present_pixels(const void *pixels, uint32_t width, uint32_t height, uint32_t pitch);
+/* The same for R8G8B8A8 pixels (OpenGL-style byte order). */
+int port_gfx_present_pixels_rgba(const void *pixels, uint32_t width, uint32_t height, uint32_t pitch);
 
 /* For a runtime rendering with Vulkan itself: the instance, physical device, device, graphics queue and its family
  * port_gfx made (VkInstance, VkPhysicalDevice, VkDevice, VkQueue as void*). NULL before port_gfx_open. Submissions to
@@ -80,6 +82,17 @@ uint32_t port_gfx_queue_family(void);
  * runtime's rendering is done. The image stays the runtime's. */
 int port_gfx_present_image(uint64_t image, uint64_t view, uint32_t format, uint32_t width, uint32_t height,
                            uint64_t wait_semaphore);
+
+/* For a runtime rendering with Direct3D 12 (Windows): shows a frame it left in a shared texture, without copying it
+ * through the CPU. handle is the NT handle ID3D12Device::CreateSharedHandle gave for a committed texture created with
+ * D3D12_HEAP_FLAG_SHARED; dxgi_format its DXGI_FORMAT (R8G8B8A8 28, B8G8R8A8 87, R10G10B10A2 24, R16G16B16A16F 10).
+ * The Direct3D work that writes the texture must be finished (wait its fence) before the call, and the texture must
+ * be on the GPU port_gfx uses: call port_gfx_prefer_adapter_luid with ID3D12Device::GetAdapterLuid before
+ * port_gfx_open. The texture is imported once and kept until another handle is given or port_gfx_close.
+ * Returns as port_gfx_present_pixels; 0 with port_gfx_error when the device cannot import (the runtime then presents
+ * its own way). FSR, DLSS (as a still picture: no depth or motion), bars and vsync apply as for any frame. */
+void port_gfx_prefer_adapter_luid(const void *luid);   /* 8 bytes, or NULL to forget */
+int port_gfx_present_d3d12(void *handle, uint32_t dxgi_format, uint32_t width, uint32_t height);
 
 /* What DLSS needs from a renderer for the next port_gfx_present_image: depth (view, image, format) at the render
  * size, motion vectors (R16G16 float, pixels, at the render size) and the frame's sub-pixel jitter. Zeros mean none. */
