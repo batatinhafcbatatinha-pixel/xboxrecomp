@@ -71,7 +71,131 @@
         "retry_if": "build/out/build.ninja"
       }
     ],
-    "buildtools": false
+    "buildtools": false,
+    "settings": {
+      "ini": "pc-settings.ini",
+      "section": "video",
+      "pc_menu": false,
+      "groups": [
+        {
+          "pt": "Vídeo",
+          "en": "Video",
+          "items": [
+            {
+              "key": "filter",
+              "pt": "Ampliação da imagem",
+              "en": "Picture scaling",
+              "default": 2,
+              "restart": true,
+              "help_pt": "AMD FSR 1.0 amplia a imagem até a janela reconstruindo as bordas.",
+              "help_en": "AMD FSR 1.0 enlarges the picture to the window rebuilding its edges.",
+              "choices": [
+                {
+                  "v": 0,
+                  "pt": "Suave (bilinear)",
+                  "en": "Smooth (bilinear)",
+                  "word": "linear"
+                },
+                {
+                  "v": 1,
+                  "pt": "Pixels nítidos",
+                  "en": "Sharp pixels",
+                  "word": "point"
+                },
+                {
+                  "v": 2,
+                  "pt": "AMD FSR 1.0",
+                  "en": "AMD FSR 1.0",
+                  "word": "fsr"
+                }
+              ]
+            },
+            {
+              "key": "vsync",
+              "pt": "Sincronia vertical (vsync)",
+              "en": "Vertical sync (vsync)",
+              "default": 1,
+              "restart": true,
+              "choices": [
+                {
+                  "v": 0,
+                  "pt": "Desligado",
+                  "en": "Off"
+                },
+                {
+                  "v": 1,
+                  "pt": "Ligado",
+                  "en": "On"
+                }
+              ]
+            },
+            {
+              "key": "aspect",
+              "pt": "Proporção",
+              "en": "Aspect",
+              "default": 0,
+              "restart": true,
+              "help_pt": "Esticar preenche telas ultrawide.",
+              "help_en": "Stretching fills ultrawide screens.",
+              "choices": [
+                {
+                  "v": 0,
+                  "pt": "Manter a do jogo",
+                  "en": "Keep the game's",
+                  "word": "keep"
+                },
+                {
+                  "v": 1,
+                  "pt": "Esticar na janela",
+                  "en": "Stretch to the window",
+                  "word": "stretch"
+                }
+              ]
+            },
+            {
+              "key": "widescreen",
+              "pt": "TV widescreen (16:9)",
+              "en": "Widescreen TV (16:9)",
+              "default": 1,
+              "restart": true,
+              "help_pt": "Jogos com modo widescreen passam a desenhar em 16:9.",
+              "help_en": "Games with a widescreen mode then draw in 16:9.",
+              "choices": [
+                {
+                  "v": 0,
+                  "pt": "Desligado",
+                  "en": "Off"
+                },
+                {
+                  "v": 1,
+                  "pt": "Ligado",
+                  "en": "On"
+                }
+              ]
+            },
+            {
+              "key": "progressive",
+              "pt": "TV com 480p",
+              "en": "480p TV",
+              "default": 1,
+              "restart": true,
+              "choices": [
+                {
+                  "v": 0,
+                  "pt": "Desligado",
+                  "en": "Off"
+                },
+                {
+                  "v": 1,
+                  "pt": "Ligado",
+                  "en": "On"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   },
   "generic_label": "^[0-9A-F]{8}$"
 }
