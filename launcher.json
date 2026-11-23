@@ -191,6 +191,39 @@
                   "en": "On"
                 }
               ]
+            },
+            {
+              "key": "antialiasing",
+              "pt": "Antisserrilhado",
+              "en": "Anti-aliasing",
+              "default": 0,
+              "restart": true,
+              "help_pt": "FXAA suaviza bordas serrilhadas; não se soma ao FSR.",
+              "help_en": "FXAA smooths jagged edges; it does not combine with FSR.",
+              "choices": [
+                {
+                  "v": 0,
+                  "pt": "Desligado",
+                  "en": "Off",
+                  "word": "off"
+                },
+                {
+                  "v": 1,
+                  "pt": "FXAA",
+                  "en": "FXAA",
+                  "word": "fxaa"
+                }
+              ]
+            },
+            {
+              "key": "gpu",
+              "pt": "Placa de vídeo",
+              "en": "Graphics card",
+              "default": -1,
+              "restart": true,
+              "source": "gpus",
+              "help_pt": "Em notebooks com duas, escolha a dedicada.",
+              "help_en": "On laptops with two, pick the dedicated one."
             }
           ]
         }

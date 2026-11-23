@@ -12,6 +12,8 @@
  * Opt-in with RECOMP_D3D_PRESENT=1; anything that fails falls back to GDI.
  * Linear filtering, RECOMP_PRESENT_FILTER=point for sharp pixels or =fsr for AMD FSR 1.0 (EASU);
  * RECOMP_PRESENT_ASPECT=stretch fills the window (ultrawide) instead of keeping the frame's shape;
+ * RECOMP_PRESENT_AA=fxaa smooths jagged edges (FXAA; with the linear or point filter, not FSR);
+ * RECOMP_PRESENT_ADAPTER=<n> uses that DXGI adapter (the launcher's GPU list) instead of Windows' default;
  * RECOMP_PRESENT_VSYNC=0 presents without waiting for the display, as the
  * SDL window does.
  */
@@ -42,6 +44,7 @@ static uint32_t                  s_bw, s_bh;    /* back buffer (client) size */
 static int                       s_vsync = 1;
 static int                       s_fsr;         /* RECOMP_PRESENT_FILTER=fsr */
 static int                       s_stretch;     /* RECOMP_PRESENT_ASPECT=stretch: fill the window */
+static int                       s_fxaa;        /* RECOMP_PRESENT_AA=fxaa */
 
 /* A triangle covering the viewport, from the vertex id; uv 0..1. */
 static const char s_hlsl[] =
@@ -90,6 +93,26 @@ static const char s_hlsl_fsr[] =
     "  float3 mn = min(min(f, g), min(j, k)), mx = max(max(f, g), max(j, k));\n"
     "  return float4(min(mx, max(mn, ac / aw)), 1); }\n";
 
+/* FXAA (after Timothy Lottes' FXAA 3.11 "console" variant): smooths the frame's jagged edges while enlarging it,
+ * for games that draw without anti-aliasing. RECOMP_PRESENT_AA=fxaa. */
+static const char s_hlsl_fxaa[] =
+    "float Lx(float3 c) { return dot(c, float3(0.299, 0.587, 0.114)); }\n"
+    "float4 ps_fxaa(V i) : SV_Target {\n"
+    "  uint w0, h0; t.GetDimensions(w0, h0); float2 rc = 1.0 / float2(w0, h0);\n"
+    "  float3 nw = t.Sample(s, i.uv + float2(-0.5, -0.5) * rc).rgb, ne = t.Sample(s, i.uv + float2(0.5, -0.5) * rc).rgb;\n"
+    "  float3 sw = t.Sample(s, i.uv + float2(-0.5, 0.5) * rc).rgb, se = t.Sample(s, i.uv + float2(0.5, 0.5) * rc).rgb;\n"
+    "  float3 m = t.Sample(s, i.uv).rgb;\n"
+    "  float lnw = Lx(nw), lne = Lx(ne), lsw = Lx(sw), lse = Lx(se), lm = Lx(m);\n"
+    "  float lmin = min(lm, min(min(lnw, lne), min(lsw, lse))), lmax = max(lm, max(max(lnw, lne), max(lsw, lse)));\n"
+    "  if (lmax - lmin < max(0.0312, lmax * 0.125)) return float4(m, 1);\n"
+    "  float2 dir = float2(-((lnw + lne) - (lsw + lse)), (lnw + lsw) - (lne + lse));\n"
+    "  float red = max((lnw + lne + lsw + lse) * (0.25 / 8.0), 1.0 / 128.0);\n"
+    "  dir = clamp(dir / (min(abs(dir.x), abs(dir.y)) + red), -8.0, 8.0) * rc;\n"
+    "  float3 a = 0.5 * (t.Sample(s, i.uv + dir * (1.0 / 3.0 - 0.5)).rgb + t.Sample(s, i.uv + dir * (2.0 / 3.0 - 0.5)).rgb);\n"
+    "  float3 b = a * 0.5 + 0.25 * (t.Sample(s, i.uv - dir * 0.5).rgb + t.Sample(s, i.uv + dir * 0.5).rgb);\n"
+    "  float lb = Lx(b);\n"
+    "  return float4((lb < lmin || lb > lmax) ? a : b, 1); }\n";
+
 int gpu_present_enabled(void)
 {
     static int on = -1;
@@ -98,6 +121,25 @@ int gpu_present_enabled(void)
         on = e && *e && *e != '0';
     }
     return on;
+}
+
+/* RECOMP_PRESENT_ADAPTER=<n>: DXGI adapter n (IDXGIFactory1::EnumAdapters1 order, as the launcher lists them);
+ * NULL for Windows' default. The caller releases it. Also used by the D3D8 layer's device. */
+IDXGIAdapter *gpu_present_chosen_adapter(void)
+{
+    const char *e = getenv("RECOMP_PRESENT_ADAPTER");
+    IDXGIFactory1 *fac = NULL;
+    IDXGIAdapter1 *adapter = NULL;
+    if (!e || !*e || *e == '-')
+        return NULL;
+    if (FAILED(CreateDXGIFactory1(&IID_IDXGIFactory1, (void **)&fac)))
+        return NULL;
+    if (FAILED(IDXGIFactory1_EnumAdapters1(fac, (UINT)atoi(e), &adapter)))
+        adapter = NULL;
+    IDXGIFactory1_Release(fac);
+    if (!adapter)
+        fprintf(stderr, "  [D3D] GPU %s not found; using Windows' default\n", e);
+    return (IDXGIAdapter *)adapter;
 }
 
 static void client_size(uint32_t *w, uint32_t *h)
@@ -122,9 +164,10 @@ static int make_rtv(void)
 static ID3DBlob *compile(const char *entry, const char *target)
 {
     ID3DBlob *code = NULL, *err = NULL;
-    char source[sizeof s_hlsl + sizeof s_hlsl_fsr];
+    char source[sizeof s_hlsl + sizeof s_hlsl_fsr + sizeof s_hlsl_fxaa];
     memcpy(source, s_hlsl, sizeof s_hlsl - 1);
-    memcpy(source + sizeof s_hlsl - 1, s_hlsl_fsr, sizeof s_hlsl_fsr);
+    memcpy(source + sizeof s_hlsl - 1, s_hlsl_fsr, sizeof s_hlsl_fsr - 1);
+    memcpy(source + sizeof s_hlsl - 1 + sizeof s_hlsl_fsr - 1, s_hlsl_fxaa, sizeof s_hlsl_fxaa);
     HRESULT hr = D3DCompile(source, strlen(source), "present", NULL, NULL, entry, target,
                             0, 0, &code, &err);
     if (FAILED(hr)) {
@@ -151,6 +194,10 @@ int gpu_present_init(HWND hwnd, uint32_t width, uint32_t height)
         s_vsync = 0;
     s_fsr = f && (f[0] == 'f' || f[0] == 'F');
     s_stretch = a && (a[0] == 's' || a[0] == 'S');
+    {
+        const char *aa = getenv("RECOMP_PRESENT_AA");
+        s_fxaa = !s_fsr && aa && (aa[0] == 'f' || aa[0] == 'F');
+    }
     s_hwnd = hwnd;
     s_w = width; s_h = height;
     client_size(&s_bw, &s_bh);
@@ -165,9 +212,13 @@ int gpu_present_init(HWND hwnd, uint32_t width, uint32_t height)
     sd.Windowed          = TRUE;
     sd.SwapEffect        = DXGI_SWAP_EFFECT_DISCARD;
 
-    hr = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0,
-                                       NULL, 0, D3D11_SDK_VERSION, &sd,
-                                       &s_chain, &s_dev, NULL, &s_ctx);
+    {
+        IDXGIAdapter *adapter = gpu_present_chosen_adapter();
+        hr = D3D11CreateDeviceAndSwapChain(adapter, adapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, 0,
+                                           NULL, 0, D3D11_SDK_VERSION, &sd,
+                                           &s_chain, &s_dev, NULL, &s_ctx);
+        if (adapter) IDXGIAdapter_Release(adapter);
+    }
     if (FAILED(hr)) {
         fprintf(stderr, "  [D3D] device/swap chain failed (0x%08lX); staying on GDI\n",
                 (unsigned long)hr);
@@ -192,7 +243,7 @@ int gpu_present_init(HWND hwnd, uint32_t width, uint32_t height)
     smp.AddressU = smp.AddressV = smp.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     smp.MaxLOD = D3D11_FLOAT32_MAX;
     vsb = compile("vs", "vs_4_0");
-    psb = compile(s_fsr ? "ps_fsr" : "ps", "ps_4_0");
+    psb = compile(s_fsr ? "ps_fsr" : s_fxaa ? "ps_fxaa" : "ps", "ps_4_0");
     if (!vsb || !psb || !make_rtv()
         || FAILED(ID3D11Device_CreateTexture2D(s_dev, &td, NULL, &s_frame))
         || FAILED(ID3D11Device_CreateShaderResourceView(s_dev, (ID3D11Resource *)s_frame, NULL, &s_srv))
@@ -211,7 +262,7 @@ int gpu_present_init(HWND hwnd, uint32_t width, uint32_t height)
     ID3D10Blob_Release(psb);
     fprintf(stderr, "  [D3D] presenting through D3D11 (%ux%u frame, vsync %s, %s filter, %s)\n",
             width, height, s_vsync ? "on" : "off",
-            s_fsr ? "FSR 1.0" : smp.Filter == D3D11_FILTER_MIN_MAG_MIP_POINT ? "point" : "linear",
+            s_fsr ? "FSR 1.0" : s_fxaa ? "FXAA" : smp.Filter == D3D11_FILTER_MIN_MAG_MIP_POINT ? "point" : "linear",
             s_stretch ? "stretched to the window" : "aspect kept");
     return 1;
 }

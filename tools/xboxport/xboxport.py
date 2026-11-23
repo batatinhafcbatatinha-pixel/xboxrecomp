@@ -236,6 +236,10 @@ aspect = keep
 widescreen = 1
 ; 1 = tell the game the TV takes 480p (progressive)
 progressive = 1
+; fxaa = smooth jagged edges (with the linear or point filter), off = none
+antialiasing = off
+; -1 = Windows' default GPU; 0, 1, 2... = that DXGI adapter (the launcher lists them by name)
+gpu = -1
 '''
 
 
@@ -259,6 +263,8 @@ def video_env(port):
         'RECOMP_PRESENT_ASPECT': 'stretch' if get('aspect', 'keep') == 'stretch' else 'keep',
         'RECOMP_XBOX_WIDESCREEN': '0' if get('widescreen', '1') == '0' else '1',
         'RECOMP_VIDEO_480P': '0' if get('progressive', '1') == '0' else '1',
+        'RECOMP_PRESENT_AA': 'fxaa' if get('antialiasing', 'off') == 'fxaa' else 'off',
+        'RECOMP_PRESENT_ADAPTER': get('gpu', '-1') if get('gpu', '-1').lstrip('-').isdigit() else '-1',
     }
 
 

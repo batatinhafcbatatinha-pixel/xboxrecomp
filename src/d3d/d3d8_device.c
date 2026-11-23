@@ -17,6 +17,7 @@
 
 #include "d3d8_internal.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "recomp_exit_hook.h"
 
@@ -225,9 +226,21 @@ static HRESULT d3d11_create_device_and_swap_chain(
     scd.Windowed = pp->Windowed;
     scd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
+    {
+    /* RECOMP_PRESENT_ADAPTER=<n>: the player's GPU (DXGI adapter n, the launcher's list), as gpu_present.c. */
+    IDXGIAdapter *chosen = NULL;
+    const char *gpu = getenv("RECOMP_PRESENT_ADAPTER");
+    if (gpu && *gpu && *gpu != '-') {
+        IDXGIFactory1 *fac = NULL;
+        if (SUCCEEDED(CreateDXGIFactory1(&IID_IDXGIFactory1, (void **)&fac))) {
+            if (FAILED(IDXGIFactory1_EnumAdapters1(fac, (UINT)atoi(gpu), (IDXGIAdapter1 **)&chosen)))
+                chosen = NULL;
+            IDXGIFactory1_Release(fac);
+        }
+    }
     hr = D3D11CreateDeviceAndSwapChain(
-        NULL,
-        D3D_DRIVER_TYPE_HARDWARE,
+        chosen,
+        chosen ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
         NULL,
         create_flags,
         NULL, 0,
@@ -238,6 +251,8 @@ static HRESULT d3d11_create_device_and_swap_chain(
         &feature_level,
         &state->d3d11_context
     );
+    if (chosen) IDXGIAdapter_Release(chosen);
+    }
 
     if (FAILED(hr)) {
         fprintf(stderr, "D3D8: Failed to create D3D11 device: 0x%08lX\n", hr);

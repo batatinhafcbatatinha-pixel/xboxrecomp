@@ -7,6 +7,8 @@
 
 int  gpu_present_enabled(void);                 /* RECOMP_D3D_PRESENT=1 */
 int  gpu_present_init(HWND hwnd, uint32_t width, uint32_t height);
+/* RECOMP_PRESENT_ADAPTER=<n>: that DXGI adapter (caller releases), or NULL for Windows' default. */
+struct IDXGIAdapter *gpu_present_chosen_adapter(void);
 /* width*height B8G8R8A8; returns 1 only when the present waited for vsync
  * (so the caller need not sleep), 0 when unpaced or nothing was shown. */
 int  gpu_present_frame(const uint32_t *pixels);
