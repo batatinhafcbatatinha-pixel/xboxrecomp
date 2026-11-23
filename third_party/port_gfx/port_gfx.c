@@ -178,10 +178,18 @@ static struct {
     PfnNgxEvaluate evaluate;
     PfnNgxRelease release;
     PfnNgxShutdown shutdown;
+    int up;      /* NGX initialised (DLSS 5 needs it even without super resolution) */
     int ready;
     NgxParameter *params;
     void *feature;
     uint32_t render_w, render_h, out_w, out_h;
+    /* DLSS 5 (feature 18): its parameter block, feature, output image and zero inputs */
+    NgxParameter *nr_params;
+    void *nr_feature;
+    uint32_t nr_w, nr_h;
+    int nr_failed, nr_reset;
+    Image nr_out, nr_depth, nr_motion;
+    int nr_fresh;
     Image depth, motion;               /* zeroed stand-ins when the renderer has none */
     int stand_ins_fresh;
     /* the renderer's own, for the next present */
@@ -252,11 +260,11 @@ static int ngx_start(void)
         snprintf(g_error, sizeof g_error, "DLSS: NGX did not start (0x%08X)", r);
         return 0;
     }
+    ngx.up = 1;
     if (!NGX_OK(ngx.capability(&caps)) || !caps || !ngx_get_i(caps, "SuperSampling.Available", 0)) {
         snprintf(g_error, sizeof g_error, "DLSS: not available on this card or driver (needs an RTX card and "
                                           "nvngx_dlss.dll next to the game)");
-        if (ngx.shutdown) ngx.shutdown();
-        return 0;
+        return 0;   /* NGX stays up for DLSS 5 */
     }
     ngx.ready = 1;
     return 1;
@@ -356,6 +364,7 @@ void port_gfx_defaults(PortGfxConfig *c)
     c->scaler = PORT_GFX_FSR;
     c->sharpness = 0.25f;
     c->dlss_quality = PORT_GFX_DLSS_QUALITY;
+    c->dlss5_strength = 0.5f;
 }
 
 void port_gfx_config_from_env(PortGfxConfig *c)
@@ -368,6 +377,9 @@ void port_gfx_config_from_env(PortGfxConfig *c)
     if ((v = getenv("PORT_GFX_SCALER")) && *v)
         c->scaler = (v[0] == 'n' || v[0] == 'p') ? PORT_GFX_NEAREST : v[0] == 'l' ? PORT_GFX_LINEAR
                   : v[0] == 'd' ? PORT_GFX_DLSS : PORT_GFX_FSR;
+    if ((v = getenv("PORT_GFX_DLSS5")) && *v) c->dlss5 = *v != '0';
+    if ((v = getenv("PORT_GFX_DLSS5_STRENGTH")) && *v) c->dlss5_strength = (float)atof(v) / 100.0f;
+    if ((v = getenv("PORT_GFX_DLSS5_STYLE")) && *v) c->dlss5_style = v[0] == 'n' ? 1 : v[0] == 'c' ? 2 : 0;
     if ((v = getenv("PORT_GFX_DLSS_QUALITY")) && *v)
         c->dlss_quality = v[0] == 'p' ? PORT_GFX_DLSS_PERFORMANCE : v[0] == 'b' ? PORT_GFX_DLSS_BALANCED
                         : v[0] == 'u' ? PORT_GFX_DLSS_ULTRA_PERFORMANCE : v[0] == 'd' ? PORT_GFX_DLSS_DLAA
@@ -582,7 +594,7 @@ static int create_device(void)
     g.external_memory = has_extension(available, ne, "VK_KHR_external_memory_win32");
     if (g.external_memory)
         extensions[count++] = "VK_KHR_external_memory_win32";
-    if (g.config.scaler == PORT_GFX_DLSS)
+    if (g.config.scaler == PORT_GFX_DLSS || g.config.dlss5)
         for (size_t i = 0; i < sizeof kNgxDeviceExtensions / sizeof *kNgxDeviceExtensions; ++i)
             if (has_extension(available, ne, kNgxDeviceExtensions[i]))
                 extensions[count++] = kNgxDeviceExtensions[i];
@@ -884,7 +896,7 @@ int port_gfx_open(void *window, const PortGfxConfig *config)
         memcpy(g_error, saved, sizeof saved);
         return 0;
     }
-    if (g.scaler == PORT_GFX_DLSS && !ngx_start()) {
+    if ((g.scaler == PORT_GFX_DLSS || g.config.dlss5) && !ngx_start() && g.scaler == PORT_GFX_DLSS) {
         fprintf(stderr, "[port_gfx] %s; using FSR\n", g_error);
         g.scaler = PORT_GFX_FSR;
     }
@@ -901,7 +913,12 @@ static void ngx_close(void)
     if (ngx.feature && ngx.release) ngx.release(ngx.feature);
     if (ngx.params && ngx.destroy) ngx.destroy(ngx.params);
     if (ngx.ready && ngx.shutdown) ngx.shutdown();
-    if (g.device) { destroy_image(&ngx.depth); destroy_image(&ngx.motion); }
+    if (ngx.nr_feature && ngx.release) ngx.release(ngx.nr_feature);
+    if (ngx.nr_params && ngx.destroy) ngx.destroy(ngx.nr_params);
+    if (g.device) {
+        destroy_image(&ngx.depth); destroy_image(&ngx.motion);
+        destroy_image(&ngx.nr_out); destroy_image(&ngx.nr_depth); destroy_image(&ngx.nr_motion);
+    }
     memset(&ngx, 0, sizeof ngx);
 }
 
@@ -1103,6 +1120,132 @@ static int ngx_evaluate(VkCommandBuffer cmd, VkImage image, VkImageView view, Vk
 }
 
 /* Scales the frame (in SHADER_READ_ONLY) onto the acquired window image and submits; cmd is recording. */
+/* DLSS 5: NVIDIA DLSS Neural Rendering (NGX feature 18) from the frame (SHADER_READ_ONLY) into ngx.nr_out at the
+ * same size, recorded into cmd; ngx.nr_out is left SHADER_READ_ONLY. 0 when it did not run. NVIDIA does not publish
+ * the feature: its DLSSNR.* keys are those open tools document (video2dlssnr, MIT), and nvngx_dlssnr.dll is the
+ * player's own, asked for through the driver's NGX core like any feature. */
+static int nr_dll_present(void)
+{
+#if defined(_WIN32)
+    wchar_t path[1100];
+    DWORD n = GetModuleFileNameW(NULL, path, 1000);
+    wchar_t *slash;
+    path[n < 1000 ? n : 1000] = 0;
+    if ((slash = wcsrchr(path, L'\\'))) slash[1] = 0;
+    wcscat(path, L"nvngx_dlssnr.dll");
+    return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES;
+#else
+    return 0;
+#endif
+}
+
+static int nr_evaluate(VkCommandBuffer cmd, VkImage image, VkImageView view, VkFormat format, uint32_t w, uint32_t h)
+{
+    static const VkClearColorValue zero = {{0.0f, 0.0f, 0.0f, 0.0f}};
+    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    NgxResource color, output, depth, motion;
+    if (!g.config.dlss5 || !ngx.up || ngx.nr_failed)
+        return 0;
+    if (!ngx.nr_out.image || ngx.nr_out.width != w || ngx.nr_out.height != h) {
+        vkDeviceWaitIdle_(g.device);
+        if (!create_image(&ngx.nr_out, VK_FORMAT_R8G8B8A8_UNORM, w, h,
+                          VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT) ||
+            !create_image(&ngx.nr_depth, VK_FORMAT_R32_SFLOAT, w, h, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT) ||
+            !create_image(&ngx.nr_motion, VK_FORMAT_R16G16_SFLOAT, w, h, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
+            ngx.nr_failed = 1;
+            return 0;
+        }
+        ngx.nr_fresh = 1;
+    }
+    if (ngx.nr_fresh) {
+        VkImage both[2] = {ngx.nr_depth.image, ngx.nr_motion.image};
+        for (int i = 0; i < 2; ++i) {
+            barrier(cmd, both[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0,
+                    VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+            vkCmdClearColorImage_(cmd, both[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &zero, 1, &range);
+            barrier(cmd, both[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        }
+    }
+    if (!ngx.nr_feature || ngx.nr_w != w || ngx.nr_h != h) {
+        if (ngx.nr_feature) { ngx.release(ngx.nr_feature); ngx.nr_feature = NULL; }
+        if (!nr_dll_present()) {
+            fprintf(stderr, "[port_gfx] DLSS 5: nvngx_dlssnr.dll is not next to the game (it is yours to put there; "
+                            "NVIDIA does not publish it)\n");
+            ngx.nr_failed = 1;
+            return 0;
+        }
+        if (!ngx.nr_params && (!NGX_OK(ngx.allocate(&ngx.nr_params)) || !ngx.nr_params)) {
+            ngx.nr_failed = 1;
+            return 0;
+        }
+        ngx_ui(ngx.nr_params, "Width", w);
+        ngx_ui(ngx.nr_params, "Height", h);
+        ngx_ui(ngx.nr_params, "OutWidth", w);
+        ngx_ui(ngx.nr_params, "OutHeight", h);
+        ngx_ui(ngx.nr_params, "PerfQualityValue", 2);
+        ngx_ui(ngx.nr_params, "CreationNodeMask", 1);
+        ngx_ui(ngx.nr_params, "VisibilityNodeMask", 1);
+        ngx_ui(ngx.nr_params, "DLSSNR.Enabled", 1);
+        ngx_ui(ngx.nr_params, "DLSSNR.Width", w);
+        ngx_ui(ngx.nr_params, "DLSSNR.Height", h);
+        ngx_ui(ngx.nr_params, "DLSSNR.Hint.Render.Preset", 0);
+        ngx_f(ngx.nr_params, "DLSSNR.Intensity", g.config.dlss5_strength);
+        ngx_ui(ngx.nr_params, "DLSSNR.Style", (unsigned)g.config.dlss5_style);
+        ngx_f(ngx.nr_params, "DLSSNR.LocalStructureStrength", 0.5f);
+        ngx_f(ngx.nr_params, "DLSSNR.LocalToneStrength", 0.5f);
+        ngx_ui(ngx.nr_params, "DLSSNR.UseAutoMask", 1);
+        ngx_ui(ngx.nr_params, "DLSSNR.UICorrection", 1);
+        if (!NGX_OK(ngx.create(g.device, cmd, 18, ngx.nr_params, &ngx.nr_feature)) || !ngx.nr_feature) {
+            fprintf(stderr, "[port_gfx] DLSS 5: the NGX runtime did not create Neural Rendering (the card, the "
+                            "driver or that nvngx_dlssnr.dll does not support it)\n");
+            ngx.nr_feature = NULL;
+            ngx.nr_failed = 1;
+            return 0;
+        }
+        ngx.nr_w = w; ngx.nr_h = h;
+        ngx.nr_reset = 1;
+    }
+    color = ngx_resource(image, view, format, w, h, 0);
+    output = ngx_resource(ngx.nr_out.image, ngx.nr_out.view, ngx.nr_out.format, w, h, 1);
+    depth = ngx_resource(ngx.nr_depth.image, ngx.nr_depth.view, ngx.nr_depth.format, w, h, 0);
+    motion = ngx_resource(ngx.nr_motion.image, ngx.nr_motion.view, ngx.nr_motion.format, w, h, 0);
+    ngx_p(ngx.nr_params, "DLSSNR.Color", &color);
+    ngx_p(ngx.nr_params, "DLSSNR.Depth", &depth);
+    ngx_p(ngx.nr_params, "DLSSNR.MVec", &motion);
+    ngx_p(ngx.nr_params, "DLSSNR.Output", &output);
+    ngx_ui(ngx.nr_params, "DLSSNR.Enabled", 1);
+    ngx_ui(ngx.nr_params, "DLSSNR.Reset", ngx.nr_reset ? 1u : 0u);
+    ngx_ui(ngx.nr_params, "DLSSNR.DepthInverted", 0);
+    {
+        static const char *const bases[] = {"DLSSNR.ColorSubrectBaseX", "DLSSNR.ColorSubrectBaseY",
+            "DLSSNR.OutputSubrectBaseX", "DLSSNR.OutputSubrectBaseY", "DLSSNR.DepthSubrectBaseX",
+            "DLSSNR.DepthSubrectBaseY", "DLSSNR.MVecSubrectBaseX", "DLSSNR.MVecSubrectBaseY"};
+        static const char *const widths[] = {"DLSSNR.ColorSubrectWidth", "DLSSNR.OutputSubrectWidth",
+            "DLSSNR.DepthSubrectWidth", "DLSSNR.MVecSubrectWidth"};
+        static const char *const heights[] = {"DLSSNR.ColorSubrectHeight", "DLSSNR.OutputSubrectHeight",
+            "DLSSNR.DepthSubrectHeight", "DLSSNR.MVecSubrectHeight"};
+        for (int i = 0; i < 8; ++i) ngx_ui(ngx.nr_params, bases[i], 0);
+        for (int i = 0; i < 4; ++i) { ngx_ui(ngx.nr_params, widths[i], w); ngx_ui(ngx.nr_params, heights[i], h); }
+    }
+    ngx_f(ngx.nr_params, "DLSSNR.MVecScaleX", 1.0f);
+    ngx_f(ngx.nr_params, "DLSSNR.MVecScaleY", 1.0f);
+    barrier(cmd, ngx.nr_out.image, ngx.nr_fresh ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    ngx.nr_fresh = 0;
+    {
+        int ok = NGX_OK(ngx.evaluate(cmd, ngx.nr_feature, ngx.nr_params, NULL));
+        barrier(cmd, ngx.nr_out.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        if (!ok) return 0;
+    }
+    ngx.nr_reset = 0;
+    return 1;
+}
+
 static int finish(VkCommandBuffer cmd, uint32_t index, VkImage image, VkImageView view, VkFormat format,
                   uint32_t w, uint32_t h, VkSemaphore extra_wait)
 {
@@ -1124,6 +1267,11 @@ static int finish(VkCommandBuffer cmd, uint32_t index, VkImage image, VkImageVie
     }
     dx = floorf((ww - dw) * 0.5f);
     dy = floorf((wh - dh) * 0.5f);
+    if (nr_evaluate(cmd, image, view, format, w, h)) {   /* DLSS 5: the rest works on its output */
+        image = ngx.nr_out.image;
+        view = ngx.nr_out.view;
+        format = ngx.nr_out.format;
+    }
     memset(&push, 0, sizeof push);
     push.source_w = (float)w; push.source_h = (float)h;
     push.sharpness = g.config.sharpness;

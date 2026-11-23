@@ -28,11 +28,18 @@ static struct {
     PfnEvaluate evaluate;
     PfnRelease release;
     PfnShutdown shutdown;
-    int ready;
+    int up;      /* NGX initialised */
+    int ready;   /* DLSS super resolution available */
     NgxParameter *params;
     void *feature;
     uint32_t rw, rh, ow, oh;
     int quality;
+    /* DLSS Neural Rendering (feature 18): its own parameter block and feature */
+    NgxParameter *nr_params;
+    void *nr_feature;
+    uint32_t nr_w, nr_h;
+    PortDlssNrSettings nr_settings;
+    int nr_failed;
 } d;
 
 const char *port_dlss_error(void) { return g_error; }
@@ -45,8 +52,8 @@ int port_dlss_d3d12_start(void *device)
     NgxFeatureInfo info;
     NgxParameter *caps = NULL;
     unsigned r;
-    if (d.ready)
-        return 1;
+    if (d.up)
+        return d.ready;
     memset(&d, 0, sizeof d);
     if (!device || !(d.library = ngx_load())) {
         snprintf(g_error, sizeof g_error, "no NVIDIA NGX runtime (_nvngx.dll) on this machine");
@@ -85,15 +92,14 @@ int port_dlss_d3d12_start(void *device)
         snprintf(g_error, sizeof g_error, "NGX did not start (0x%08X)", r);
         return 0;
     }
+    d.up = 1;   /* NGX stays up for Neural Rendering even without super resolution */
+    if (!NGX_OK(d.allocate(&d.params)) || !d.params) {
+        snprintf(g_error, sizeof g_error, "NGX parameters could not be allocated");
+        return 0;
+    }
     if (!NGX_OK(d.capability(&caps)) || !caps || !ngx_get_i(caps, "SuperSampling.Available", 0)) {
         snprintf(g_error, sizeof g_error, "DLSS is not available on this card or driver (needs an RTX card and "
                                           "nvngx_dlss.dll next to the game)");
-        if (d.shutdown) d.shutdown();
-        return 0;
-    }
-    if (!NGX_OK(d.allocate(&d.params)) || !d.params) {
-        snprintf(g_error, sizeof g_error, "NGX parameters could not be allocated");
-        if (d.shutdown) d.shutdown();
         return 0;
     }
     d.ready = 1;
@@ -141,10 +147,118 @@ int port_dlss_d3d12_evaluate(void *list, void *color, void *depth, void *motion,
     return NGX_OK(d.evaluate(list, d.feature, d.params, NULL));
 }
 
+/* ------------------------------------------------------------------ DLSS Neural Rendering ("DLSS 5", feature 18)
+ * NVIDIA does not publish this feature: its parameter keys (DLSSNR.*) are those its nvngx_dlssnr.dll reads, as open
+ * tools document them (video2dlssnr, MIT). It is asked of the driver's NGX core like any other feature; the core
+ * loads nvngx_dlssnr.dll from the game's folder, the player's own copy (nothing here downloads it). */
+
+void port_dlss_nr_defaults(PortDlssNrSettings *s)
+{
+    memset(s, 0, sizeof *s);
+    s->intensity = 0.5f;
+    s->local_structure = 0.5f;
+    s->local_tone = 0.5f;
+    s->auto_mask = 1;
+    s->ui_correction = 1;
+}
+
+static int nr_dll_present(void)
+{
+#if defined(_WIN32)
+    wchar_t path[1100];
+    DWORD n = GetModuleFileNameW(NULL, path, 1000);
+    wchar_t *slash;
+    path[n < 1000 ? n : 1000] = 0;
+    if ((slash = wcsrchr(path, L'\\'))) slash[1] = 0;
+    wcscat(path, L"nvngx_dlssnr.dll");
+    return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES;
+#else
+    return 0;
+#endif
+}
+
+int port_dlss_nr_d3d12_evaluate(void *list, void *color, void *depth, void *motion, void *output,
+                                uint32_t width, uint32_t height, const PortDlssNrSettings *s, int reset)
+{
+    PortDlssNrSettings def;
+    if (!s) { port_dlss_nr_defaults(&def); s = &def; }
+    if (!d.up || d.nr_failed || !list || !color || !depth || !motion || !output || !width || !height)
+        return 0;
+    if (!d.nr_feature || d.nr_w != width || d.nr_h != height || memcmp(&d.nr_settings, s, sizeof *s) != 0) {
+        if (d.nr_feature) { d.release(d.nr_feature); d.nr_feature = NULL; }
+        if (!nr_dll_present()) {
+            snprintf(g_error, sizeof g_error, "DLSS 5: nvngx_dlssnr.dll is not next to the game (it is the player's "
+                                              "own; NVIDIA does not publish it)");
+            d.nr_failed = 1;
+            return 0;
+        }
+        if (!d.nr_params && (!NGX_OK(d.allocate(&d.nr_params)) || !d.nr_params)) {
+            d.nr_failed = 1;
+            return 0;
+        }
+        /* Everything the model reads is latched at create. */
+        ngx_ui(d.nr_params, "Width", width);
+        ngx_ui(d.nr_params, "Height", height);
+        ngx_ui(d.nr_params, "OutWidth", width);
+        ngx_ui(d.nr_params, "OutHeight", height);
+        ngx_ui(d.nr_params, "PerfQualityValue", 2);
+        ngx_ui(d.nr_params, "CreationNodeMask", 1);
+        ngx_ui(d.nr_params, "VisibilityNodeMask", 1);
+        ngx_ui(d.nr_params, "DLSSNR.Enabled", 1);
+        ngx_ui(d.nr_params, "DLSSNR.Width", width);
+        ngx_ui(d.nr_params, "DLSSNR.Height", height);
+        ngx_ui(d.nr_params, "DLSSNR.Hint.Render.Preset", (unsigned)s->preset);
+        ngx_f(d.nr_params, "DLSSNR.Intensity", s->intensity);
+        ngx_ui(d.nr_params, "DLSSNR.Style", (unsigned)s->style);
+        ngx_f(d.nr_params, "DLSSNR.LocalStructureStrength", s->local_structure);
+        ngx_f(d.nr_params, "DLSSNR.LocalToneStrength", s->local_tone);
+        ngx_ui(d.nr_params, "DLSSNR.UseAutoMask", (unsigned)s->auto_mask);
+        ngx_ui(d.nr_params, "DLSSNR.UICorrection", (unsigned)s->ui_correction);
+        if (!NGX_OK(d.create(list, PORT_DLSS_FEATURE_NEURAL_RENDERING, d.nr_params, &d.nr_feature)) || !d.nr_feature) {
+            snprintf(g_error, sizeof g_error, "DLSS 5: the NGX runtime did not create Neural Rendering (the card, the "
+                                              "driver or that nvngx_dlssnr.dll does not support it)");
+            d.nr_feature = NULL;
+            d.nr_failed = 1;   /* not again this run */
+            return 0;
+        }
+        d.nr_w = width; d.nr_h = height; d.nr_settings = *s;
+        reset = 1;
+    }
+    ngx_resource(d.nr_params, "DLSSNR.Color", color);
+    ngx_resource(d.nr_params, "DLSSNR.Depth", depth);
+    ngx_resource(d.nr_params, "DLSSNR.MVec", motion);
+    ngx_resource(d.nr_params, "DLSSNR.Output", output);
+    ngx_ui(d.nr_params, "DLSSNR.Enabled", 1);
+    ngx_ui(d.nr_params, "DLSSNR.Reset", reset ? 1u : 0u);
+    ngx_ui(d.nr_params, "DLSSNR.DepthInverted", 0);
+    {
+        static const char *const bases[] = {"DLSSNR.ColorSubrectBaseX", "DLSSNR.ColorSubrectBaseY",
+            "DLSSNR.OutputSubrectBaseX", "DLSSNR.OutputSubrectBaseY", "DLSSNR.DepthSubrectBaseX",
+            "DLSSNR.DepthSubrectBaseY", "DLSSNR.MVecSubrectBaseX", "DLSSNR.MVecSubrectBaseY"};
+        static const char *const widths[] = {"DLSSNR.ColorSubrectWidth", "DLSSNR.OutputSubrectWidth",
+            "DLSSNR.DepthSubrectWidth", "DLSSNR.MVecSubrectWidth"};
+        static const char *const heights[] = {"DLSSNR.ColorSubrectHeight", "DLSSNR.OutputSubrectHeight",
+            "DLSSNR.DepthSubrectHeight", "DLSSNR.MVecSubrectHeight"};
+        for (int i = 0; i < 8; ++i) ngx_ui(d.nr_params, bases[i], 0);
+        for (int i = 0; i < 4; ++i) { ngx_ui(d.nr_params, widths[i], width); ngx_ui(d.nr_params, heights[i], height); }
+    }
+    ngx_f(d.nr_params, "DLSSNR.MVecScaleX", 1.0f);
+    ngx_f(d.nr_params, "DLSSNR.MVecScaleY", 1.0f);
+    if (!NGX_OK(d.evaluate(list, d.nr_feature, d.nr_params, NULL))) {
+        snprintf(g_error, sizeof g_error, "DLSS 5: evaluation refused");
+        return 0;
+    }
+    return 1;
+}
+
+int port_dlss_nr_failed(void) { return d.nr_failed; }
+
 void port_dlss_d3d12_stop(void)
 {
+    if (d.nr_feature && d.release) d.release(d.nr_feature);
+    if (d.nr_params && d.destroy) d.destroy(d.nr_params);
     if (d.feature && d.release) d.release(d.feature);
     if (d.params && d.destroy) d.destroy(d.params);
-    if (d.ready && d.shutdown) d.shutdown();
+    if (d.up && d.shutdown) d.shutdown();
     memset(&d, 0, sizeof d);
 }

@@ -32,6 +32,26 @@ int port_dlss_d3d12_evaluate(void *command_list, void *color, void *depth, void 
                              uint32_t render_width, uint32_t render_height, uint32_t output_width,
                              uint32_t output_height, int quality, float jitter_x, float jitter_y, int reset);
 void port_dlss_d3d12_stop(void);
+
+/* DLSS Neural Rendering ("DLSS 5", NGX feature 18): NVIDIA's model that reworks a frame's light, detail and colour at
+ * the same resolution. NVIDIA does not publish it: it runs only when the player put nvngx_dlssnr.dll next to the game
+ * (nothing here downloads it), on a card and driver whose NGX runtime accepts it (RTX 50 for NVIDIA's own builds).
+ * port_dlss_d3d12_start must have run (NGX stays up even without super resolution). Resources as for evaluate, the
+ * output the same size as color. After a failure it is not tried again this run (port_dlss_nr_failed). */
+#define PORT_DLSS_FEATURE_NEURAL_RENDERING 18
+typedef struct PortDlssNrSettings {
+    int preset;              /* 0 default, 1..3 NVIDIA's presets */
+    float intensity;         /* overall strength, 0..1 */
+    int style;               /* 0 default, 1 natural, 2 cinematic */
+    float local_structure;   /* 0..1 */
+    float local_tone;        /* 0..1 */
+    int auto_mask;           /* 1: the model masks what it should not touch */
+    int ui_correction;       /* 1: keep menus and text as they are */
+} PortDlssNrSettings;
+void port_dlss_nr_defaults(PortDlssNrSettings *settings);
+int port_dlss_nr_d3d12_evaluate(void *command_list, void *color, void *depth, void *motion, void *output,
+                                uint32_t width, uint32_t height, const PortDlssNrSettings *settings, int reset);
+int port_dlss_nr_failed(void);
 int port_dlss_ready(void);
 const char *port_dlss_error(void);
 

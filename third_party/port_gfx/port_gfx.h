@@ -43,6 +43,12 @@ typedef struct PortGfxConfig {
     float sharpness;      /* RCAS, in stops: 0 = sharpest, 2 = soft; FSR and DLSS */
     int dlss_quality;     /* PORT_GFX_DLSS_* */
     float aspect;         /* the frame's display aspect (e.g. 4/3 for a 640x448 PS2 frame); 0 = its pixel size's */
+    /* DLSS 5 (NVIDIA DLSS Neural Rendering, NGX feature 18) on the frame before it is scaled. NVIDIA does not
+     * publish it: it runs only with nvngx_dlssnr.dll the player put next to the game (nothing downloads it), on a
+     * card and driver that accept it; otherwise the frame is shown as it was. */
+    int dlss5;
+    float dlss5_strength; /* 0..1 */
+    int dlss5_style;      /* 0 default, 1 natural, 2 cinematic */
 } PortGfxConfig;
 
 /* Defaults: vsync on, the first discrete GPU, FSR, aspect kept, sharpness 0.25, DLSS quality preset. */
@@ -50,7 +56,8 @@ void port_gfx_defaults(PortGfxConfig *config);
 
 /* Reads PortGfxConfig from environment variables (each optional), the way the port tools pass the launcher's settings:
  *   PORT_GFX_VSYNC=0|1  PORT_GFX_ADAPTER=<n>  PORT_GFX_SCALER=nearest|linear|fsr|dlss  PORT_GFX_STRETCH=0|1
- *   PORT_GFX_SHARPNESS=<stops>  PORT_GFX_DLSS_QUALITY=performance|balanced|quality|ultra_performance|dlaa */
+ *   PORT_GFX_SHARPNESS=<stops>  PORT_GFX_DLSS_QUALITY=performance|balanced|quality|ultra_performance|dlaa
+ *   PORT_GFX_DLSS5=0|1  PORT_GFX_DLSS5_STRENGTH=0..100  PORT_GFX_DLSS5_STYLE=default|natural|cinematic */
 void port_gfx_config_from_env(PortGfxConfig *config);
 
 /* Vulkan on the window (HWND on Windows). 1 when ready; 0 (with port_gfx_error) when Vulkan, a device or the window's

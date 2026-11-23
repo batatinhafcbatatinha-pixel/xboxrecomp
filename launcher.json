@@ -253,6 +253,64 @@
                   "word": "vulkan"
                 }
               ]
+            },
+            {
+              "key": "dlss5",
+              "pt": "DLSS 5 (Neural Rendering)",
+              "en": "DLSS 5 (Neural Rendering)",
+              "default": 0,
+              "restart": true,
+              "help_pt": "Precisa do nvngx_dlssnr.dll que você mesmo colocar ao lado do jogo (a NVIDIA não publica; roda em RTX 50) e da API Vulkan. Sem ele, nada muda.",
+              "help_en": "Needs nvngx_dlssnr.dll that you put next to the game yourself (NVIDIA does not publish it; runs on RTX 50) and the Vulkan API. Without it, nothing changes.",
+              "choices": [
+                {
+                  "v": 0,
+                  "pt": "Desligado",
+                  "en": "Off"
+                },
+                {
+                  "v": 1,
+                  "pt": "Ligado",
+                  "en": "On"
+                }
+              ]
+            },
+            {
+              "key": "dlss5_strength",
+              "pt": "Força do DLSS 5",
+              "en": "DLSS 5 strength",
+              "default": 50,
+              "min": 0,
+              "max": 100,
+              "step": 5,
+              "restart": true
+            },
+            {
+              "key": "dlss5_style",
+              "pt": "Estilo do DLSS 5",
+              "en": "DLSS 5 style",
+              "default": 0,
+              "restart": true,
+              "choices": [
+                {
+                  "v": 0,
+                  "pt": "Padrão",
+                  "en": "Default",
+                  "word": "default"
+                },
+                {
+                  "v": 1,
+                  "pt": "Natural",
+                  "en": "Natural",
+                  "word": "natural"
+                },
+                {
+                  "v": 2,
+                  "pt": "Cinematográfico",
+                  "en": "Cinematic",
+                  "word": "cinematic"
+                }
+              ]
             }
           ]
         }

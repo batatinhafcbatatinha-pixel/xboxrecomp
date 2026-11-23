@@ -243,6 +243,11 @@ antialiasing = off
 gpu = -1
 ; native = Direct3D 11; vulkan = Direct3D 11 on Vulkan (DXVK, when the graphics card supports Vulkan)
 api = native
+; DLSS 5 (NVIDIA Neural Rendering) with api = vulkan: 1 = on. Needs nvngx_dlssnr.dll that you put next to the game
+; (NVIDIA does not publish it; nothing downloads it). Strength 0-100, style default | natural | cinematic.
+dlss5 = 0
+dlss5_strength = 50
+dlss5_style = default
 '''
 
 
@@ -268,6 +273,10 @@ def video_env(port):
         'RECOMP_VIDEO_480P': '0' if get('progressive', '1') == '0' else '1',
         'RECOMP_PRESENT_AA': 'fxaa' if get('antialiasing', 'off') == 'fxaa' else 'off',
         'RECOMP_GRAPHICS_API': 'vulkan' if get('api', 'native') == 'vulkan' else 'native',
+        # DLSS 5 (port_gfx, with api = vulkan): the player's own nvngx_dlssnr.dll next to the game.
+        'PORT_GFX_DLSS5': '1' if get('dlss5', '0') == '1' else '0',
+        'PORT_GFX_DLSS5_STRENGTH': get('dlss5_strength', '50') if get('dlss5_strength', '50').isdigit() else '50',
+        'PORT_GFX_DLSS5_STYLE': get('dlss5_style', 'default'),
         'RECOMP_PRESENT_ADAPTER': get('gpu', '-1') if get('gpu', '-1').lstrip('-').isdigit() else '-1',
     }
 
