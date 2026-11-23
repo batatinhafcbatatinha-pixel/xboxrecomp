@@ -28,6 +28,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gpu_present.h"
+#ifdef PORT_GFX
+#include "port_gfx.h"   /* RECOMP_GRAPHICS_API=vulkan */
+#endif
 
 static ID3D11Device             *s_dev;
 static ID3D11DeviceContext      *s_ctx;
@@ -45,6 +48,7 @@ static int                       s_vsync = 1;
 static int                       s_fsr;         /* RECOMP_PRESENT_FILTER=fsr */
 static int                       s_stretch;     /* RECOMP_PRESENT_ASPECT=stretch: fill the window */
 static int                       s_fxaa;        /* RECOMP_PRESENT_AA=fxaa */
+static int                       s_vulkan;      /* presenting through port_gfx */
 
 /* A triangle covering the viewport, from the vertex id; uv 0..1. */
 static const char s_hlsl[] =
@@ -192,7 +196,7 @@ int gpu_present_init(HWND hwnd, uint32_t width, uint32_t height)
     const char *a = getenv("RECOMP_PRESENT_ASPECT");
     if (v && v[0] == '0')
         s_vsync = 0;
-    s_fsr = f && (f[0] == 'f' || f[0] == 'F');
+    s_fsr = f && (f[0] == 'f' || f[0] == 'F' || f[0] == 'd' || f[0] == 'D');   /* DLSS is Vulkan's: FSR here */
     s_stretch = a && (a[0] == 's' || a[0] == 'S');
     {
         const char *aa = getenv("RECOMP_PRESENT_AA");
@@ -200,6 +204,30 @@ int gpu_present_init(HWND hwnd, uint32_t width, uint32_t height)
     }
     s_hwnd = hwnd;
     s_w = width; s_h = height;
+#ifdef PORT_GFX
+    {
+        /* RECOMP_GRAPHICS_API=vulkan: the same frames through Vulkan (port_gfx), with FSR 1.0 or DLSS
+         * (RECOMP_PRESENT_FILTER=dlss); Direct3D 11 below when Vulkan cannot start. */
+        const char *api = getenv("RECOMP_GRAPHICS_API");
+        if (api && (api[0] == 'v' || api[0] == 'V')) {
+            PortGfxConfig cfg;
+            const char *gpu = getenv("RECOMP_PRESENT_ADAPTER");
+            port_gfx_defaults(&cfg);
+            cfg.vsync = s_vsync;
+            cfg.stretch = s_stretch;
+            cfg.adapter = gpu && *gpu ? atoi(gpu) : -1;
+            cfg.scaler = !f ? PORT_GFX_FSR : (f[0] == 'p' || f[0] == 'P') ? PORT_GFX_NEAREST
+                       : (f[0] == 'l' || f[0] == 'L') ? PORT_GFX_LINEAR : (f[0] == 'd' || f[0] == 'D') ? PORT_GFX_DLSS
+                       : PORT_GFX_FSR;
+            port_gfx_config_from_env(&cfg);
+            if (port_gfx_open(hwnd, &cfg)) {
+                s_vulkan = 1;
+                return 1;
+            }
+            fprintf(stderr, "  [Vulkan] %s; presenting through Direct3D 11\n", port_gfx_error());
+        }
+    }
+#endif
     client_size(&s_bw, &s_bh);
     ZeroMemory(&sd, sizeof sd);
     sd.BufferDesc.Width  = s_bw;
@@ -277,6 +305,10 @@ int gpu_present_frame(const uint32_t *pixels)
     uint32_t cw, ch;
     float sx, sy;
 
+#ifdef PORT_GFX
+    if (s_vulkan)
+        return port_gfx_present_pixels(pixels, s_w, s_h, s_w * 4);
+#endif
     if (!s_rtv || !pixels)
         return 0;
     client_size(&cw, &ch);
@@ -317,6 +349,9 @@ int gpu_present_frame(const uint32_t *pixels)
 
 void gpu_present_shutdown(void)
 {
+#ifdef PORT_GFX
+    if (s_vulkan) { port_gfx_close(); s_vulkan = 0; }
+#endif
     if (s_ps)    { ID3D11PixelShader_Release(s_ps);           s_ps = NULL; }
     if (s_vs)    { ID3D11VertexShader_Release(s_vs);          s_vs = NULL; }
     if (s_samp)  { ID3D11SamplerState_Release(s_samp);        s_samp = NULL; }

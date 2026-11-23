@@ -17,6 +17,10 @@ endif()
 if(WIN32)
     # gpu_present.c: the framebuffer window's D3D11 presenter.
     target_sources(xbox_video PRIVATE gpu_present.c)
+    # port_gfx (third_party/port_gfx, shared with the other recompilers): RECOMP_GRAPHICS_API=vulkan presents the
+    # framebuffer window through Vulkan, with FSR 1.0 or DLSS.
+    include(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/port_gfx/port_gfx.cmake)
+    port_gfx_add(xbox_video)
     target_link_libraries(xbox_video PUBLIC mfplat mfreadwrite mfuuid mf ole32
                           d3d11 dxgi dxguid d3dcompiler)
 else()

@@ -226,7 +226,8 @@ def step_compile(port, args):
 
 PC_SETTINGS = '''; PC video settings of this game (tools/xboxport play reads them; an environment variable wins).
 [video]
-; Enlarging the frame to the window: linear | point | fsr (AMD FidelityFX Super Resolution 1.0)
+; Enlarging the frame to the window: linear | point | fsr (AMD FidelityFX Super Resolution 1.0) |
+; dlss (NVIDIA DLSS, RTX cards, with api = vulkan; FSR otherwise)
 filter = fsr
 ; 1 = vertical sync, 0 = off
 vsync = 1
@@ -260,7 +261,7 @@ def video_env(port):
     get = lambda key, default: str(v.get(key, default)).strip().lower()
     return {
         'RECOMP_D3D_PRESENT': '1',
-        'RECOMP_PRESENT_FILTER': get('filter', 'fsr') if get('filter', 'fsr') in ('linear', 'point', 'fsr') else 'fsr',
+        'RECOMP_PRESENT_FILTER': get('filter', 'fsr') if get('filter', 'fsr') in ('linear', 'point', 'fsr', 'dlss') else 'fsr',
         'RECOMP_PRESENT_VSYNC': '0' if get('vsync', '1') == '0' else '1',
         'RECOMP_PRESENT_ASPECT': 'stretch' if get('aspect', 'keep') == 'stretch' else 'keep',
         'RECOMP_XBOX_WIDESCREEN': '0' if get('widescreen', '1') == '0' else '1',
@@ -281,8 +282,12 @@ def step_play(port, args):
     # [video] api = vulkan: Direct3D 11 on Vulkan through DXVK (vulkan_layer.py), when the card supports Vulkan.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import vulkan_layer
-    vulkan_layer.stage(port.exe.parent, 'd3d11', env.get('RECOMP_GRAPHICS_API') == 'vulkan',
-                       Path(__file__).resolve().parents[2] / '.local/downloads/vulkan')
+    # With Vulkan the framebuffer window presents through port_gfx itself, and the D3D8 layer's Direct3D 11 goes
+    # through DXVK. DLSS (filter = dlss) needs NVIDIA's network next to the game.
+    cache = Path(__file__).resolve().parents[2] / '.local/downloads/vulkan'
+    vulkan = env.get('RECOMP_GRAPHICS_API') == 'vulkan'
+    vulkan_layer.stage(port.exe.parent, 'd3d11', vulkan, cache)
+    vulkan_layer.stage_dlss(port.exe.parent, vulkan and env.get('RECOMP_PRESENT_FILTER') == 'dlss', cache)
     r = subprocess.run([str(port.exe), str(port.files)], cwd=port.exe.parent, env=env)
     sys.exit(r.returncode)
 

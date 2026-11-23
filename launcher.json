@@ -107,6 +107,12 @@
                   "pt": "AMD FSR 1.0",
                   "en": "AMD FSR 1.0",
                   "word": "fsr"
+                },
+                {
+                  "v": 3,
+                  "pt": "NVIDIA DLSS (com API Vulkan; placas RTX)",
+                  "en": "NVIDIA DLSS (with the Vulkan API; RTX cards)",
+                  "word": "dlss"
                 }
               ]
             },
@@ -231,8 +237,8 @@
               "en": "Graphics API",
               "default": 0,
               "restart": true,
-              "help_pt": "Vulkan roda o Direct3D 11 do jogo sobre Vulkan (DXVK). Só vale se a placa de vídeo tiver Vulkan; senão fica o Direct3D 11.",
-              "help_en": "Vulkan runs the game's Direct3D 11 on Vulkan (DXVK). Only with a graphics card that supports Vulkan; Direct3D 11 otherwise.",
+              "help_pt": "Vulkan: a janela do jogo é apresentada em Vulkan (com FSR ou DLSS) e o Direct3D 11 roda sobre Vulkan (DXVK). Sem placa com Vulkan, fica o Direct3D 11.",
+              "help_en": "Vulkan: the game's window is presented through Vulkan (with FSR or DLSS) and Direct3D 11 runs on Vulkan (DXVK). Without a Vulkan card, Direct3D 11 stays.",
               "choices": [
                 {
                   "v": 0,

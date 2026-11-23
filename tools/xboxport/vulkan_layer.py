@@ -8,6 +8,7 @@ the program's own folder first. stage() puts them there or takes them away again
 Vulkan device: otherwise the game keeps Direct3D, which is also where it goes back to if the layer cannot start.
 
     stage(exe_dir, api, want, cache_dir, log=print) -> bool   # True when the game will draw through Vulkan
+    stage_dlss(exe_dir, want, cache_dir, log=print) -> bool   # NVIDIA's DLSS network next to the game
     vulkan_devices() -> list of names                          # the Vulkan devices the loader sees
 """
 import ctypes
@@ -30,6 +31,12 @@ FILES = {
     'd3d12': [(DXVK, 'dxgi.dll'), (VKD3D, 'd3d12.dll'), (VKD3D, 'd3d12core.dll')],
 }
 MARKER = 'vulkan-layer.txt'   # the files stage() put there (and nothing else is ever removed)
+
+# NVIDIA DLSS (port_gfx's DLSS scaler): the network, nvngx_dlss.dll, from NVIDIA's own repository. Its licence lets
+# applications ship it but not open-source repositories carry it, so it is fetched on the player's machine.
+DLSS = ('https://raw.githubusercontent.com/NVIDIA/DLSS/v310.9.16/lib/Windows_x86_64/rel/nvngx_dlss.dll',
+        'd00b5b0ab29c3ca101b70c3a5ecb3a01b7ef33766a3383a28a18623083e6123e')
+DLSS_MARKER = 'dlss-runtime.txt'
 
 
 def vulkan_devices():
@@ -138,6 +145,28 @@ def stage(exe_dir, api, want, cache_dir, log=print):
         log(f'Vulkan: {e}; the game keeps Direct3D.')
         return False
     log(f'Vulkan: {api} through {"DXVK" if api == "d3d11" else "vkd3d-proton + DXVK"} on {devices[0]}.')
+    return True
+
+
+def stage_dlss(exe_dir, want, cache_dir, log=print):
+    """nvngx_dlss.dll next to the game when want (the DLSS scaler is chosen), else removed if stage_dlss put it there.
+    True when it is there."""
+    exe_dir = Path(exe_dir)
+    target, marker = exe_dir / 'nvngx_dlss.dll', exe_dir / DLSS_MARKER
+    if not want or os.name != 'nt':
+        if marker.is_file():
+            target.unlink(missing_ok=True)
+            marker.unlink()
+        return False
+    if target.is_file() and not marker.is_file():
+        return True   # the player's own copy
+    try:
+        data = _archive((DLSS[0], DLSS[1], ''), cache_dir).read_bytes()
+        marker.write_text('nvngx_dlss.dll'+chr(10), encoding='utf-8')
+        target.write_bytes(data)
+    except Exception as e:   # noqa: BLE001 -- the game then uses FSR
+        log(f'DLSS: {e}; the game uses FSR instead.')
+        return False
     return True
 
 
