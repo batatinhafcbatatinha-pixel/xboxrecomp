@@ -267,7 +267,8 @@ def step_play(port, args):
         raise SystemExit('The game is not built yet: install it from the launcher.')
     port.observed.mkdir(parents=True, exist_ok=True)
     # Code the run reaches that was not translated is recorded for the next build (see learn).
-    env = {**video_env(port), **os.environ, 'RECOMP_MISSING_FILE': str(port.missing)}
+    # input.ini in the port folder: this game's controller settings (port_input), over the global ones.
+    env = {**video_env(port), **os.environ, 'RECOMP_MISSING_FILE': str(port.missing), 'PORT_INPUT_GAME_DIR': str(port.dir)}
     r = subprocess.run([str(port.exe), str(port.files)], cwd=port.exe.parent, env=env)
     sys.exit(r.returncode)
 

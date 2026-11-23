@@ -15,6 +15,11 @@ target_link_libraries(xbox_input PUBLIC xbox_input_map)
 if(WIN32)
     # Mouse+keyboard pad (RECOMP_MKB) reads Win32 raw input.
     target_sources(xbox_input PRIVATE mkb_input.c)
+    # port_input (third_party/port_input, shared with the other recompilers): every controller SDL3 knows, with the
+    # player's controller choice, remaps, dead zones, sensitivities, wheels and vibration settings.
+    target_sources(xbox_input PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/port_input/port_input.c)
+    target_include_directories(xbox_input PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/port_input)
+    target_compile_definitions(xbox_input PRIVATE XBOX_PORT_INPUT)
     # mingw-w64's libxinput.a imports XINPUT1_3.dll, the DirectX June 2010
     # redistributable: stock Windows 10/11 lacks it and the exe dies with
     # 0xC0000135 before main. Proton ships it, so only native Windows shows

@@ -44,3 +44,6 @@ if(MSVC)
   target_link_options(game PRIVATE /LARGEADDRESSAWARE)
 endif()
 set_target_properties(game PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+# SDL3.dll and gamecontrollerdb.txt next to the game: every controller SDL knows (port_input, src/input).
+include("${XBOXRECOMP_DIR}/third_party/port_input/port_input.cmake")
+port_input_stage(game)

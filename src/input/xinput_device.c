@@ -267,10 +267,86 @@ static DWORD sdl_get_state(DWORD port, XINPUT_STATE *out)
     return result;
 }
 
+#ifdef XBOX_PORT_INPUT
+/* port_input (third_party/port_input): when SDL3.dll is there it reads every controller, with the player's
+ * controller choice, remaps, dead zones, sensitivities, wheels and vibration settings (input.ini, the launcher's
+ * Controllers page), and stands in for both paths above. */
+#include "port_input.h"
+static int port_input_state = -1;   /* -1 not tried, 0 off, 1 on */
+static CRITICAL_SECTION port_input_lock;
+
+static int port_input_on(void)
+{
+    if (port_input_state < 0) {
+        char dir[MAX_PATH], *slash;
+        const char *off = getenv("RECOMP_PORT_INPUT");
+        GetModuleFileNameA(NULL, dir, sizeof dir);
+        slash = strrchr(dir, '\\');
+        if (slash) *slash = 0;
+        InitializeCriticalSection(&port_input_lock);
+        port_input_state = !(off && off[0] == '0') && port_input_start(dir, NULL);
+    }
+    return port_input_state;
+}
+
+static DWORD port_input_get(DWORD port, XINPUT_STATE *out)
+{
+    static DWORD tick, packet[XBOX_MAX_CONTROLLERS];
+    static XINPUT_GAMEPAD last[XBOX_MAX_CONTROLLERS];
+    static const struct { uint32_t from; WORD to; } map[] = {
+        {PORT_BTN_A, XINPUT_GAMEPAD_A}, {PORT_BTN_B, XINPUT_GAMEPAD_B}, {PORT_BTN_X, XINPUT_GAMEPAD_X},
+        {PORT_BTN_Y, XINPUT_GAMEPAD_Y}, {PORT_BTN_LB, XINPUT_GAMEPAD_LEFT_SHOULDER},
+        {PORT_BTN_RB, XINPUT_GAMEPAD_RIGHT_SHOULDER}, {PORT_BTN_BACK, XINPUT_GAMEPAD_BACK},
+        {PORT_BTN_START, XINPUT_GAMEPAD_START}, {PORT_BTN_LS, XINPUT_GAMEPAD_LEFT_THUMB},
+        {PORT_BTN_RS, XINPUT_GAMEPAD_RIGHT_THUMB}, {PORT_BTN_UP, XINPUT_GAMEPAD_DPAD_UP},
+        {PORT_BTN_DOWN, XINPUT_GAMEPAD_DPAD_DOWN}, {PORT_BTN_LEFT, XINPUT_GAMEPAD_DPAD_LEFT},
+        {PORT_BTN_RIGHT, XINPUT_GAMEPAD_DPAD_RIGHT}};
+    PortPad pad;
+    XINPUT_GAMEPAD g;
+    DWORD now = GetTickCount();
+    size_t i;
+    EnterCriticalSection(&port_input_lock);
+    if (now != tick) {
+        tick = now;
+        port_input_update();
+    }
+    port_input_pad((int)port, &pad);
+    LeaveCriticalSection(&port_input_lock);
+    if (!pad.connected)
+        return ERROR_DEVICE_NOT_CONNECTED;
+    memset(&g, 0, sizeof g);
+    for (i = 0; i < sizeof map / sizeof map[0]; i++)
+        if (pad.buttons & map[i].from)
+            g.wButtons |= map[i].to;
+    g.bLeftTrigger = (BYTE)(pad.lt * 255.0f + 0.5f);
+    g.bRightTrigger = (BYTE)(pad.rt * 255.0f + 0.5f);
+    g.sThumbLX = (SHORT)(pad.lx * 32767.0f);
+    g.sThumbLY = (SHORT)(-pad.ly * 32767.0f);   /* SDL's Y axis points down, XInput's up */
+    g.sThumbRX = (SHORT)(pad.rx * 32767.0f);
+    g.sThumbRY = (SHORT)(-pad.ry * 32767.0f);
+    if (memcmp(&g, &last[port], sizeof g)) {
+        last[port] = g;
+        packet[port]++;
+    }
+    out->dwPacketNumber = packet[port];
+    out->Gamepad = g;
+    return ERROR_SUCCESS;
+}
+#endif
+
 /* A host pad as XInput would report it, whichever API it came through. */
 DWORD xbox_InputGetRaw(DWORD dwPort, XINPUT_STATE *out)
 {
-    DWORD result = XInputGetState(dwPort, out);
+    DWORD result;
+#ifdef XBOX_PORT_INPUT
+    if (dwPort < XBOX_MAX_CONTROLLERS && port_input_on()) {
+        result = port_input_get(dwPort, out);
+        g_controller_connected[dwPort] = result == ERROR_SUCCESS;
+        g_sdl_port_connected[dwPort] = FALSE;
+        return result;
+    }
+#endif
+    result = XInputGetState(dwPort, out);
     if (dwPort >= XBOX_MAX_CONTROLLERS)
         return result;
     g_controller_connected[dwPort] = result == ERROR_SUCCESS;
@@ -361,6 +437,12 @@ DWORD xbox_InputSetState(DWORD dwPort, const XBOX_VIBRATION *pVibration)
 
     xi_vib.wLeftMotorSpeed = pVibration->wLeftMotorSpeed;
     xi_vib.wRightMotorSpeed = pVibration->wRightMotorSpeed;
+#ifdef XBOX_PORT_INPUT
+    if (port_input_on()) {
+        port_input_rumble((int)dwPort, xi_vib.wLeftMotorSpeed / 65535.0f, xi_vib.wRightMotorSpeed / 65535.0f);
+        return g_controller_connected[dwPort] ? ERROR_SUCCESS : ERROR_DEVICE_NOT_CONNECTED;
+    }
+#endif
     if (!g_controller_connected[dwPort] && sdl_state == 1) {
         SDLPad *pad;
         DWORD result = ERROR_DEVICE_NOT_CONNECTED;
