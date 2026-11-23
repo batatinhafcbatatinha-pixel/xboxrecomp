@@ -449,5 +449,65 @@
    ]
   }
  ],
- "launcher_name": "Setup"
+ "launcher_name": "Setup",
+  "linux": {
+    "play": "Play.sh",
+    "exe": ".local/build/fifastreet_recomp",
+    "deps": {
+      "buildtools_gb": 0.5,
+      "python_gb": 0.1,
+      "tools": [
+        {
+          "id": "llvm",
+          "name": "Clang",
+          "check": null,
+          "gb": 0
+        },
+        {
+          "id": "cmake",
+          "name": "CMake 3.31.12",
+          "check": ".local/tools/cmake-3.31.12/bin/cmake",
+          "gb": 0.1
+        },
+        {
+          "id": "ninja",
+          "name": "Ninja 1.13.2",
+          "check": ".local/tools/ninja-1.13.2/ninja",
+          "gb": 0.01
+        }
+      ]
+    },
+    "vulkan_dir": null,
+    "ini": ".local/build/fifastreet2.ini"
+  },
+  "macos": {
+    "play": "Play.sh",
+    "exe": ".local/build/fifastreet_recomp",
+    "deps": {
+      "buildtools_gb": 1.5,
+      "python_gb": 0.1,
+      "tools": [
+        {
+          "id": "llvm",
+          "name": "Clang",
+          "check": null,
+          "gb": 0
+        },
+        {
+          "id": "cmake",
+          "name": "CMake 3.31.12",
+          "check": ".local/tools/cmake-3.31.12/CMake.app/Contents/bin/cmake",
+          "gb": 0.1
+        },
+        {
+          "id": "ninja",
+          "name": "Ninja 1.13.2",
+          "check": ".local/tools/ninja-1.13.2/ninja",
+          "gb": 0.01
+        }
+      ]
+    },
+    "vulkan_dir": null,
+    "ini": ".local/build/fifastreet2.ini"
+  }
 }

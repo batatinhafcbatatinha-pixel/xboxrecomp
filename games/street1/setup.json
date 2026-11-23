@@ -32,5 +32,49 @@
       "url": "https://github.com/batatinhafcbatatinha-pixel/port-installer.git",
       "commit": "7c3b4ad5d353cf4609d1c00ab96168a3d16e084f"
     }
+  },
+  "linux": {
+    "play": "Play.sh",
+    "exe": ".local/build/fifastreet_recomp",
+    "tools": [
+      "llvm",
+      "cmake",
+      "ninja"
+    ],
+    "buildtools": false,
+    "steps": [
+      {
+        "name": "Prepare and build the native profile",
+        "run": [
+          "bash",
+          "build-linux.sh",
+          "--jobs",
+          "{jobs}"
+        ],
+        "retry_if": ".local/build/build.ninja"
+      }
+    ]
+  },
+  "macos": {
+    "play": "Play.sh",
+    "exe": ".local/build/fifastreet_recomp",
+    "tools": [
+      "llvm",
+      "cmake",
+      "ninja"
+    ],
+    "buildtools": false,
+    "steps": [
+      {
+        "name": "Prepare and build the native profile",
+        "run": [
+          "bash",
+          "build-macos.sh",
+          "--jobs",
+          "{jobs}"
+        ],
+        "retry_if": ".local/build/build.ninja"
+      }
+    ]
   }
 }

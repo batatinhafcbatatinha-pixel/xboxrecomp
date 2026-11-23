@@ -24,7 +24,7 @@ target_compile_definitions(game_aot PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SE
 
 # Untranslated code runs emulated on Unicorn (src/x86_fallback.c) when tools/xboxport fetched it.
 set(XBOXPORT_UNICORN_DIR "" CACHE PATH "Unicorn (include/, lib/unicorn.lib, lib/unicorn.dll) for the fallback emulator")
-if(XBOXPORT_UNICORN_DIR AND EXISTS "${XBOXPORT_UNICORN_DIR}/lib/unicorn.dll")
+if(WIN32 AND XBOXPORT_UNICORN_DIR AND EXISTS "${XBOXPORT_UNICORN_DIR}/lib/unicorn.dll")
   target_compile_definitions(game_aot PRIVATE XBOXPORT_FALLBACK)
   target_include_directories(game_aot PRIVATE "${XBOXPORT_UNICORN_DIR}/include")
   set(XBOXPORT_UNICORN_DLL "${XBOXPORT_UNICORN_DIR}/lib/unicorn.dll")   # loaded at run time (x86_fallback.c)
@@ -35,7 +35,10 @@ endif()
 
 add_executable(game src/main.c)
 target_include_directories(game PRIVATE src/recomp src/recomp/gen "${XBOXRECOMP_DIR}/include" "${XBOXRECOMP_DIR}/src")
-target_link_libraries(game PRIVATE game_aot xboxrecomp d3d11 dxgi dxguid xinput winmm dbghelp)
+target_link_libraries(game PRIVATE game_aot xboxrecomp)
+if(WIN32)
+  target_link_libraries(game PRIVATE d3d11 dxgi dxguid xinput winmm dbghelp)
+endif()
 if(XBOXPORT_UNICORN_DLL)
   add_custom_command(TARGET game POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${XBOXPORT_UNICORN_DLL}" "$<TARGET_FILE_DIR:game>")
@@ -45,5 +48,7 @@ if(MSVC)
 endif()
 set_target_properties(game PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 # SDL3.dll and gamecontrollerdb.txt next to the game: every controller SDL knows (port_input, src/input).
-include("${XBOXRECOMP_DIR}/third_party/port_input/port_input.cmake")
-port_input_stage(game)
+if(WIN32)
+  include("${XBOXRECOMP_DIR}/third_party/port_input/port_input.cmake")
+  port_input_stage(game)
+endif()

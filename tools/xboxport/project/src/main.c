@@ -5,7 +5,13 @@
  * and calls the translated entry point. Graphics and sound go through the toolkit's emulated hardware (NV2A, APU),
  * as in templates/new-game. */
 #include <xbox/xboxrecomp.h>
+#ifdef _WIN32
 #include <dbghelp.h>
+#else
+#include <signal.h>
+#include <unistd.h>
+#include "video/video_player.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,6 +25,7 @@ extern void xbe_entry_point(void);
 typedef struct MCPXAPUState MCPXAPUState;
 extern MCPXAPUState *mcpx_apu_init_standalone(uint8_t *ram_ptr);
 extern MCPXAPUState *g_apu_state;
+#ifdef _WIN32
 extern bool apu_hook_handle_mmio(PCONTEXT ctx, uintptr_t fault_addr, uint32_t fault_xbox_va, int is_write);
 #define APU_TRAP_BASE 0xFE800000u
 #define APU_TRAP_END  0xFE880000u
@@ -52,6 +59,25 @@ static LONG CALLBACK veh_handler(PEXCEPTION_POINTERS ep)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
+#else
+static void host_fault(int sig, siginfo_t *info, void *context)
+{
+    if (xbox_PosixMmioFault(context, (uintptr_t)info->si_addr)) return;
+    /* Restore the default action: a repeated fault produces the host crash report. */
+    signal(sig, SIG_DFL);
+}
+
+static int install_host_faults(void)
+{
+    struct sigaction action;
+    memset(&action, 0, sizeof action);
+    sigemptyset(&action.sa_mask);
+    action.sa_sigaction = host_fault;
+    action.sa_flags = SA_SIGINFO;
+    return sigaction(SIGSEGV, &action, NULL) == 0 && sigaction(SIGBUS, &action, NULL) == 0;
+}
+#endif
+
 static int load_xbe(const char *path, void **data, size_t *bytes)
 {
     FILE *f = fopen(path, "rb");
@@ -70,8 +96,13 @@ static int load_xbe(const char *path, void **data, size_t *bytes)
 
 extern void xboxport_fallback_init(void);   /* x86_fallback.c */
 
-int main(int argc, char **argv)
+static int host_argc;
+static char **host_argv;
+
+static int guest_main(void)
 {
+    int argc = host_argc;
+    char **argv = host_argv;
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
     xboxport_fallback_init();   /* before the runtime lays out the guest address space */
@@ -79,13 +110,23 @@ int main(int argc, char **argv)
     char xbe[MAX_PATH];
     void *data = NULL;
     size_t bytes = 0;
-    if (snprintf(xbe, sizeof(xbe), "%s\\default.xbe", game) >= (int)sizeof(xbe) || !load_xbe(xbe, &data, &bytes)) {
+    const char *separator =
+#ifdef _WIN32
+        "\\";
+#else
+        "/";
+#endif
+    if (snprintf(xbe, sizeof(xbe), "%s%sdefault.xbe", game, separator) >= (int)sizeof(xbe) || !load_xbe(xbe, &data, &bytes)) {
         fprintf(stderr, "default.xbe missing or not an XBE: %s\n", xbe);
         return 2;
     }
+    #ifdef _WIN32
     SymSetOptions(SYMOPT_DEFERRED_LOADS | SYMOPT_UNDNAME);
     SymInitialize(GetCurrentProcess(), NULL, TRUE);
     AddVectoredExceptionHandler(1, veh_handler);
+    #else
+    if (!install_host_faults()) { free(data); return 3; }
+    #endif
     if (!xbox_MemoryLayoutInit(data, bytes)) {
         fprintf(stderr, "Cannot map the Xbox memory layout (the address range may be in use)\n");
         free(data);
@@ -108,4 +149,15 @@ int main(int argc, char **argv)
     xbox_MemoryLayoutShutdown();
     free(data);
     return 0;
+}
+
+int main(int argc, char **argv)
+{
+    host_argc = argc;
+    host_argv = argv;
+#ifdef _WIN32
+    return guest_main();
+#else
+    return xbox_HostWindowMain(guest_main);
+#endif
 }

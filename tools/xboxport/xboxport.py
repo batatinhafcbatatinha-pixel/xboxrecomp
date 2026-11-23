@@ -40,7 +40,7 @@ class Port:
         self.project = self.dir / 'project'
         self.gen = self.project / 'src/recomp/gen'
         self.out = self.build / 'out'
-        self.exe = self.out / 'bin' / 'game.exe'
+        self.exe = self.out / 'bin' / ('game.exe' if os.name == 'nt' else 'game')
         self.observed = self.dir / 'observed'
         self.missing = self.observed / 'missing_code.txt'
         self.seeds = self.observed / 'seed_functions.json'
@@ -209,7 +209,10 @@ def step_prepare(port, args):
 def step_compile(port, args):
     need('cmake'), need('ninja')
     # llvm-mingw (setup sets CC/CXX to clang): no Visual Studio needed; else clang-cl / cl with the MSVC environment.
-    if os.environ.get('CC') and shutil.which(os.environ['CC']):
+    if os.name != 'nt':
+        cc = need(os.environ.get('CC', 'clang'))
+        cxx = need(os.environ.get('CXX', 'clang++'))
+    elif os.environ.get('CC') and shutil.which(os.environ['CC']):
         cc, cxx = os.environ['CC'], os.environ.get('CXX', 'clang++')
     elif shutil.which('clang') and shutil.which('x86_64-w64-mingw32-clang'):
         cc, cxx = 'clang', 'clang++'
@@ -217,7 +220,7 @@ def step_compile(port, args):
         cc = cxx = shutil.which('clang-cl') or need('cl')
     project_files(port)
     mark_missing(port)   # translations made before the fallback get it too
-    uc = unicorn_dir()
+    uc = unicorn_dir() if os.name == 'nt' else None
     run(['cmake', '-S', port.project, '-B', port.out, '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release',
          '-DCMAKE_C_COMPILER=' + cc, '-DCMAKE_CXX_COMPILER=' + cxx, '-DXBOXRECOMP_DIR=' + REPO.as_posix(),
          '-DXBOXPORT_UNICORN_DIR=' + (uc.as_posix() if uc else '')])
@@ -288,15 +291,18 @@ def step_play(port, args):
     # Code the run reaches that was not translated is recorded for the next build (see learn).
     # input.ini in the port folder: this game's controller settings (port_input), over the global ones.
     env = {**video_env(port), **os.environ, 'RECOMP_MISSING_FILE': str(port.missing), 'PORT_INPUT_GAME_DIR': str(port.dir)}
-    # [video] api = vulkan: Direct3D 11 on Vulkan through DXVK (vulkan_layer.py), when the card supports Vulkan.
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import vulkan_layer
-    # With Vulkan the framebuffer window presents through port_gfx itself, and the D3D8 layer's Direct3D 11 goes
-    # through DXVK. DLSS (filter = dlss) needs NVIDIA's network next to the game.
-    cache = Path(__file__).resolve().parents[2] / '.local/downloads/vulkan'
-    vulkan = env.get('RECOMP_GRAPHICS_API') == 'vulkan'
-    vulkan_layer.stage(port.exe.parent, 'd3d11', vulkan, cache)
-    vulkan_layer.stage_dlss(port.exe.parent, vulkan and env.get('RECOMP_PRESENT_FILTER') == 'dlss', cache)
+    if os.name != 'nt':
+        env.setdefault('RECOMP_FB_WINDOW', '1')
+    else:
+        # [video] api = vulkan: Direct3D 11 on Vulkan through DXVK (vulkan_layer.py), when the card supports Vulkan.
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import vulkan_layer
+        # With Vulkan the framebuffer window presents through port_gfx itself, and the D3D8 layer's Direct3D 11 goes
+        # through DXVK. DLSS (filter = dlss) needs NVIDIA's network next to the game.
+        cache = Path(__file__).resolve().parents[2] / '.local/downloads/vulkan'
+        vulkan = env.get('RECOMP_GRAPHICS_API') == 'vulkan'
+        vulkan_layer.stage(port.exe.parent, 'd3d11', vulkan, cache)
+        vulkan_layer.stage_dlss(port.exe.parent, vulkan and env.get('RECOMP_PRESENT_FILTER') == 'dlss', cache)
     r = subprocess.run([str(port.exe), str(port.files)], cwd=port.exe.parent, env=env)
     sys.exit(r.returncode)
 

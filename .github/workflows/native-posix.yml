@@ -1,0 +1,40 @@
+name: Native POSIX
+on:
+  push:
+    branches: [ports]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  runtime:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libsdl2-dev libepoxy-dev libssl-dev
+      - name: macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install ninja pkg-config sdl2 libepoxy openssl@3
+      - name: Configure runtime and standalone tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ runner.os }}" = macOS ]; then
+            export CMAKE_PREFIX_PATH="$(brew --prefix):$(brew --prefix openssl@3)"
+          fi
+          cmake -S . -B build/native -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=clang -DXBOXRECOMP_BUILD_TESTS=ON
+      - name: Build runtime and standalone tests
+        run: cmake --build build/native --parallel 3
+      - name: C tests
+        run: ctest --test-dir build/native --output-on-failure
+      - name: Python disc tools
+        run: python3 -m unittest tools.xiso.test_xdvdfs tools.rtti.test_rtti tools.resolve.test_metadata

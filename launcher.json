@@ -317,5 +317,193 @@
       ]
     }
   },
-  "generic_label": "^[0-9A-F]{8}$"
+  "generic_label": "^[0-9A-F]{8}$",
+  "linux": {
+    "exe": "build/out/bin/game",
+    "packages": {
+      "apt": [
+        "clang",
+        "pkg-config",
+        "libsdl2-dev",
+        "libsdl2-ttf-dev",
+        "libepoxy-dev",
+        "libssl-dev",
+        "libvulkan-dev"
+      ],
+      "dnf": [
+        "clang",
+        "pkgconf-pkg-config",
+        "SDL2-devel",
+        "SDL2_ttf-devel",
+        "libepoxy-devel",
+        "openssl-devel",
+        "vulkan-loader-devel"
+      ],
+      "pacman": [
+        "clang",
+        "pkgconf",
+        "sdl2",
+        "sdl2_ttf",
+        "libepoxy",
+        "openssl",
+        "vulkan-headers",
+        "vulkan-icd-loader"
+      ],
+      "zypper": [
+        "clang",
+        "pkg-config",
+        "libSDL2-devel",
+        "libSDL2_ttf-devel",
+        "libepoxy-devel",
+        "libopenssl-devel",
+        "vulkan-devel"
+      ]
+    },
+    "deps": {
+      "buildtools_gb": 0.5,
+      "python_gb": 0.1,
+      "tools": [
+        {
+          "id": "llvm",
+          "name": "Clang",
+          "check": null,
+          "gb": 0
+        },
+        {
+          "id": "cmake",
+          "name": "CMake 3.31.12",
+          "check": ".local/tools/cmake-3.31.12/bin/cmake",
+          "gb": 0.1
+        },
+        {
+          "id": "ninja",
+          "name": "Ninja 1.13.2",
+          "check": ".local/tools/ninja-1.13.2/ninja",
+          "gb": 0.01
+        }
+      ]
+    },
+    "generic": {
+      "play": "Play.sh",
+      "exe": "build/out/bin/game",
+      "disk_gb": 10,
+      "download_gb": 1,
+      "minutes": "30-90",
+      "tools": [
+        "llvm",
+        "cmake",
+        "ninja"
+      ],
+      "gb_per_job": 2,
+      "requirements": "../../../tools/xboxport/requirements.txt",
+      "steps": [
+        {
+          "name": "Analyse and translate your game (xboxrecomp)",
+          "run": [
+            "{python}",
+            "../../../tools/xboxport/xboxport.py",
+            "prepare",
+            "--port",
+            "{root}"
+          ],
+          "done_if": "project/src/recomp/gen/recomp_funcs.h",
+          "prepare": true
+        },
+        {
+          "name": "Compile",
+          "run": [
+            "{python}",
+            "../../../tools/xboxport/xboxport.py",
+            "compile",
+            "--port",
+            "{root}",
+            "--jobs",
+            "{jobs}"
+          ],
+          "retry_if": "build/out/build.ninja"
+        }
+      ],
+      "buildtools": false,
+      "play_sh": "#!/usr/bin/env bash\nset -euo pipefail\nhere=\"$(cd \"$(dirname \"$0\")\" && pwd)\"\nexec \"${PYTHON:-python3}\" \"$here/../../../tools/xboxport/xboxport.py\" play --port \"$here\" \"$@\"\n"
+    }
+  },
+  "macos": {
+    "exe": "build/out/bin/game",
+    "packages": {
+      "brew": [
+        "pkg-config",
+        "sdl2",
+        "sdl2_ttf",
+        "libepoxy",
+        "openssl@3"
+      ]
+    },
+    "deps": {
+      "buildtools_gb": 1.5,
+      "python_gb": 0.1,
+      "tools": [
+        {
+          "id": "llvm",
+          "name": "Clang",
+          "check": null,
+          "gb": 0
+        },
+        {
+          "id": "cmake",
+          "name": "CMake 3.31.12",
+          "check": ".local/tools/cmake-3.31.12/CMake.app/Contents/bin/cmake",
+          "gb": 0.1
+        },
+        {
+          "id": "ninja",
+          "name": "Ninja 1.13.2",
+          "check": ".local/tools/ninja-1.13.2/ninja",
+          "gb": 0.01
+        }
+      ]
+    },
+    "generic": {
+      "play": "Play.sh",
+      "exe": "build/out/bin/game",
+      "disk_gb": 10,
+      "download_gb": 1,
+      "minutes": "30-90",
+      "tools": [
+        "llvm",
+        "cmake",
+        "ninja"
+      ],
+      "gb_per_job": 2,
+      "requirements": "../../../tools/xboxport/requirements.txt",
+      "steps": [
+        {
+          "name": "Analyse and translate your game (xboxrecomp)",
+          "run": [
+            "{python}",
+            "../../../tools/xboxport/xboxport.py",
+            "prepare",
+            "--port",
+            "{root}"
+          ],
+          "done_if": "project/src/recomp/gen/recomp_funcs.h",
+          "prepare": true
+        },
+        {
+          "name": "Compile",
+          "run": [
+            "{python}",
+            "../../../tools/xboxport/xboxport.py",
+            "compile",
+            "--port",
+            "{root}",
+            "--jobs",
+            "{jobs}"
+          ],
+          "retry_if": "build/out/build.ninja"
+        }
+      ],
+      "buildtools": false,
+      "play_sh": "#!/usr/bin/env bash\nset -euo pipefail\nhere=\"$(cd \"$(dirname \"$0\")\" && pwd)\"\nexec \"${PYTHON:-python3}\" \"$here/../../../tools/xboxport/xboxport.py\" play --port \"$here\" \"$@\"\n"
+    }
+  }
 }
