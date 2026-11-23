@@ -6,7 +6,9 @@
 
 typedef void (*recomp_func_t)(void);
 
-recomp_func_t recomp_lookup_manual(uint32_t va) { (void)va; return (recomp_func_t)0; }
+/* Asked first on every indirect call: an untranslated target in the game's code runs emulated (x86_fallback.c). */
+extern recomp_func_t xboxport_fallback_lookup(uint32_t va);
+recomp_func_t recomp_lookup_manual(uint32_t va) { return xboxport_fallback_lookup(va); }
 
 extern int xbox_missing_code(uint32_t va, const char *how);  /* runtime: record + stop */
 

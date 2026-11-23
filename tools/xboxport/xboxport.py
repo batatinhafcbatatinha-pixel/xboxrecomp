@@ -16,6 +16,7 @@ game_files/ (the disc, copied and checked by the launcher). Steps (each skips it
   play       run the game
 """
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -127,9 +128,21 @@ def project_files(port):
 
 
 def mark_missing(port):
-    """Calls the generator could not resolve report the address at run time instead of doing nothing."""
+    """Calls the generator could not resolve report the address at run time instead of doing nothing; with the
+    fallback emulator (project/src/x86_fallback.c) each one first tries to run the code emulated."""
     unresolved = port.gen / 'recomp_stubs_unresolved.c'
     if not unresolved.is_file():
+        return
+    text = unresolved.read_text(encoding='utf-8')
+    if 'RECOMP_STUB_HIT(' in text:
+        if 'xboxport_fallback_run(' not in text:
+            text = re.sub(r'\{ RECOMP_STUB_HIT\((0x[0-9A-Fa-f]+)u?\);',
+                          lambda m: '{ if (xboxport_fallback_run(%su, "direct call")) return; RECOMP_STUB_HIT(%su);'
+                          % (m[1], m[1]), text)
+            text = text.replace('#define RECOMP_STUB_HIT(va)',
+                                'extern int xboxport_fallback_run(uint32_t va, const char *how);\n'
+                                '#define RECOMP_STUB_HIT(va)', 1)
+            unresolved.write_text(text, encoding='utf-8')
         return
     out = ['#include <stdint.h>', 'extern int xbox_missing_code(uint32_t va, const char *how);']
     for line in unresolved.read_text(encoding='utf-8').splitlines():
@@ -138,6 +151,40 @@ def mark_missing(port):
             out.append(f'void {m[1]}(void) {{ xbox_missing_code(0x{m[2]}u, "direct call"); }}')
     if len(out) > 2:
         unresolved.write_text('\n'.join(out) + '\n', encoding='utf-8')
+
+
+# The fallback emulator's CPU: Unicorn's own Windows build (the PyPI wheel carries unicorn.dll, its import library
+# and headers), pinned by hash.
+UNICORN = ('2.1.1', 'unicorn-2.1.1-py2.py3-none-win_amd64.whl',
+           'f0ebcfaba67ef0ebcd05ee3560268f1c6f683bdd08ff496888741a163d29735d')
+
+
+def unicorn_dir():
+    """Unicorn for the fallback emulator (.local/xboxport/unicorn), fetched once; None when unavailable (the port is
+    then built without the fallback and skips untranslated code as before)."""
+    dest = REPO / '.local/xboxport/unicorn'
+    if (dest / 'lib/unicorn.dll').is_file():
+        return dest
+    if os.name != 'nt':
+        return None
+    version, wheel_name, sha = UNICORN
+    tmp = dest.parent / 'unicorn-wheel'
+    shutil.rmtree(tmp, ignore_errors=True)
+    r = subprocess.run([sys.executable, '-m', 'pip', 'download', f'unicorn=={version}', '--no-deps', '--only-binary=:all:',
+                        '--platform', 'win_amd64', '-d', str(tmp), '-q'], capture_output=True, text=True)
+    wheel = tmp / wheel_name
+    if r.returncode or not wheel.is_file() or hashlib.sha256(wheel.read_bytes()).hexdigest() != sha:
+        log('- Unicorn (fallback emulator): not available, untranslated code will be skipped')
+        return None
+    import zipfile
+    with zipfile.ZipFile(wheel) as z:
+        for name in z.namelist():
+            if name.startswith(('unicorn/include/', 'unicorn/lib/')) and not name.endswith('/'):
+                target = dest / name[len('unicorn/'):]
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(z.read(name))
+    shutil.rmtree(tmp, ignore_errors=True)
+    return dest
 
 
 def step_translate(port, args):
@@ -169,8 +216,11 @@ def step_compile(port, args):
     else:
         cc = cxx = shutil.which('clang-cl') or need('cl')
     project_files(port)
+    mark_missing(port)   # translations made before the fallback get it too
+    uc = unicorn_dir()
     run(['cmake', '-S', port.project, '-B', port.out, '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release',
-         '-DCMAKE_C_COMPILER=' + cc, '-DCMAKE_CXX_COMPILER=' + cxx, '-DXBOXRECOMP_DIR=' + REPO.as_posix()])
+         '-DCMAKE_C_COMPILER=' + cc, '-DCMAKE_CXX_COMPILER=' + cxx, '-DXBOXRECOMP_DIR=' + REPO.as_posix(),
+         '-DXBOXPORT_UNICORN_DIR=' + (uc.as_posix() if uc else '')])
     run(['cmake', '--build', port.out, '--parallel', str(args.jobs), '--target', 'game'])
 
 

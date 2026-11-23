@@ -68,10 +68,13 @@ static int load_xbe(const char *path, void **data, size_t *bytes)
     return 1;
 }
 
+extern void xboxport_fallback_init(void);   /* x86_fallback.c */
+
 int main(int argc, char **argv)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
+    xboxport_fallback_init();   /* before the runtime lays out the guest address space */
     const char *game = argc > 1 ? argv[1] : "game_files";
     char xbe[MAX_PATH];
     void *data = NULL;
