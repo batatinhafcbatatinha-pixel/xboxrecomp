@@ -34,7 +34,7 @@ def environment():
     return env
 
 
-def dependencies(env):
+def dependencies(env, required_here=True):
     base = Path(env.get('DEPS', str(Path.home() / '.local/share/native-ports-macos')
                         if sys.platform == 'darwin' else str(REPO / '.local/native-deps'))).expanduser().resolve()
     graphics_key = 'DXMT_DIR' if sys.platform == 'darwin' else 'DXVK_NATIVE_DIR'
@@ -44,6 +44,8 @@ def dependencies(env):
                 graphics / ('lib/dxgi.dylib' if sys.platform == 'darwin' else 'lib/libdxvk_dxgi.so'),
                 shader / ('lib/libvkd3d-shader.dylib' if sys.platform == 'darwin' else 'lib/libvkd3d-shader.so')]
     missing = [str(p) for p in required if not p.is_file()]
+    if missing and not required_here:
+        return None  # the profile's own CMake options name the libraries
     if missing:
         raise ValueError('Install native renderer development libraries first; see docs/LINUX_MACOS.md. Missing: ' + ', '.join(missing))
     return graphics_key, graphics, shader
@@ -53,12 +55,15 @@ def build(root, jobs, extra, env):
     for tool in ('cmake', 'ninja', 'clang'):
         if not shutil.which(tool, path=env['PATH']):
             raise ValueError(tool + ' is required on PATH')
-    key, graphics, shader = dependencies(env)
-    options = ['-D' + key + '=' + str(graphics), '-DVKD3D_DIR=' + str(shader)]
-    if sys.platform == 'darwin':
-        options += ['-DCMAKE_OSX_ARCHITECTURES=x86_64']
     pipeline = root / 'scripts/native_pipeline.py'
     builder = root / 'tools/build_local.py'
+    found = dependencies(env, required_here=not pipeline.is_file())
+    options = []
+    if found:
+        key, graphics, shader = found
+        options = ['-D' + key + '=' + str(graphics), '-DVKD3D_DIR=' + str(shader)]
+    if sys.platform == 'darwin':
+        options += ['-DCMAKE_OSX_ARCHITECTURES=x86_64']
     if pipeline.is_file():
         # Retain this profile's established environment keys without duplicating its identity.
         source = pipeline.read_text(encoding='utf-8')

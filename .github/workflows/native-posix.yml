@@ -1,7 +1,7 @@
 name: Native POSIX
 on:
   push:
-    branches: [ports, linux-macos]
+    branches: [ports]
   pull_request:
   workflow_dispatch:
 jobs:
