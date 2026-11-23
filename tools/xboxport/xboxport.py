@@ -224,12 +224,50 @@ def step_compile(port, args):
     run(['cmake', '--build', port.out, '--parallel', str(args.jobs), '--target', 'game'])
 
 
+PC_SETTINGS = '''; PC video settings of this game (tools/xboxport play reads them; an environment variable wins).
+[video]
+; Enlarging the frame to the window: linear | point | fsr (AMD FidelityFX Super Resolution 1.0)
+filter = fsr
+; 1 = vertical sync, 0 = off
+vsync = 1
+; keep = the frame's shape with bars; stretch = fill the window (ultrawide)
+aspect = keep
+; 1 = tell the game the TV is 16:9 (games with a widescreen mode then draw for it)
+widescreen = 1
+; 1 = tell the game the TV takes 480p (progressive)
+progressive = 1
+'''
+
+
+def video_env(port):
+    """Runtime environment for <port>/pc-settings.ini (written with the defaults the first time)."""
+    import configparser
+    ini = port.dir / 'pc-settings.ini'
+    if not ini.is_file():
+        ini.write_text(PC_SETTINGS, encoding='utf-8')
+    cfg = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
+    try:
+        cfg.read(ini, encoding='utf-8')
+    except configparser.Error:
+        return {}
+    v = cfg['video'] if cfg.has_section('video') else {}
+    get = lambda key, default: str(v.get(key, default)).strip().lower()
+    return {
+        'RECOMP_D3D_PRESENT': '1',
+        'RECOMP_PRESENT_FILTER': get('filter', 'fsr') if get('filter', 'fsr') in ('linear', 'point', 'fsr') else 'fsr',
+        'RECOMP_PRESENT_VSYNC': '0' if get('vsync', '1') == '0' else '1',
+        'RECOMP_PRESENT_ASPECT': 'stretch' if get('aspect', 'keep') == 'stretch' else 'keep',
+        'RECOMP_XBOX_WIDESCREEN': '0' if get('widescreen', '1') == '0' else '1',
+        'RECOMP_VIDEO_480P': '0' if get('progressive', '1') == '0' else '1',
+    }
+
+
 def step_play(port, args):
     if not port.exe.is_file():
         raise SystemExit('The game is not built yet: install it from the launcher.')
     port.observed.mkdir(parents=True, exist_ok=True)
     # Code the run reaches that was not translated is recorded for the next build (see learn).
-    env = {**os.environ, 'RECOMP_MISSING_FILE': str(port.missing)}
+    env = {**video_env(port), **os.environ, 'RECOMP_MISSING_FILE': str(port.missing)}
     r = subprocess.run([str(port.exe), str(port.files)], cwd=port.exe.parent, env=env)
     sys.exit(r.returncode)
 

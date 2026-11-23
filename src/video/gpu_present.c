@@ -10,7 +10,8 @@
  * size (or borderless fullscreen) without stretching the picture.
  *
  * Opt-in with RECOMP_D3D_PRESENT=1; anything that fails falls back to GDI.
- * Linear filtering, RECOMP_PRESENT_FILTER=point for sharp pixels;
+ * Linear filtering, RECOMP_PRESENT_FILTER=point for sharp pixels or =fsr for AMD FSR 1.0 (EASU);
+ * RECOMP_PRESENT_ASPECT=stretch fills the window (ultrawide) instead of keeping the frame's shape;
  * RECOMP_PRESENT_VSYNC=0 presents without waiting for the display, as the
  * SDL window does.
  */
@@ -39,6 +40,8 @@ static HWND                      s_hwnd;
 static uint32_t                  s_w, s_h;      /* frame size */
 static uint32_t                  s_bw, s_bh;    /* back buffer (client) size */
 static int                       s_vsync = 1;
+static int                       s_fsr;         /* RECOMP_PRESENT_FILTER=fsr */
+static int                       s_stretch;     /* RECOMP_PRESENT_ASPECT=stretch: fill the window */
 
 /* A triangle covering the viewport, from the vertex id; uv 0..1. */
 static const char s_hlsl[] =
@@ -47,6 +50,45 @@ static const char s_hlsl[] =
     "V vs(uint i : SV_VertexID) { V o; float2 q = float2((i << 1) & 2, i & 2);\n"
     "  o.uv = q; o.p = float4(q * float2(2, -2) + float2(-1, 1), 0, 1); return o; }\n"
     "float4 ps(V i) : SV_Target { return float4(t.Sample(s, i.uv).rgb, 1); }\n";
+
+/* AMD FidelityFX Super Resolution 1.0, EASU (MIT; Copyright (c) 2021 Advanced Micro Devices): the 32-bit path of
+ * ffx_fsr1.h, as in the ports' other presenters. Enlarges the frame to the window while rebuilding its edges. */
+static const char s_hlsl_fsr[] =
+    "float Lu(float3 c) { return c.b * 0.5 + (c.r * 0.5 + c.g); }\n"
+    "float3 Ld(int2 p, int2 n) { return t.Load(int3(clamp(p, int2(0, 0), n - 1), 0)).rgb; }\n"
+    "void Es(inout float2 dir, inout float len, float w, float a, float b, float c, float d, float e) {\n"
+    "  float lx = max(abs(d - c), abs(c - b)); lx = lx > 0.0 ? 1.0 / lx : 0.0; float dx = d - b; dir.x += dx * w;\n"
+    "  lx = saturate(abs(dx) * lx); len += lx * lx * w;\n"
+    "  float ly = max(abs(e - c), abs(c - a)); ly = ly > 0.0 ? 1.0 / ly : 0.0; float dy = e - a; dir.y += dy * w;\n"
+    "  ly = saturate(abs(dy) * ly); len += ly * ly * w; }\n"
+    "void Et(inout float3 ac, inout float aw, float2 o, float2 dir, float2 len2, float lob, float clp, float3 c) {\n"
+    "  float2 v = float2(o.x * dir.x + o.y * dir.y, o.x * (-dir.y) + o.y * dir.x) * len2;\n"
+    "  float d2 = min(dot(v, v), clp); float wb = 0.4 * d2 - 1.0, wa = lob * d2 - 1.0;\n"
+    "  wb *= wb; wa *= wa; wb = 1.5625 * wb - 0.5625; float w = wb * wa; ac += c * w; aw += w; }\n"
+    "float4 ps_fsr(V i) : SV_Target {\n"
+    "  uint w0, h0; t.GetDimensions(w0, h0); int2 n = int2(w0, h0);\n"
+    "  float2 pp = i.uv * float2(n) - 0.5; float2 fp = floor(pp); pp -= fp; int2 q = int2(fp);\n"
+    "  float3 b = Ld(q + int2(0, -1), n), c = Ld(q + int2(1, -1), n), e = Ld(q + int2(-1, 0), n), f = Ld(q, n),\n"
+    "         g = Ld(q + int2(1, 0), n), h = Ld(q + int2(2, 0), n), ii = Ld(q + int2(-1, 1), n), j = Ld(q + int2(0, 1), n),\n"
+    "         k = Ld(q + int2(1, 1), n), l = Ld(q + int2(2, 1), n), m = Ld(q + int2(0, 2), n), o = Ld(q + int2(1, 2), n);\n"
+    "  float bL = Lu(b), cL = Lu(c), eL = Lu(e), fL = Lu(f), gL = Lu(g), hL = Lu(h), iL = Lu(ii), jL = Lu(j),\n"
+    "        kL = Lu(k), lL = Lu(l), mL = Lu(m), oL = Lu(o);\n"
+    "  float2 dir = float2(0.0, 0.0); float len = 0.0;\n"
+    "  Es(dir, len, (1.0 - pp.x) * (1.0 - pp.y), bL, eL, fL, gL, jL); Es(dir, len, pp.x * (1.0 - pp.y), cL, fL, gL, hL, kL);\n"
+    "  Es(dir, len, (1.0 - pp.x) * pp.y, fL, iL, jL, kL, mL); Es(dir, len, pp.x * pp.y, gL, jL, kL, lL, oL);\n"
+    "  float dr = dot(dir, dir); bool z = dr < 1.0 / 32768.0; dr = z ? 1.0 : rsqrt(dr); dir.x = z ? 1.0 : dir.x; dir *= dr;\n"
+    "  len = len * 0.5; len *= len; float st = dot(dir, dir) / max(abs(dir.x), abs(dir.y));\n"
+    "  float2 len2 = float2(1.0 + (st - 1.0) * len, 1.0 - 0.5 * len);\n"
+    "  float lob = 0.5 + ((1.0 / 4.0 - 0.04) - 0.5) * len; float clp = 1.0 / lob;\n"
+    "  float3 ac = float3(0.0, 0.0, 0.0); float aw = 0.0;\n"
+    "  Et(ac, aw, float2(0.0, -1.0) - pp, dir, len2, lob, clp, b); Et(ac, aw, float2(1.0, -1.0) - pp, dir, len2, lob, clp, c);\n"
+    "  Et(ac, aw, float2(-1.0, 1.0) - pp, dir, len2, lob, clp, ii); Et(ac, aw, float2(0.0, 1.0) - pp, dir, len2, lob, clp, j);\n"
+    "  Et(ac, aw, float2(0.0, 0.0) - pp, dir, len2, lob, clp, f); Et(ac, aw, float2(-1.0, 0.0) - pp, dir, len2, lob, clp, e);\n"
+    "  Et(ac, aw, float2(1.0, 1.0) - pp, dir, len2, lob, clp, k); Et(ac, aw, float2(2.0, 1.0) - pp, dir, len2, lob, clp, l);\n"
+    "  Et(ac, aw, float2(2.0, 0.0) - pp, dir, len2, lob, clp, h); Et(ac, aw, float2(1.0, 0.0) - pp, dir, len2, lob, clp, g);\n"
+    "  Et(ac, aw, float2(1.0, 2.0) - pp, dir, len2, lob, clp, o); Et(ac, aw, float2(0.0, 2.0) - pp, dir, len2, lob, clp, m);\n"
+    "  float3 mn = min(min(f, g), min(j, k)), mx = max(max(f, g), max(j, k));\n"
+    "  return float4(min(mx, max(mn, ac / aw)), 1); }\n";
 
 int gpu_present_enabled(void)
 {
@@ -80,7 +122,10 @@ static int make_rtv(void)
 static ID3DBlob *compile(const char *entry, const char *target)
 {
     ID3DBlob *code = NULL, *err = NULL;
-    HRESULT hr = D3DCompile(s_hlsl, sizeof s_hlsl - 1, "present", NULL, NULL, entry, target,
+    char source[sizeof s_hlsl + sizeof s_hlsl_fsr];
+    memcpy(source, s_hlsl, sizeof s_hlsl - 1);
+    memcpy(source + sizeof s_hlsl - 1, s_hlsl_fsr, sizeof s_hlsl_fsr);
+    HRESULT hr = D3DCompile(source, strlen(source), "present", NULL, NULL, entry, target,
                             0, 0, &code, &err);
     if (FAILED(hr)) {
         fprintf(stderr, "  [D3D] present shader %s: %s\n", entry,
@@ -101,8 +146,11 @@ int gpu_present_init(HWND hwnd, uint32_t width, uint32_t height)
     HRESULT hr;
     const char *v = getenv("RECOMP_PRESENT_VSYNC"), *f = getenv("RECOMP_PRESENT_FILTER");
 
+    const char *a = getenv("RECOMP_PRESENT_ASPECT");
     if (v && v[0] == '0')
         s_vsync = 0;
+    s_fsr = f && (f[0] == 'f' || f[0] == 'F');
+    s_stretch = a && (a[0] == 's' || a[0] == 'S');
     s_hwnd = hwnd;
     s_w = width; s_h = height;
     client_size(&s_bw, &s_bh);
@@ -144,7 +192,7 @@ int gpu_present_init(HWND hwnd, uint32_t width, uint32_t height)
     smp.AddressU = smp.AddressV = smp.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     smp.MaxLOD = D3D11_FLOAT32_MAX;
     vsb = compile("vs", "vs_4_0");
-    psb = compile("ps", "ps_4_0");
+    psb = compile(s_fsr ? "ps_fsr" : "ps", "ps_4_0");
     if (!vsb || !psb || !make_rtv()
         || FAILED(ID3D11Device_CreateTexture2D(s_dev, &td, NULL, &s_frame))
         || FAILED(ID3D11Device_CreateShaderResourceView(s_dev, (ID3D11Resource *)s_frame, NULL, &s_srv))
@@ -161,9 +209,10 @@ int gpu_present_init(HWND hwnd, uint32_t width, uint32_t height)
     }
     ID3D10Blob_Release(vsb);
     ID3D10Blob_Release(psb);
-    fprintf(stderr, "  [D3D] presenting through D3D11 (%ux%u frame, vsync %s, %s filter)\n",
+    fprintf(stderr, "  [D3D] presenting through D3D11 (%ux%u frame, vsync %s, %s filter, %s)\n",
             width, height, s_vsync ? "on" : "off",
-            smp.Filter == D3D11_FILTER_MIN_MAG_MIP_POINT ? "point" : "linear");
+            s_fsr ? "FSR 1.0" : smp.Filter == D3D11_FILTER_MIN_MAG_MIP_POINT ? "point" : "linear",
+            s_stretch ? "stretched to the window" : "aspect kept");
     return 1;
 }
 
@@ -194,11 +243,11 @@ int gpu_present_frame(const uint32_t *pixels)
                                           pixels, s_w * 4, 0);
     ID3D11DeviceContext_OMSetRenderTargets(s_ctx, 1, &s_rtv, NULL);
     ID3D11DeviceContext_ClearRenderTargetView(s_ctx, s_rtv, black);
-    /* The largest rectangle of the frame's shape that fits, centred. */
+    /* The largest rectangle of the frame's shape that fits, centred (or the whole window, stretched). */
     sx = (float)s_bw / (float)s_w;
     sy = (float)s_bh / (float)s_h;
-    vp.Width = (float)s_w * (sx < sy ? sx : sy);
-    vp.Height = (float)s_h * (sx < sy ? sx : sy);
+    vp.Width = s_stretch ? (float)s_bw : (float)s_w * (sx < sy ? sx : sy);
+    vp.Height = s_stretch ? (float)s_bh : (float)s_h * (sx < sy ? sx : sy);
     vp.TopLeftX = ((float)s_bw - vp.Width) * 0.5f;
     vp.TopLeftY = ((float)s_bh - vp.Height) * 0.5f;
     vp.MinDepth = 0; vp.MaxDepth = 1;
