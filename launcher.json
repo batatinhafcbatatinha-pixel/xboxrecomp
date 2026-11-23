@@ -224,6 +224,29 @@
               "source": "gpus",
               "help_pt": "Em notebooks com duas, escolha a dedicada.",
               "help_en": "On laptops with two, pick the dedicated one."
+            },
+            {
+              "key": "api",
+              "pt": "API gráfica",
+              "en": "Graphics API",
+              "default": 0,
+              "restart": true,
+              "help_pt": "Vulkan roda o Direct3D 11 do jogo sobre Vulkan (DXVK). Só vale se a placa de vídeo tiver Vulkan; senão fica o Direct3D 11.",
+              "help_en": "Vulkan runs the game's Direct3D 11 on Vulkan (DXVK). Only with a graphics card that supports Vulkan; Direct3D 11 otherwise.",
+              "choices": [
+                {
+                  "v": 0,
+                  "pt": "Direct3D 11 (nativa)",
+                  "en": "Direct3D 11 (native)",
+                  "word": "native"
+                },
+                {
+                  "v": 1,
+                  "pt": "Vulkan",
+                  "en": "Vulkan",
+                  "word": "vulkan"
+                }
+              ]
             }
           ]
         }

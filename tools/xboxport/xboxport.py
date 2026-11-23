@@ -240,6 +240,8 @@ progressive = 1
 antialiasing = off
 ; -1 = Windows' default GPU; 0, 1, 2... = that DXGI adapter (the launcher lists them by name)
 gpu = -1
+; native = Direct3D 11; vulkan = Direct3D 11 on Vulkan (DXVK, when the graphics card supports Vulkan)
+api = native
 '''
 
 
@@ -264,6 +266,7 @@ def video_env(port):
         'RECOMP_XBOX_WIDESCREEN': '0' if get('widescreen', '1') == '0' else '1',
         'RECOMP_VIDEO_480P': '0' if get('progressive', '1') == '0' else '1',
         'RECOMP_PRESENT_AA': 'fxaa' if get('antialiasing', 'off') == 'fxaa' else 'off',
+        'RECOMP_GRAPHICS_API': 'vulkan' if get('api', 'native') == 'vulkan' else 'native',
         'RECOMP_PRESENT_ADAPTER': get('gpu', '-1') if get('gpu', '-1').lstrip('-').isdigit() else '-1',
     }
 
@@ -275,6 +278,11 @@ def step_play(port, args):
     # Code the run reaches that was not translated is recorded for the next build (see learn).
     # input.ini in the port folder: this game's controller settings (port_input), over the global ones.
     env = {**video_env(port), **os.environ, 'RECOMP_MISSING_FILE': str(port.missing), 'PORT_INPUT_GAME_DIR': str(port.dir)}
+    # [video] api = vulkan: Direct3D 11 on Vulkan through DXVK (vulkan_layer.py), when the card supports Vulkan.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import vulkan_layer
+    vulkan_layer.stage(port.exe.parent, 'd3d11', env.get('RECOMP_GRAPHICS_API') == 'vulkan',
+                       Path(__file__).resolve().parents[2] / '.local/downloads/vulkan')
     r = subprocess.run([str(port.exe), str(port.files)], cwd=port.exe.parent, env=env)
     sys.exit(r.returncode)
 
