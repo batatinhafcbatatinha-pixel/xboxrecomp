@@ -2367,14 +2367,6 @@ VOID RaiseException(DWORD code, DWORD flags, DWORD nargs, const ULONG_PTR *args)
     /* TODO: on Windows this does not return; SEH dispatch unimplemented. */
 }
 
-DWORD GetFileAttributesA(const char *path)
-{
-    struct stat st;
-    if (!path || stat(path, &st) != 0)
-        return INVALID_FILE_ATTRIBUTES;
-    return S_ISDIR(st.st_mode) ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
-}
-
 /* Vectored handlers over SIGSEGV/SIGBUS/SIGILL/SIGFPE.
  *
  * The trapped-MMIO devices (OHCI, APU, NV2A) leave their pages PROT_NONE and

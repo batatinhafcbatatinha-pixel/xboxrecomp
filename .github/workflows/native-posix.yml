@@ -33,7 +33,7 @@ jobs:
           cmake -S . -B build/native -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER=clang -DXBOXRECOMP_BUILD_TESTS=ON
       - name: Build runtime and standalone tests
-        run: cmake --build build/native --parallel 3
+        run: cmake --build build/native --parallel 3 -- -k 0
       - name: C tests
         run: ctest --test-dir build/native --output-on-failure
       - name: Python disc tools
