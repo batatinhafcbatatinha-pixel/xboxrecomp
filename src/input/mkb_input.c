@@ -36,6 +36,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#ifdef XBOX_PORT_INPUT
+#include "port_input.h"   /* the launcher's mouse sensitivity (input.ini) */
+#endif
 
 /* ---- configuration ----------------------------------------------------- */
 
@@ -345,6 +348,9 @@ static void mkb_aim_vector(double ax, double ay, SHORT *out_x, SHORT *out_y)
     if (r > 1.0) r = 1.0;
     len = s_cfg.dz + (1.0 - s_cfg.dz) * pow(r, s_cfg.acc);
     len *= s_cfg.sens;
+#ifdef XBOX_PORT_INPUT
+    len *= port_input_settings()->mouse_sensitivity / 100.0;   /* the Controllers page, over RECOMP_MKB_SENS */
+#endif
     if (len > 1.0) len = 1.0;
     fx = ax * len / sqrt(ax * ax + ay * ay);
     fy = ay * len / sqrt(ax * ax + ay * ay);
